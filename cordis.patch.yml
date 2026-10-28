@@ -1,0 +1,7 @@
+# Fairy Ⅲ — 绝区零 H.D.D 皮肤（Host + Client）。
+# 只插入一行皮肤插件；装上后整页刷新即可看到开机动画 → 居中问好 → 左下坞。
+# 「Fairy 模式」agent 预设不在这里（它依赖较多 @deepseek-ai/dsh-* 插件，
+# 不同 DSH 版本的工具集不同，默认不启用）——需要的话见 presets/fairy-mode.patch.yml。
+- insert:
+    - id: fairy-zzz-skin
+      name: 'dsh-fairy-zzz'

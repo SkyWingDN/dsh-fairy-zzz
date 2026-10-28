@@ -1,0 +1,11 @@
+# runtime / local only
+node_modules/
+/cache/
+/voice/
+voice-home.txt
+*.log
+diag/
+
+# OS junk
+.DS_Store
+Thumbs.db
