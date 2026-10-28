@@ -20,16 +20,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-Third-party notice
-
-This repository is a modified edition of fairy-zzz-plugin
-(https://github.com/AssassinVIX/fairy-zzz-plugin, MIT).
-
-The eye-core SVG (FAIRY_EYE_SVG), the eyelid clip mechanism and the idle-motion
-runtime in client.js are adapted from Fairy-DSH
-(https://github.com/Chengzhibense/Fairy-DSH, Apache-2.0).
-See NOTICE-fairy-dsh.md for the full attribution and the list of modifications;
-the Apache-2.0 text is in licenses/Apache-2.0.txt.

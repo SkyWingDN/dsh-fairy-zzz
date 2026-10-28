@@ -70,3 +70,14 @@ Performance work done by SkyWingDN with DeepSeek Harness (see
   GPT-SoVITS + Fairy voice model and point the plugin at it (see README).
 - No third-party source dependencies are bundled; the plugin only uses the
   slots and web server provided by DeepSeek Harness at runtime.
+
+## License layering
+
+- The repository as a whole (the modifications by SkyWingDN) is released under
+  the MIT license in [LICENSE](LICENSE).
+- The original plugin by AssassinVIX is MIT licensed.
+- The eye-core SVG, the eyelid clip mechanism and the idle-motion runtime adapted
+  from Fairy-DSH are Apache-2.0; the full text is in
+  [licenses/Apache-2.0.txt](licenses/Apache-2.0.txt) and the Fairy-DSH NOTICE and
+  trademark notice are in [licenses/Fairy-DSH-NOTICE.txt](licenses/Fairy-DSH-NOTICE.txt)
+  and [licenses/Fairy-DSH-TRADEMARKS.md](licenses/Fairy-DSH-TRADEMARKS.md).
