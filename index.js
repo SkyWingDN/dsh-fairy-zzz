@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 /**
  * Fairy Ⅲ · H.D.D Skin — Host half.
  *
- *   GET  /fairy-zzz/assets/<file>   boot.mp4 / poster.jpg / hero.png / voice/greet-*.wav
+ *   GET  /fairy-zzz/assets/<file>   boot-opt.mp4 / poster.jpg / hero.webp / icon-180.png / voice/greet-*.mp3
  *   GET  /fairy-zzz/audio/<hash>.wav synthesized voice cache (Range capable)
  *   POST /fairy-zzz/tts             { text } -> { url, cached, seconds }
  *   GET  /fairy-zzz/mood            { mood } -> idle | thinking | working | done
