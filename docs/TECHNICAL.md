@@ -13,7 +13,7 @@
 - 代码在哪（三处，同步关系见第 2 节）：
   - 实际运行目录：`C:\Users\SkyWingDN\.dsh\plugins\dsh-fairy-zzz`（DSH 加载的是这里）
   - 本地 git 仓库：`C:\Users\SkyWingDN\Desktop\dsh-fairy-zzz`（发布用，内容应与运行目录一致）
-  - 远端仓库：`https://github.com/SkyWingDN/dsh-fairy-zzz`（public，MIT；另有 release v1.1.0）
+  - 远端仓库：`https://github.com/SkyWingDN/dsh-fairy-zzz`（public，MIT；release：https://github.com/SkyWingDN/dsh-fairy-zzz/releases ，最新 v1.1.1）
 - 代码只有三个入口文件：`index.js`（host 侧，Node 路由 / TTS / 情绪）、`client.js`（浏览器侧，React 组件 + 全部 CSS + 动效运行时）、`cordis.patch.yml`（一行 insert 完成插件装配）。
 - 图标 / 视频 / 试听音频都在 `assets/`；发布版约 5.5 MB（其中开机视频 2.4 MB）。
 - 当前安装的 DSH 版本：`0.2.1-rc.3`（`C:\softs\DeepSeek Harness\resources\app.asar`，桌面 Electron 壳）。DSH 升级后前端 bundle 的 hash 会变，但插件只依赖**槽位名**和少量 data 属性，通常不需要改。
