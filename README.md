@@ -27,6 +27,7 @@
   - 页面隐藏时自动暂停故障与装饰动画；**系统「减少动态效果」（含 Windows 关闭动画效果）不再降级**——插件固定保持完整动效。
   - **性能**：待机 / 思考时主线程约 1–2.5%（原版约 31–41%），常驻 rAF 归零；页面隐藏时暂停轮询与动画；首屏资源约 2.9 MB（原约 9.0 MB）。详见 [docs/PERFORMANCE.md](docs/PERFORMANCE.md)。
 - **品牌位替换**：隐藏官方 SVG 字标，在原位置叠上 Fairy 眼徽 + 斜体 `Fairy` 字标，位置由量测官方元素得到，随窗口自适应。
+- **欢迎页品牌位（1.1.1 新增）**：接管 `conversation.hero.brand.mark` 槽位，把新会话欢迎页「探索未至之境」标题左侧的 DeepSeek 鲸鱼 logo 换成同一个 Fairy 眼标；复用静态 SVG，不增加动画开销，悬停时跟随官方 `fish` 类一起轻微摆动。见 [docs/TECHNICAL.md](docs/TECHNICAL.md)。
 - **主题**：深蓝玻璃 + 青蓝霓虹 token、网格与扫描线壁纸、H.D.D 风滚动条与焦点光。
 - **语音**：开场问候是预录 mp3（不依赖引擎）；后续回复可自动朗读或点按钮朗读，走本地 GPT-SoVITS（CPU 推理）。**本仓库不含模型与引擎**，需按下方说明自行部署。
 - **设置面板**：DSH 的「设置 → Fairy」里集中管理朗读开关、引擎状态、引擎目录、试听/重播/测试。
@@ -87,6 +88,8 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1 -Uninstall  # 卸
 > 并把插件目录从 `node_modules\@local\dsh-fairy-zzz` 换到 `node_modules\dsh-fairy-zzz`。
 
 > **从 1.1.0 起**本仓库为性能优化修改版（仓库地址改为 SkyWingDN/dsh-fairy-zzz），包名与路由不变；升级时直接覆盖 `client.js`、`index.js`、`assets/` 后重启 DSH 即可。
+>
+> **1.1.1** 只改 `client.js`（新增欢迎页品牌位，无新资源），从 1.1.0 升级只需覆盖这一个文件并重启 DSH。
 
 
 > `presets/fairy-mode.patch.yml` 是**可选**的「Fairy 模式」agent 预设（毒舌 AI 腔、称你为「主人」）。
@@ -187,7 +190,7 @@ index.js             # 宿主：静态资源（ETag/304/Range）、TTS 队列与
 assets/              # boot-opt.mp4 / poster.jpg / hero.webp / icon-180.png / voice/*.mp3
 presets/             # 可选的「Fairy 模式」agent 预设
 screenshots/         # 列表用截图
-docs/                # 性能报告与对比图（PERFORMANCE.md）
+docs/                # 原理说明（TECHNICAL.md）、性能报告与对比图（PERFORMANCE.md）
 licenses/            # 第三方许可全文（Apache-2.0 / Fairy-DSH NOTICE）
 install-windows.ps1  # Windows 安装/卸载脚本
 ```
@@ -233,6 +236,8 @@ It turns the DSH web interface into Fairy's H.D.D terminal: a full-screen boot a
   - the outer halo, atmosphere glow and flash are **static layered gradients** instead of live `drop-shadow` / `blur()` (no per-frame re-rasterisation), so the big 330 px stage stays at ~60 fps;
   - faults and decorative motion pause on hidden pages; the plugin deliberately ignores the system "reduce motion" setting (including Windows' animation-effects switch) and always keeps the full motion.
 - **Brand slot replacement** — the official SVG wordmark is hidden and the Fairy eye badge plus an italic `Fairy` wordmark are overlaid in the same spot, positioned from measurements of the official element so it stays responsive.
+- **Welcome-hero brand mark (new in 1.1.1)** — the plugin takes over the `conversation.hero.brand.mark` slot, so the DeepSeek whale logo left of the “探索未至之境” headline on the new-session welcome page becomes the same Fairy eye badge. It reuses the static SVG (no extra animation cost) and inherits the official `fish` hover wiggle. See [docs/TECHNICAL.md](docs/TECHNICAL.md).
+
 ## Performance (this edition)
 
 The upstream plugin runs all eye motion from a resident `requestAnimationFrame` loop; this edition replaces it with CSS keyframes and turns the thinking eyelid into a static clipped shape. Headless Chrome, 10 s steady-state window, same machine:
@@ -287,6 +292,8 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1 -Uninstall  # uni
 ```
 
 > **Since 1.1.0** this repository is the performance-optimized edition (now at SkyWingDN/dsh-fairy-zzz). The package name and routes are unchanged; to upgrade, overwrite `client.js`, `index.js` and `assets/`, then restart DSH.
+>
+> **1.1.1** only touches `client.js` (new welcome-hero brand mark, no new assets), so upgrading from 1.1.0 means replacing that single file and restarting DSH.
 
 The script finds your profile, copies the plugin into `node_modules\dsh-fairy-zzz`, adds the patch and switches a light theme to dark. If you would rather not let a script edit files, use option 1 or 2.
 
@@ -388,7 +395,7 @@ index.js             # host: static assets (ETag/304/Range), TTS queue and cache
 assets/              # boot-opt.mp4 / poster.jpg / hero.webp / icon-180.png / voice/*.mp3
 presets/             # optional Fairy mode agent preset
 screenshots/         # screenshots used above
-docs/                # performance report and comparison image
+docs/                # technical guide (TECHNICAL.md), performance report and comparison image
 licenses/            # third-party license texts (Apache-2.0 / Fairy-DSH NOTICE)
 install-windows.ps1  # Windows install/uninstall script
 ```

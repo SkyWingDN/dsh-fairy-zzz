@@ -456,6 +456,10 @@ button:not([disabled]):active{transform:translateY(1px)}
 .fz3-brandmark{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px}
 .fz3-brandmark-eye{width:100%;height:100%;display:block;filter:drop-shadow(0 0 6px rgba(80,140,255,.5))}
 .fz3-brandmark-eye svg{width:100%;height:100%;display:block}
+/* 欢迎页 hero 品牌位（conversation.hero.brand.mark）：替换 DSH 鲸鱼 fallback，放静态 Fairy 眼标 */
+.fz3-hero-brand{display:inline-flex;align-items:center;justify-content:center;flex:none}
+.fz3-hero-brand-eye{display:block;width:100%;height:100%;filter:drop-shadow(0 0 6px rgba(80,140,255,.5))}
+.fz3-hero-brand-eye svg{display:block;width:100%;height:100%}
 .fz3-brandname{display:flex;flex-direction:column;gap:2px;line-height:1.05;font-family:var(--fz3-font);min-width:0}
 .fz3-brandname b{font-weight:700;font-size:14px;letter-spacing:.34em;color:#eaf7ff;text-shadow:0 0 14px rgba(87,232,255,.55)}
 .fz3-brandname i{font-style:normal;font-size:8px;letter-spacing:.2em;color:rgba(122,188,240,.72);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1566,6 +1570,24 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
       )
     }
 
+    function HeroBrandMark(props) {
+      const size = props && typeof props.size === 'number' ? props.size : 34
+      const extra = props && props.className ? ' ' + props.className : ''
+      return h(
+        'span',
+        {
+          className: 'fz3-hero-brand' + extra,
+          style: { width: size + 'px', height: size + 'px', display: 'inline-flex' },
+          'aria-hidden': 'true',
+        },
+        h('span', {
+          className: 'fz3-hero-brand-eye',
+          'aria-hidden': 'true',
+          dangerouslySetInnerHTML: { __html: FAIRY_EYE_SVG },
+        }),
+      )
+    }
+
     function BrandName() {
       return h(
         'span',
@@ -2117,6 +2139,7 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 
         mount('sidebar.brand.mark', { id: 'fairy-zzz-brandmark', priority: 100 }, BrandMark)
         mount('sidebar.brand.name', { id: 'fairy-zzz-brandname', priority: 100 }, BrandName)
+        mount('conversation.hero.brand.mark', { id: 'fairy-zzz-hero-brand', priority: 0 }, HeroBrandMark)
         mount('shell.overlay', { id: 'fairy-zzz-skin', order: 24 }, FairySkin)
         mount('shell.overlay', { id: 'fairy-zzz-atmos', order: 12 }, Atmos)
             mount('conversation.chat.assistant-actions', { id: 'fairy-zzz-voice', order: 20, label: '朗读' }, VoiceAction)
