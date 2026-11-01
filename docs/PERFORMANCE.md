@@ -2,7 +2,7 @@
 
 This page records why and how the **performance-optimized edition** of
 dsh-fairy-zzz differs from the upstream plugin, plus the measurements used to
-validate the result. 中文在前，English summary at the end. Section 9 adds the v1.2.0 GPU-usage work.
+validate the result. 中文在前，English summary at the end. Section 9 adds the v1.2.0 GPU-usage work; §9.10 covers the v1.2.1 dead-code / dead-style cleanup.
 
 ## 1. 背景与目标
 
@@ -76,7 +76,7 @@ harness 与测量脚本属于一次性验证工具，**未随仓库发布**；�
    （克隆只在花屏时 `display:block`）。
 3. 眼睑半闭眼形状改为静态（详见第 4 节）。
 4. 启动动画：两路 `boot.mp4` 同时解码改为单路 `boot-opt.mp4`；去掉全屏 `blur(46px)` 铺底；
-   进度条直接写 DOM（不再每帧 `setState` 触发 React 重渲染）。
+   进度条直接写 DOM（不再每帧 `setState` 触发 React 重渲染）。进度条本身已在 v1.2.1 随被隐藏的 boot HUD 一并删除（见本节第 11 条）。
 5. 去掉多道常驻模糊 / 滤镜：氛围光 `blur(34px)`、闪光 `blur(20px)`、眼周光晕 `blur(20px)`、
    眼睛 `drop-shadow` 全部改成静态多层渐变（不再每帧重栅格化）。
 6. 轮询感知页面可见性：mood 900ms、health 5s 轮询在页面隐藏时暂停、可见时恢复，
@@ -87,6 +87,7 @@ harness 与测量脚本属于一次性验证工具，**未随仓库发布**；�
    `visibility:hidden`，彻底停止绘制。
 9. 清理重复的 `body::after` 死规则等。
 10. （v1.2.0）GPU 占用优化：背景 40s 漂移动画静态化、氛围光 14s 呼吸改为 500ms JS 环境时钟、删除 `fz3-drift` / `fz3-breathe` 两个全屏动画关键帧（详见第 9 节）。
+11. （v1.2.1）死代码 / 死样式清理（**零行为变化**）：删除从未渲染的 `Waveform`、被 CSS `display:none` 隐藏的 boot HUD / 进度条 / 跳过按钮（含 `barRef/pctRef/onTime` 直写 DOM 的代码）、FairySkin 左下角 `fz3-tag`，以及 `index.js` 里从未调用的 `pingEngine()`；CSS 删除 93 条死规则 / 6 个未使用 `@keyframes` / 6 个未使用 CSS 变量，i18n 删除 25 条未使用词条。`client.js` 2,171 → 1,919 行、109,117 → 93,886 B（约 −14%）；不改动任何渲染路径与动画，第 3 / 9 节的 GPU / 主线程数据不受影响（详见 9.10）。
 
 ### index.js（host 路由）
 
@@ -241,6 +242,15 @@ harness 与测量脚本属于一次性验证工具，**未随仓库发布**；�
 - boot 的视频解码与 greet 过渡仍是瞬态高点，属于可接受代价。
 - 未来若想恢复漂移：可把背景换成独立小元素并限制合成范围（例如只在一个小区域做动画），但**不要**用定时器改 `:root` CSS 变量。
 
+### 9.10 v1.2.1：死代码 / 死样式清理（零行为变化）
+
+v1.2.1 只删代码、不碰渲染与动画路径，因此本节 GPU / 主线程数据全部继续有效：
+
+- `client.js` 2,171 → 1,919 行、109,117 → 93,886 B（约 −14%）；`index.js` 30,859 → 30,812 B（删掉从未被调用的 `pingEngine()`）。
+- CSS 文本 517 → 383 行（文件行 347-729）：删除 93 条死规则、6 个未使用 `@keyframes`（`fz3-bar/fz3-wave/fz3-panel-in/fz3-rot/fz3-rot-rev/fz3-twinkle`）、6 个未使用变量（`--fz3-blue/violet/magenta/ink/mute/line`）。
+- 被删除的选择器 / 变量 / 关键帧在删除前已全文件 `grep` 确认无引用；眼徽动画、boot 视频、静态 poster 模糊铺底、问候与 SKIP2、设置面板、朗读按钮全部保留。
+- headless Chrome 真实加载插件页面验证：boot → greet → dock 正常，无 JS 报错，`.fz3-boot-hud` / `.fz3-tag` / `.fz3-wave*` 元素数为 0，截图与 v1.2.0 一致。
+
 ---
 
 ## English summary
@@ -260,8 +270,9 @@ This edition:
   (the eye itself still breathes, the lashes still rotate, the pulse rings and
   flicker are intact);
 - replaces live `blur()` / `drop-shadow` with static layered gradients;
-- makes the boot stage a single `boot-opt.mp4` without a full-screen blur backfill
-  and writes progress straight to the DOM;
+- makes the boot stage a single `boot-opt.mp4` without a full-screen blur backfill,
+  and wrote progress straight to the DOM until v1.2.1 removed the progress bar
+  together with the hidden boot HUD;
 - adds strong ETag / `Last-Modified` / 304 revalidation, `Range` / `If-Range`, and
   immutable caching for synthesized audio; memoises `/mood`, `/engine` and
   `/voice-home` briefly; pauses polling while the page is hidden;
@@ -276,7 +287,14 @@ This edition:
   discrete `steps(1)` flicker are nearly free; the pitfall to avoid is driving
   `:root` custom properties from a timer (even at 2 Hz it triggered a
   full-document style recalc: 4.055 s vs 0.82 s over a 20 s window), so the
-  background drift was dropped instead.
+  background drift was dropped instead;
+- trims dead code and dead CSS (v1.2.1, zero visible behaviour change): removes
+  the unused `Waveform` component, the CSS-hidden boot HUD / progress bar / skip
+  button and their direct-DOM `barRef` / `pctRef` / `onTime` code, the sidebar
+  dock tag, and the never-called `pingEngine()`; deletes 93 dead CSS rules,
+  6 unused `@keyframes`, 6 unused CSS custom properties and 25 unused i18n
+  entries — `client.js` goes 2,171 → 1,919 lines / 109,117 → 93,886 B (about
+  −14%) while touching no render path, so the GPU / CPU numbers above stand.
 
 Pixel-level comparison of frozen animation frames shows the boot screen is
 pixel-identical and idle / greeting screens differ only by 0.23–1.49 / 255 on

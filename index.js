@@ -389,10 +389,6 @@ async function engineState() {
   }
 }
 
-async function pingEngine() {
-  return (await engineState()).up
-}
-
 let enginePromise = null
 let engineChild = null
 

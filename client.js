@@ -32,67 +32,17 @@ window.__ModuleLoader__.load({
     /* ------------------------------------------------------------------ *
      * ———————————— */
     const ZH = {
-      'boot.kicker': 'H.D.D // BOOT SEQUENCE',
-      'boot.version': 'FAIRY.OS 3.01',
-      'boot.title': 'Ⅲ型总序式集成泛用人工智能',
-      'boot.check1': 'CORE LINK',
-      'boot.check2': 'VOICE MODULE',
-      'boot.check3': 'HDD INTERFACE',
-      'boot.skip': 'SKIP',
       'boot.sound': '🔊 点击任意处开启声音',
       'greet.kicker': 'H.D.D CORE // ONLINE',
-      'greet.1': '主人，Fairy 已就位。',
-      'greet.2': 'H.D.D 全链路自检通过，语音模块在线。',
-      'greet.3': '今天的烂摊子，也请交给本系统。',
       'greet.sub': 'Ⅲ型总序式集成泛用人工智能 · VOICE LINK ACTIVE',
       'greet.tap': '点击任意处唤起声音',
-      'dock.tag': 'FAIRY Ⅲ',
-      'dock.tagsub': 'H.D.D / B4',
-      'dock.title': 'FAIRY Ⅲ // H.D.D CORE',
-      'dock.sub': 'Ⅲ型总序式集成泛用人工智能',
-      'dock.autoVoice': '自动语音',
-      'dock.engine': '语音引擎',
-      'dock.ready': '就绪',
-      'dock.idle': '待机',
-      'dock.busy': '合成中',
-      'dock.speaking': '发声',
-      'dock.replayGreet': '重播问候',
-      'dock.replayBoot': '重新开机',
-      'dock.stop': '停止发声',
-      'dock.test': '试听一句',
-      'dock.foot': 'GPT-SoVITS · Fairy_e10_s870',
       'dock.error': '语音链路异常',
     }
     const EN = {
-      'boot.kicker': 'H.D.D // BOOT SEQUENCE',
-      'boot.version': 'FAIRY.OS 3.01',
-      'boot.title': 'III-Type Omnibus Integrated General-Purpose AI',
-      'boot.check1': 'CORE LINK',
-      'boot.check2': 'VOICE MODULE',
-      'boot.check3': 'HDD INTERFACE',
-      'boot.skip': 'SKIP',
       'boot.sound': '🔊 Tap anywhere to enable sound',
       'greet.kicker': 'H.D.D CORE // ONLINE',
-      'greet.1': 'Master. Fairy is online.',
-      'greet.2': 'H.D.D self-check passed. Voice module linked.',
-      'greet.3': 'Your mess, as always, is mine to clean.',
       'greet.sub': 'III-Type Omnibus Integrated AI · VOICE LINK ACTIVE',
       'greet.tap': 'Tap anywhere to wake her voice',
-      'dock.tag': 'FAIRY Ⅲ',
-      'dock.tagsub': 'H.D.D',
-      'dock.title': 'FAIRY Ⅲ // H.D.D CORE',
-      'dock.sub': 'III-Type Omnibus Integrated General-Purpose AI',
-      'dock.autoVoice': 'Auto voice',
-      'dock.engine': 'Voice engine',
-      'dock.ready': 'ready',
-      'dock.idle': 'idle',
-      'dock.busy': 'synth',
-      'dock.speaking': 'speaking',
-      'dock.replayGreet': 'Replay greeting',
-      'dock.replayBoot': 'Reboot',
-      'dock.stop': 'Stop',
-      'dock.test': 'Test voice',
-      'dock.foot': 'GPT-SoVITS · Fairy_e10_s870',
       'dock.error': 'voice link error',
     }
     let tr = null
@@ -397,14 +347,8 @@ window.__ModuleLoader__.load({
     const CSS = `
 :root{
   --fz3-cyan:#8fb4ff;
-  --fz3-blue:#3d5bf0;
-  --fz3-violet:#6a5cff;
-  --fz3-magenta:#ff3d8b;
   --fz3-amber:#ffc93c;
-  --fz3-ink:#070818;
   --fz3-text:#e8f3ff;
-  --fz3-mute:#9aa4d6;
-  --fz3-line:rgba(110,130,255,.2);
   --fz3-font:"Bahnschrift","DIN Alternate","HarmonyOS Sans SC","Microsoft YaHei UI","PingFang SC","Noto Sans SC",system-ui,sans-serif;
   --fz3-dock-x:25vw;
   --fz3-dock-y:52vh;
@@ -488,9 +432,6 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 }
 .fz3-layer[data-phase="greet"] .fz3-hero{opacity:.9;transform:scale(1.01)}
 .fz3-layer[data-phase="dock"] .fz3-hero{opacity:0;transition:opacity 1.4s ease}
-.fz3-veil{position:absolute;inset:0;pointer-events:none;background:
-  radial-gradient(58% 52% at 50% 42%,transparent 12%,rgba(2,5,13,.45) 72%,rgba(2,5,13,.92) 100%),
-  linear-gradient(180deg,rgba(2,5,13,.62),transparent 32%,rgba(2,5,13,.78));}
 
 /* ———————————————————— */
 .fz3-boot{position:absolute;inset:0;background:#04060d;overflow:hidden;transition:opacity .6s ease}
@@ -501,38 +442,15 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
   background:url('/fairy-zzz/assets/poster.jpg') center/cover no-repeat;
   filter:blur(46px) brightness(.74) saturate(1.45);transform:scale(1.1);opacity:1;
 }
-.fz3-boot-fill video{display:block;width:100%;height:100%;object-fit:cover;opacity:.85}
 .fz3-boot video{position:absolute;inset:0;z-index:1;width:100%;height:100%;object-fit:contain;filter:saturate(1.06) contrast(1.04) brightness(.94)}
 .fz3-boot::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
   background:
     repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px),
     radial-gradient(124% 96% at 50% 50%,transparent 52%,rgba(0,0,0,.5) 100%);
 }
-.fz3-boot-hud{position:absolute;inset:0;pointer-events:none;font-size:10px;letter-spacing:.22em}
-.fz3-boot-top{position:absolute;left:32px;right:70px;top:56px;display:flex;justify-content:space-between;color:rgba(150,225,255,.72);text-shadow:0 0 12px rgba(87,232,255,.6);letter-spacing:.24em}
-.fz3-boot-top b{color:#eaf7ff;font-weight:600;letter-spacing:.18em}
-.fz3-corner{position:absolute;width:34px;height:34px;border:1px solid rgba(110,220,255,.4);pointer-events:none}
-.fz3-corner.tl{left:20px;top:44px;border-right:0;border-bottom:0}
-.fz3-corner.tr{right:20px;top:44px;border-left:0;border-bottom:0}
-.fz3-corner.bl{left:20px;bottom:96px;border-right:0;border-top:0}
-.fz3-corner.br{right:20px;bottom:96px;border-left:0;border-top:0}
-.fz3-boot-foot{position:absolute;left:32px;right:32px;bottom:30px;display:flex;flex-direction:column;gap:12px}
-.fz3-boot-row{display:flex;align-items:center;gap:18px;width:100%}
-.fz3-boot-title{font-size:10px;letter-spacing:.3em;color:rgba(206,238,255,.82);white-space:nowrap}
-.fz3-boot-checks{display:flex;gap:16px;font-size:9px;letter-spacing:.18em;color:rgba(126,196,240,.6);margin-left:auto}
-.fz3-boot-checks span::before{content:"◇";color:rgba(87,232,255,.78)}
-.fz3-boot-bar{flex:1;height:2px;background:rgba(110,190,255,.14);position:relative;overflow:hidden;min-width:80px;box-shadow:0 0 18px rgba(60,120,255,.25)}
-.fz3-boot-bar span{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#2f7bff,#57e8ff);box-shadow:0 0 16px rgba(87,232,255,.95);transition:width .22s linear}
-.fz3-boot-pct{font-size:10.5px;font-variant-numeric:tabular-nums;color:#a9ecff;min-width:38px;text-align:right;letter-spacing:.1em}
 /* 浏览器拦截带声音的自动播放时，提示点击一次开启（DSH 桌面壳通常允许直接出声，不显示这条）。 */
 .fz3-boot-sound{position:absolute;left:0;right:0;bottom:78px;text-align:center;z-index:3;pointer-events:none;
   font-size:10px;letter-spacing:.2em;color:rgba(255,201,60,.85);animation:fz3-blink 1.6s ease-in-out infinite}
-.fz3-skip{
-  pointer-events:auto;font:inherit;font-size:9.5px;letter-spacing:.26em;color:rgba(206,240,255,.85);
-  background:rgba(6,16,34,.55);border:1px solid rgba(110,220,255,.38);padding:7px 14px;cursor:pointer;flex:none;
-  clip-path:polygon(0 0,100% 0,calc(100% - 9px) 100%,0 100%);
-}
-.fz3-skip:hover{background:rgba(87,232,255,.18);color:#fff;border-color:rgba(87,232,255,.75)}
 
 /* ---------- 全息核心 ---------- */
 .fz3-core{
@@ -546,9 +464,7 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 }
 .fz3-layer[data-phase="boot"] .fz3-core{opacity:0}
 .fz3-core svg{display:block;width:100%;height:100%;filter:none}
-.fz3-eye-glyph{transition:transform .28s ease}
 .fz3-layer[data-phase="dock"] .fz3-core svg{filter:none;transition:transform .3s ease}
-.fz3-layer[data-phase="dock"] .fz3-core:hover .fz3-eye-glyph{transform:scale(1.07)}
 .fz3-core::after{
   content:none;
 }
@@ -733,7 +649,6 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 .fz3-copy-lines span:nth-child(2){animation-delay:1.15s}
 .fz3-copy-lines span:nth-child(3){animation-delay:1.75s}
 .fz3-copy-sub{margin-top:clamp(6px,1.4vh,16px);font-size:clamp(7px,.66vw,8.5px);letter-spacing:.32em;color:rgba(122,178,230,.6);text-indent:.32em}
-.fz3-copy-tap{margin-top:14px;font-size:10px;letter-spacing:.2em;color:rgba(255,201,60,.85);animation:fz3-blink 1.6s ease-in-out infinite}
 .fz3-skip2{
   position:absolute;right:clamp(12px,2.4vw,30px);bottom:clamp(10px,2.6vh,26px);pointer-events:auto;background:none;border:0;font:inherit;
   font-size:9.5px;letter-spacing:.26em;color:rgba(150,200,235,.55);cursor:pointer;padding:8px;
@@ -741,65 +656,6 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 .fz3-skip2:hover{color:#9fefff}
 
 /* ---------- 左下角坞 ---------- */
-.fz3-tag{
-  position:fixed;left:calc(var(--fz3-dock-x) + 62px);top:calc(100% - 262px);z-index:5;pointer-events:none;
-  display:flex;flex-direction:column;gap:3px;padding:5px 12px 6px 10px;border-left:2px solid rgba(87,232,255,.75);
-  background:linear-gradient(90deg,rgba(8,20,42,.82),rgba(8,20,42,0));
-  opacity:0;transform:translateX(-8px);
-  transition:opacity .6s ease .35s,transform .6s ease .35s;
-}
-.fz3-layer[data-phase="dock"] .fz3-tag{opacity:1;transform:none}
-.fz3-tag b{font-size:11px;letter-spacing:.3em;color:#e6f8ff;text-shadow:0 0 14px rgba(87,232,255,.7)}
-.fz3-tag i{font-style:normal;font-size:7.5px;letter-spacing:.24em;color:rgba(140,196,240,.85)}
-.fz3-panel{
-  position:fixed;left:calc(var(--fz3-dock-x) - 30px);bottom:330px;width:308px;z-index:6;pointer-events:auto;
-  padding:14px 15px 12px;color:var(--fz3-text);
-  background:linear-gradient(158deg,rgba(10,21,44,.97),rgba(4,8,20,.985));
-  border:1px solid rgba(87,232,255,.32);
-  clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px));
-  box-shadow:0 26px 70px -26px rgba(0,0,0,.95),0 0 46px -22px rgba(87,232,255,.75);
-  animation:fz3-panel-in .26s cubic-bezier(.2,.8,.2,1);
-  transform-origin:10% 100%;
-}
-.fz3-panel::before{content:"";position:absolute;left:0;top:0;width:72px;height:2px;background:linear-gradient(90deg,#57e8ff,transparent)}
-.fz3-panel::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.24;
-  background:repeating-linear-gradient(0deg,rgba(0,0,0,.4) 0 1px,transparent 1px 4px)}
-.fz3-panel-head{display:flex;align-items:center;justify-content:space-between;padding-bottom:9px;border-bottom:1px solid rgba(87,232,255,.18)}
-.fz3-panel-title{font-size:10.5px;letter-spacing:.26em;color:#dff4ff;text-shadow:0 0 10px rgba(87,232,255,.5)}
-.fz3-dot{width:6px;height:6px;border-radius:50%;background:#3ef0b0;box-shadow:0 0 10px #3ef0b0;flex:none}
-.fz3-dot.off{background:#ff5d7a;box-shadow:0 0 10px #ff5d7a}
-.fz3-dot.warn{background:#ffc93c;box-shadow:0 0 10px #ffc93c}
-.fz3-panel-sub{font-size:8.5px;letter-spacing:.14em;color:rgba(130,170,215,.68);margin:8px 0 10px}
-.fz3-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;font-size:12px;color:rgba(222,238,255,.92)}
-.fz3-row-label{display:flex;align-items:center;gap:8px;letter-spacing:.06em}
-.fz3-row small{font-size:9px;letter-spacing:.14em;color:rgba(120,170,215,.7)}
-.fz3-switch{
-  position:relative;width:38px;height:19px;flex:none;padding:0;border:1px solid rgba(87,232,255,.35);
-  background:rgba(8,16,34,.9);cursor:pointer;
-  clip-path:polygon(0 0,calc(100% - 6px) 0,100% 6px,100% 100%,6px 100%,0 calc(100% - 6px));
-}
-.fz3-switch::after{
-  content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;background:rgba(150,180,210,.75);
-  transition:transform .18s ease,background .18s ease,box-shadow .18s ease;
-}
-.fz3-switch[data-on="1"]{border-color:rgba(87,232,255,.8);box-shadow:inset 0 0 14px -6px rgba(87,232,255,.9)}
-.fz3-switch[data-on="1"]::after{transform:translateX(19px);background:var(--fz3-cyan);box-shadow:0 0 10px var(--fz3-cyan)}
-.fz3-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;position:relative;z-index:1}
-.fz3-btn{
-  font:inherit;font-size:10px;letter-spacing:.1em;color:rgba(214,236,255,.9);background:rgba(10,22,44,.8);
-  border:1px solid rgba(87,232,255,.24);padding:8px 8px;cursor:pointer;
-  clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px));
-}
-.fz3-btn:hover{background:rgba(87,232,255,.16);border-color:rgba(87,232,255,.7);color:#fff}
-.fz3-btn:disabled{opacity:.45;cursor:not-allowed}
-.fz3-btn.is-ghost{background:transparent;border-color:rgba(120,160,210,.16);color:rgba(160,190,220,.75)}
-.fz3-panel-foot{margin-top:10px;padding-top:8px;border-top:1px solid rgba(87,232,255,.12);display:flex;justify-content:space-between;font-size:7.5px;letter-spacing:.16em;color:rgba(110,150,200,.55)}
-.fz3-wave{display:inline-flex;align-items:flex-end;gap:2px;height:11px;margin-left:8px}
-.fz3-wave i{display:block;width:2px;height:3px;background:var(--fz3-cyan);box-shadow:0 0 6px var(--fz3-cyan)}
-.fz3-wave.on i{animation:fz3-wave .9s ease-in-out infinite}
-.fz3-wave i:nth-child(2){animation-delay:.1s}
-.fz3-wave i:nth-child(3){animation-delay:.2s}
-.fz3-wave i:nth-child(4){animation-delay:.3s}
 
 /* ———————————————————— */
 .fz3-voice{
@@ -813,17 +669,6 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 .fz3-voice[data-state="play"]{color:var(--fz3-cyan);text-shadow:0 0 10px var(--fz3-cyan)}
 
 /* ———————————————————— */
-.fz3-frame{position:fixed;inset:0;pointer-events:none;z-index:3;border-radius:16px;
-  box-shadow:0 0 0 7px rgba(8,6,18,.92),0 0 0 8px rgba(146,126,255,.22),0 0 0 14px rgba(70,50,180,.10),0 24px 70px rgba(0,0,0,.55)}
-.fz3-sb-stats{position:fixed;left:12px;bottom:74px;width:258px;padding:10px 12px;border-radius:12px;pointer-events:none;z-index:4;
-  background:linear-gradient(180deg,rgba(16,14,34,.94),rgba(11,10,24,.94));border:1px solid rgba(120,110,255,.16);
-  box-shadow:0 12px 30px rgba(0,0,0,.45);opacity:0;transition:opacity .6s ease .45s}
-.fz3-layer[data-phase="dock"] .fz3-sb-stats{opacity:1}
-.fz3-sb-row{display:flex;align-items:baseline;gap:8px;font-size:10px;letter-spacing:.06em;color:rgba(150,164,214,.78)}
-.fz3-sb-row b{font-size:12px;font-weight:600;color:#eaf0ff;letter-spacing:.02em}
-.fz3-sb-row2{margin-top:7px}
-.fz3-sb-row em{margin-left:auto;font-style:normal;font-size:9px;padding:2px 7px;border-radius:6px;
-  color:rgba(196,208,255,.9);background:rgba(90,80,190,.22);border:1px solid rgba(130,120,255,.22)}
 /* 官方字标是 SVG（没有文本节点）：按 CSS Module 的语义后缀直接隐掉，
    再由 .fz3-sb-brand 在同一位置画 Fairy 字标。 */
 [class*="_brandName"],[class*="_brandMark"]{visibility:hidden!important}
@@ -838,26 +683,6 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
   font-family:"Palatino Linotype","Songti SC",Georgia,serif;font-style:italic}
 .fz3-sb-text i{font-style:normal;font-size:8.5px;letter-spacing:.16em;color:rgba(150,168,220,.72);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-.fz3-wave{position:fixed;right:24px;bottom:118px;width:104px;display:flex;flex-direction:column;align-items:center;gap:7px;
-  pointer-events:none;z-index:4;opacity:0;transition:opacity .6s ease .5s}
-.fz3-layer[data-phase="dock"] .fz3-wave{opacity:1}
-.fz3-wave-dot{width:5px;height:5px;border-radius:50%;background:#ff6b8a;box-shadow:0 0 8px rgba(255,107,138,.9);align-self:flex-start;margin-left:6px}
-.fz3-wave-bars{display:flex;align-items:center;gap:3px;height:22px;min-height:22px}
-.fz3-wave-bars i{display:block;width:4px;height:22px;border-radius:2px;background:linear-gradient(180deg,rgba(196,216,255,1),rgba(108,140,255,.75));
-  transform-origin:bottom;animation:fz3-bar 1.05s ease-in-out infinite}
-.fz3-wave-bars i:nth-child(1){animation-delay:0s}.fz3-wave-bars i:nth-child(2){animation-delay:.12s}
-.fz3-wave-bars i:nth-child(3){animation-delay:.24s}.fz3-wave-bars i:nth-child(4){animation-delay:.06s}
-.fz3-wave-bars i:nth-child(5){animation-delay:.3s}.fz3-wave-bars i:nth-child(6){animation-delay:.18s}
-.fz3-wave-bars i:nth-child(7){animation-delay:.36s}.fz3-wave-bars i:nth-child(8){animation-delay:.09s}
-.fz3-wave-bars i:nth-child(9){animation-delay:.27s}.fz3-wave-bars i:nth-child(10){animation-delay:.15s}
-.fz3-wave-bars i:nth-child(11){animation-delay:.33s}.fz3-wave-bars i:nth-child(12){animation-delay:.21s}
-@keyframes fz3-bar{0%,100%{transform:scaleY(.28)}50%{transform:scaleY(1)}}
-.fz3-wave-slider{position:relative;width:88px;height:10px;border-radius:6px;background:rgba(18,20,44,.92);
-  border:1px solid rgba(120,140,255,.18);box-shadow:inset 0 1px 2px rgba(0,0,0,.5)}
-.fz3-wave-slider b{position:absolute;left:3px;top:2px;bottom:2px;width:58%;border-radius:5px;
-  background:linear-gradient(90deg,rgba(110,90,255,.85),rgba(150,120,255,.55))}
-.fz3-wave-slider-2 b{width:34%;background:linear-gradient(90deg,rgba(70,120,255,.8),rgba(120,150,255,.45))}
-.fz3-boot-top,.fz3-boot-foot,.fz3-boot-checks,.fz3-boot-ver,.fz3-boot-corner,.fz3-corner,.fz3-tag{display:none!important}
 .fz3-rim{position:fixed;left:-90px;top:-140px;width:560px;height:560px;pointer-events:none;
   background:radial-gradient(closest-side,rgba(126,92,255,.16),rgba(70,60,220,.05) 58%,transparent 76%);filter:blur(8px)}
 .fz3-bay{position:fixed;left:50%;bottom:-190px;width:980px;height:400px;transform:translateX(-50%);pointer-events:none;
@@ -872,26 +697,17 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 .fz3-atmos-glow{position:absolute;left:-12%;top:-26%;width:64%;height:70%;background:radial-gradient(circle,rgba(70,52,255,.16),rgba(60,46,240,.05) 52%,transparent 78%);opacity:.55;transform:scale(1)}
 .fz3-atmos-flash{position:absolute;right:4%;top:2%;width:34%;height:30%;background:radial-gradient(ellipse at 60% 20%,rgba(120,190,255,.16),rgba(100,160,255,.04) 42%,transparent 72%);animation:fz3-flash 11s steps(1) infinite}
 
-@keyframes fz3-rot{to{transform:rotate(360deg)}}
-@keyframes fz3-rot-rev{to{transform:rotate(-360deg)}}
 @keyframes fz3-line{to{opacity:1;transform:none}}
 @keyframes fz3-blink{50%{opacity:.3}}
 /* fz3-breathe（氛围光 14s 呼吸）改由 JS 环境时钟按余弦曲线写入 opacity/scale；
    原 CSS 动画在 .fz3-atmos 全屏 mix-blend-mode 层里，每帧都要重做整屏混合。 */
-@keyframes fz3-twinkle{0%,100%{opacity:.15}45%{opacity:.9}55%{opacity:.35}}
-@keyframes fz3-wave{0%,100%{height:3px}50%{height:11px}}
 @keyframes fz3-flash{0%,38%,41%,63%,100%{opacity:.35}39%,40%,64%{opacity:.85}}
-@keyframes fz3-panel-in{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
 
 @media (max-width:1180px){
   :root{--fz3-dock-size:112px}
 }
 @media (max-width:820px){
   :root{--fz3-dock-size:84px;--fz3-eye-cy:40vh}
-  .fz3-tag{left:calc(var(--fz3-dock-x) + 38px);top:calc(100% - 214px)}
-  .fz3-panel{left:12px;width:min(320px,calc(100vw - 24px))}
-  .fz3-boot-checks{display:none}
-  .fz3-boot-title{display:none}
   .fz3-copy{width:92vw}
   .fz3-copy-title{letter-spacing:.01em}
   .fz3-copy-lines{font-size:clamp(11px,2.55vw,15px);padding:0 18px;line-break:strict}
@@ -1598,25 +1414,10 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
       )
     }
 
-    function Waveform({ on }) {
-      return h(
-        'span',
-        { className: 'fz3-wave' + (on ? ' on' : '') },
-        h('i'),
-        h('i'),
-        h('i'),
-        h('i'),
-      )
-    }
-
     /* ------------------------------------------------------------------ *
      * ———————————— */
     function BootStage({ onDone }) {
       const videoRef = useRef(null)
-      /* 进度条不再走 React state：timeupdate 每秒约 4 次，setState 会连带重渲染整个 HUD。
-         改成直接写两个 DOM 节点的 width/textContent，渲染次数从 ~60 次降到 1 次。 */
-      const barRef = useRef(null)
-      const pctRef = useRef(null)
       const [out, setOut] = useState(false)
       const [soundBlocked, setSoundBlocked] = useState(false)
       const doneRef = useRef(false)
@@ -1666,13 +1467,6 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
         }
       }, [finish])
 
-      const onTime = () => {
-        const video = videoRef.current
-        if (!video || !video.duration) return
-        const value = Math.max(0, Math.min(100, (video.currentTime / video.duration) * 100))
-        if (barRef.current) barRef.current.style.width = value + '%'
-        if (pctRef.current) pctRef.current.textContent = Math.round(value) + '%'
-      }
 
       return h(
         'div',
@@ -1687,46 +1481,8 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
           playsInline: true,
           preload: 'auto',
           onEnded: finish,
-          onTimeUpdate: onTime,
         }),
-        soundBlocked ? h('div', { className: 'fz3-boot-sound' }, t('boot.sound')) : null,
-        h(
-          'div',
-          { className: 'fz3-boot-hud' },
-          h(
-            'div',
-            { className: 'fz3-boot-top' },
-            h('span', null, t('boot.kicker')),
-            h('span', null, 'FAIRY.OS ', h('b', null, '3.01')),
-          ),
-          h('span', { className: 'fz3-corner tl' }),
-          h('span', { className: 'fz3-corner tr' }),
-          h('span', { className: 'fz3-corner bl' }),
-          h('span', { className: 'fz3-corner br' }),
-          h(
-            'div',
-            { className: 'fz3-boot-foot' },
-            h(
-              'div',
-              { className: 'fz3-boot-row' },
-              h('span', { className: 'fz3-boot-title' }, 'H.D.D // SYSTEM BOOT'),
-              h(
-                'span',
-                { className: 'fz3-boot-checks' },
-                h('span', null, t('boot.check1')),
-                h('span', null, t('boot.check2')),
-                h('span', null, t('boot.check3')),
-              ),
-            ),
-            h(
-              'div',
-              { className: 'fz3-boot-row' },
-              h('span', { className: 'fz3-boot-bar' }, h('span', { ref: barRef })),
-              h('span', { className: 'fz3-boot-pct', ref: pctRef }, '0%'),
-              h('button', { type: 'button', className: 'fz3-skip', onClick: finish }, t('boot.skip') + ' ▸'),
-            ),
-          ),
-        ),
+        soundBlocked ? h('div', { className: 'fz3-boot-sound' }, t('boot.sound')) : null
       )
     }
 
@@ -2089,14 +1845,6 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
               h('div', { className: 'fz3-copy-sub' }, t('greet.sub')),
             )
           : null,
-
-        /* 左下角标签 */
-        h(
-          'div',
-          { className: 'fz3-tag' },
-          h('b', null, t('dock.tag')),
-          h('i', null, t('dock.tagsub')),
-        ),
 
       )
     }
