@@ -426,14 +426,14 @@ body::before{
     radial-gradient(28% 22% at 62% 38%,rgba(98,120,255,.08),transparent 74%),
     repeating-linear-gradient(-24deg,rgba(150,160,255,.045) 0 1px,transparent 1px 132px),
     linear-gradient(160deg,#0a0818 0%,#050410 52%,#080513 100%);
-  animation:fz3-drift 40s ease-in-out infinite alternate;
+  /* 40s 位移漂移已静态化：全屏层动画在 165Hz 下每帧合成，实测占 GPU ~20%@165Hz；
+     这一层几乎被应用界面覆盖，漂移肉眼几乎不可见，保留原起始位姿即可。 */
+  transform:translate3d(-1.4%,-1%,0) scale(1.03);
 }
 /* body::after 只在下面「图层」段定义一次。这里早先的 76px 网格版本已被后面 48px 网格版本
    逐属性完全覆盖（含 -webkit-mask-image 别名），属于死规则，删掉可少一层绘制声明。 */
-@keyframes fz3-drift{
-  from{transform:translate3d(-1.4%,-1%,0) scale(1.03)}
-  to{transform:translate3d(1.6%,1.2%,0) scale(1.08)}
-}
+/* fz3-drift（背景 40s 漂移）已删除：全屏层每帧合成的成本远超观感收益，
+   背景层固定在上面的起始位姿，不再产生逐帧合成。 */
 ::selection{background:rgba(87,232,255,.30);color:#fff}
 *::-webkit-scrollbar{width:9px;height:9px}
 *::-webkit-scrollbar-track{background:transparent}
@@ -869,14 +869,15 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 .fz3-atmos-frame::after{right:-1px;bottom:-1px;border-left:0;border-top:0}
 /* 两团氛围光原本各带一层大半径滤镜（blur 34px / 20px），在整块屏幕尺寸上常驻栅格化；
    径向渐变本身已经是软过渡，去掉滤镜后观感几乎不变，但这块不再需要离屏滤镜。 */
-.fz3-atmos-glow{position:absolute;left:-12%;top:-26%;width:64%;height:70%;background:radial-gradient(circle,rgba(70,52,255,.16),rgba(60,46,240,.05) 52%,transparent 78%);animation:fz3-breathe 14s ease-in-out infinite}
+.fz3-atmos-glow{position:absolute;left:-12%;top:-26%;width:64%;height:70%;background:radial-gradient(circle,rgba(70,52,255,.16),rgba(60,46,240,.05) 52%,transparent 78%);opacity:.55;transform:scale(1)}
 .fz3-atmos-flash{position:absolute;right:4%;top:2%;width:34%;height:30%;background:radial-gradient(ellipse at 60% 20%,rgba(120,190,255,.16),rgba(100,160,255,.04) 42%,transparent 72%);animation:fz3-flash 11s steps(1) infinite}
 
 @keyframes fz3-rot{to{transform:rotate(360deg)}}
 @keyframes fz3-rot-rev{to{transform:rotate(-360deg)}}
 @keyframes fz3-line{to{opacity:1;transform:none}}
 @keyframes fz3-blink{50%{opacity:.3}}
-@keyframes fz3-breathe{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
+/* fz3-breathe（氛围光 14s 呼吸）改由 JS 环境时钟按余弦曲线写入 opacity/scale；
+   原 CSS 动画在 .fz3-atmos 全屏 mix-blend-mode 层里，每帧都要重做整屏混合。 */
 @keyframes fz3-twinkle{0%,100%{opacity:.15}45%{opacity:.9}55%{opacity:.35}}
 @keyframes fz3-wave{0%,100%{height:3px}50%{height:11px}}
 @keyframes fz3-flash{0%,38%,41%,63%,100%{opacity:.35}39%,40%,64%{opacity:.85}}
@@ -1774,10 +1775,29 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
     /* ------------------------------------------------------------------ *
      * 背景氛围层 */
     const Atmos = React.memo(function Atmos() {
+      const glowRef = React.useRef(null)
+      React.useEffect(() => {
+        const glow = glowRef.current
+        if (!glow) return undefined
+        const GLOW_MS = 14000
+        const t0 = performance.now()
+        const tick = () => {
+          if (document.hidden) return
+          const t = performance.now() - t0
+          /* 氛围光呼吸：0% opacity .55/scale 1 → 50% opacity 1/scale 1.06，余弦即 ease-in-out */
+          const gp = (t % GLOW_MS) / GLOW_MS
+          const ge = 0.5 - 0.5 * Math.cos(2 * Math.PI * gp)
+          glow.style.opacity = (0.55 + 0.45 * ge).toFixed(3)
+          glow.style.transform = 'scale(' + (1 + 0.06 * ge).toFixed(4) + ')'
+        }
+        tick()
+        const id = window.setInterval(tick, 500)
+        return () => { window.clearInterval(id) }
+      }, [])
       return h(
         'div',
         { className: 'fz3-atmos', 'aria-hidden': 'true' },
-        h('div', { className: 'fz3-atmos-glow' }),
+        h('div', { className: 'fz3-atmos-glow', ref: glowRef }),
         h('div', { className: 'fz3-atmos-flash' }),
         h('div', { className: 'fz3-atmos-frame' }),
         h('div', { className: 'fz3-rim' }),

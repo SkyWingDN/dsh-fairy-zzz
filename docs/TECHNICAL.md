@@ -1,7 +1,7 @@
-# dsh-fairy-zzz 插件技术说明（v1.1.1）
+# dsh-fairy-zzz 插件技术说明（v1.2.0）
 
 > 目标读者：**没有参与过本项目、但要继续维护或修改这个插件的人 / AI 智能体**。读完这篇文档，应该能独立定位代码、改功能、打版本、发布到 GitHub，并复现验证。
-> 最后更新：2026-10-28，对应版本 v1.1.1（在 1.1.0 的"性能优化修改版"之上新增了欢迎页品牌位）。
+> 最后更新：2026-11-01，对应版本 v1.2.0（在 v1.1.1 欢迎页品牌位之上新增 GPU 占用优化）。
 > 姊妹文档：[docs/PERFORMANCE.md](PERFORMANCE.md)（性能优化报告：为什么这么改、数据怎么量出来的）。
 
 ---
@@ -13,9 +13,10 @@
 - 代码在哪（三处，同步关系见第 2 节）：
   - 实际运行目录：`C:\Users\SkyWingDN\.dsh\plugins\dsh-fairy-zzz`（DSH 加载的是这里）
   - 本地 git 仓库：`C:\Users\SkyWingDN\Desktop\dsh-fairy-zzz`（发布用，内容应与运行目录一致）
-  - 远端仓库：`https://github.com/SkyWingDN/dsh-fairy-zzz`（public，MIT；release：https://github.com/SkyWingDN/dsh-fairy-zzz/releases ，最新 v1.1.1）
+  - 远端仓库：`https://github.com/SkyWingDN/dsh-fairy-zzz`（public，MIT；release：https://github.com/SkyWingDN/dsh-fairy-zzz/releases ，最新 v1.2.0）
 - 代码只有三个入口文件：`index.js`（host 侧，Node 路由 / TTS / 情绪）、`client.js`（浏览器侧，React 组件 + 全部 CSS + 动效运行时）、`cordis.patch.yml`（一行 insert 完成插件装配）。
 - 图标 / 视频 / 试听音频都在 `assets/`；发布版约 5.5 MB（其中开机视频 2.4 MB）。
+- 性能（v1.2.0）：dock 待机 GPU 从修改前 v1.1.1 的约 43% 降到约 5%（同机 165 Hz headless 实测，约 −88%）；主线程约 1–2.5%，首屏运行时下载约 2.9 MB。
 - 当前安装的 DSH 版本：`0.2.1-rc.3`（`C:\softs\DeepSeek Harness\resources\app.asar`，桌面 Electron 壳）。DSH 升级后前端 bundle 的 hash 会变，但插件只依赖**槽位名**和少量 data 属性，通常不需要改。
 
 ---
@@ -156,17 +157,17 @@ DSH 新会话欢迎页的标题行结构：
 
 - 槽位声明在 `@deepseek-ai/dsh-client-ui-conversation/lib/client.js`（`C:\softs\DeepSeek Harness\resources\app.asar\dsh\node_modules\...`，asar 内，Electron 的 fs 可读）：`offset 668,759` 附近是 HeroShell，`offset 767,813` 附近是 `children: { 'conversation.hero.brand.mark': { kind: 'single', scope: 'root' } }`。**这些偏移量随 DSH 版本变化**，搜槽位名字符串即可重新定位。
 - 官方**没有插件占用**这个槽，渲染的是 fallback `HeroFish`（鲸鱼）。因此本插件注册 `priority: 0` 的条目后，鲸鱼被**完全替换**，不需要额外隐藏。
-- 实现要点（`client.js` 约 1573 行 `HeroBrandMark`）：
+- 实现要点（`client.js` 约 1574 行 `HeroBrandMark`）：
   - 组件收到 `{ size, className }`：`size` 固定 34px；`className` 必须拼接到自己的 `className` 上（官方 hover 摆动的 `fish` 类，以及它的 `:hover animation`），否则欢迎页 hover 时眼标不会摆动。
   - 内部复用静态 `FAIRY_EYE_SVG`（34px 大小下细节足够，且**不挂 .fz3-eye 类** → 不会启动呼吸/故障动画，零额外开销）。
-  - CSS：`.fz3-hero-brand` / `.fz3-hero-brand-eye`（`client.js` 约 459-466 行），只做弹性居中和静态 `drop-shadow` 光晕。
+  - CSS：`.fz3-hero-brand` / `.fz3-hero-brand-eye`（`client.js` 约 460-462 行），只做弹性居中和静态 `drop-shadow` 光晕。
 - 验证结果（1624×1042 窗口）：`document.querySelectorAll('.fz3-hero-brand').length === 1`；元素 outerHTML 的 class 是 `fz3-hero-brand WOwLGG_fish`；rect 为 `[819,421,34,34]`，即原鲸鱼的位置；控制台无报错。效果图见 [docs/img/hero-brand-mark.png](img/hero-brand-mark.png)。
 
 ---
 
-## 5. client.js 文件地图（2152 行，约 108 KB）
+## 5. client.js 文件地图（2171 行，约 109 KB）
 
-> 行号基于 v1.1.1。改代码前先 `grep` 函数名定位，不要只信行号。
+> 行号基于 v1.2.0（v1.2.0 删除了两个全屏动画关键帧、新增了 Atmos 环境时钟，净增约 19 行且位置分散）。改代码前先 `grep` 函数名定位，不要只信行号。
 
 | 行号（约） | 区块 | 内容 |
 | --- | --- | --- |
@@ -175,30 +176,30 @@ DSH 新会话欢迎页的标题行结构：
 | 22-31 | SVG 资产 | `FAIRY_EYE_SVG`（256×256 viewBox "-1 -1 162 162"，眼标本体，含 defs 渐变 / clipPath `#fz3-lid-clip`；带 SPDX 注释）、`FAIRY_PULSE_SVG`（5 圈睫毛脉冲环）、`FAIRY_THREADS_SVG`（feTurbulence 拉丝滤镜） |
 | 33-107 | i18n | `ZH` / `EN` 词条表；`t(key)` 优先用 `locale.bind(NS)` 的 tr，缺词回退 ZH |
 | 109-153 | 声音状态 | 模块级 `voice = { enabled, busy, speaking, error }`，`useVoice()` 订阅式 hook（不用 Redux/Context） |
-| 155-280 | 语音工具 | `playClip(url, token)`（Audio 播放 + token 防串音）、`cleanSpeakable`、`chunkText(text, 90, 8)`（按句切段送 TTS）、`readStored/readBool/writeStored`（localStorage 容错） |
-| 283-390 | 读回答文本 | `readMessageText` / `NON_SPEECH_SELECTORS` / `speechTextOfRow` / `readAssistantText` / `autoRead`：从消息 DOM 里只抓"最终回答"，跳过思考块、工具卡片、过程区 |
+| 155-281 | 语音工具 | `playClip(url, token)`（Audio 播放 + token 防串音）、`cleanSpeakable`、`chunkText(text, 90, 8)`（按句切段送 TTS）、`readStored/readBool/writeStored`（localStorage 容错） |
+| 283-369 | 读回答文本 | `readMessageText` / `NON_SPEECH_SELECTORS` / `speechTextOfRow` / `readAssistantText` / `autoRead`：从消息 DOM 里只抓"最终回答"，跳过思考块、工具卡片、过程区 |
 | 371-392 | 主题 token | `baseTokens`（约 20 个 `--dsw-alias-*` / `--dsw-specific-*` 深蓝玻璃配色），`TOKENS` 同时给 light/dark（插件固定深色观感） |
-| 397-916 | **CSS 字符串** | 全部样式，见第 6 节分区表 |
-| 917-1304 | **FZ3 动效运行时** | `FZ3_RUNTIME_BEGIN/END` 标记包裹；详见第 8 节。CSS 驱动、无常驻 rAF |
-| 1306-1339 | `CoreGlyph` | React.memo；挂 DOM 后在 `useEffect` 里 `fz3EyeRuntime.mount(el)`，mood 变化时 `setState`；渲染 6 份内联 SVG（眼标 ×1 + 花屏克隆 ×5） |
-| 1341-1559 | `FairySettings` | 设置 → Fairy 面板；`/health` 5s 轮询（页面隐藏时停）、引擎 start/stop、重播问候/开机、测试/停止朗读 |
-| 1561-1597 | 品牌组件 | `BrandMark`（侧栏眼标）、`HeroBrandMark`（欢迎页，1.1.1）、`BrandName`（FAIRY Ⅲ · H.D.D） |
-| 1600-1609 | `Waveform` | 朗读时的小波形（4 根 i 标签，纯 CSS 动画） |
-| 1611-1732 | `BootStage` | 全屏开机视频：单路 `boot-opt.mp4`（`object-fit:contain`，四周用静态 poster 模糊铺底），进度条直接写 DOM（`barRef/pctRef`，不走 setState）；自动播放被拦时先静音 + 提示点击解锁声音；播完 640ms 后 `onDone` |
-| 1734-1788 | `VoiceAction` | 回复旁"朗读"按钮；挂载时 `autoRead` 触发自动朗读 |
-| 1776-1789 | `Atmos` | React.memo，纯静态氛围光层 |
-| 1790-1797 | `greetLine()` | 按时段的居中问好中文台词 |
-| 1799-2082 | `FairySkin` | 主组件：`phase`（boot/greet/dock）+ `mood`（idle/thinking/working/done）；品牌位置测量、dock 位置测量、mood 轮询、问候音频、SKIP 按钮、dock 后渲染 `fz3-sb-brand` |
-| 2084-2152 | apply / 挂载 | `guard` 容错、locale、样式注入、主题 token、`mount()` helper、6 个槽位注册 |
+| 397-913 | **CSS 字符串** | 全部样式，见第 6 节分区表；v1.2.0 删除了 `fz3-drift` / `fz3-breathe` 两个全屏关键帧 |
+| 918-1305 | **FZ3 动效运行时** | `FZ3_RUNTIME_BEGIN/END` 标记包裹；详见第 8 节。CSS 驱动、无常驻 rAF |
+| 1310-1340 | `CoreGlyph` | React.memo；挂 DOM 后在 `useEffect` 里 `fz3EyeRuntime.mount(el)`，mood 变化时 `setState`；渲染 6 份内联 SVG（眼标 ×1 + 花屏克隆 ×5） |
+| 1342-1560 | `FairySettings` | 设置 → Fairy 面板；`/health` 5s 轮询（页面隐藏时停）、引擎 start/stop、重播问候/开机、测试/停止朗读 |
+| 1562-1599 | 品牌组件 | `BrandMark`（侧栏眼标）、`HeroBrandMark`（欢迎页，1.1.1）、`BrandName`（FAIRY Ⅲ · H.D.D） |
+| 1601-1610 | `Waveform` | 朗读时的小波形（4 根 i 标签，纯 CSS 动画） |
+| 1612-1731 | `BootStage` | 全屏开机视频：单路 `boot-opt.mp4`（`object-fit:contain`，四周用静态 poster 模糊铺底），进度条直接写 DOM（`barRef/pctRef`，不走 setState）；自动播放被拦时先静音 + 提示点击解锁声音；播完 640ms 后 `onDone` |
+| 1735-1773 | `VoiceAction` | 回复旁"朗读"按钮；挂载时 `autoRead` 触发自动朗读 |
+| 1775-1806 | `Atmos` | React.memo；v1.2.0 起用 500ms 环境时钟写呼吸内联样式（见 8.5），静态基线只作兜底 |
+| 1808-1817 | `greetLine()` | 按时段的居中问好中文台词 |
+| 1820-2102 | `FairySkin` | 主组件：`phase`（boot/greet/dock）+ `mood`（idle/thinking/working/done）；品牌位置测量、dock 位置测量、mood 轮询、问候音频、SKIP 按钮、dock 后渲染 `fz3-sb-brand` |
+| 2104-2168 | apply / 挂载 | `guard` 容错、locale、样式注入、主题 token、`mount()` helper、6 个槽位注册 |
 
 ---
 
-## 6. CSS 分区（都在第 397 行的 `CSS` 大字符串里）
+## 6. CSS 分区（都在第 397 行的 `CSS` 大字符串里，v1.2.0 行号）
 
 | 行号（约） | 分区 | 说明 |
 | --- | --- | --- |
 | 398-417 | `:root` 变量 | `--fz3-cyan/blue/violet/...` 色板、字体、`--fz3-eye`（clamp 自适应眼径 132-330px）、`--fz3-dock-x/y/size` |
-| 418-454 | 全局壳 | body 背景/网格/扫描线/滚动条/焦点光/hover 发光 |
+| 418-454 | 全局壳 | body 背景/网格/扫描线/滚动条/焦点光/hover 发光；`body::before` 背景漂移已静态化（420-432） |
 | 455-466 | 品牌 | `.fz3-brandmark`（侧栏）、`.fz3-hero-brand`（欢迎页，1.1.1） |
 | 467-494 | 图层 | `.fz3-layer`（固定全屏、层级）、`.fz3-bg` / `.fz3-hero`（`hero.webp` 背景图） |
 | 495-536 | 开机舞台 | `.fz3-boot` / `.fz3-boot-fill` / HUD / 进度条 / 声音提示 |
@@ -209,10 +210,12 @@ DSH 新会话欢迎页的标题行结构：
 | 652-704 | 待机小动作 | 呼吸关键帧 `fz3-breath-a..d`、眼闪 `.fz3-eye-flicker`、`.fz3-eye[data-lid="thinking"]` 半闭眼剪裁、`[data-fz3-suspended]` 暂停全部时间线 |
 | 705-742 | 问候文案 | 镜面倒影标题、kicker、sub、SKIP |
 | 743-803 | 左下角坞 | `.fz3-core` / `.fz3-dock` / `.fz3-sb-brand`（含 829 行隐藏官方品牌） |
-| 804-897 | 其它 | 设置按钮、滚动条、杂项 |
-| 898-916 | 响应式 | 矮视口收起次要行、压缩字号 |
+| 804-885 | 其它 | 设置按钮、滚动条、杂项 |
+| 886-912 | 响应式 | 矮视口收起次要行、压缩字号 |
 
-**动画性能约定**：所有持续动画只用 `transform` / `opacity` 或纯 CSS `animation`，**不要**在 JS 里逐帧写 style；大光晕用静态径向渐变代替 `blur()/drop-shadow` 的逐帧重栅格化；页面隐藏时整层 `animation-play-state:paused`。
+**v1.2.0 的 CSS 变化**：① `body::before` 的 40s 漂移动画 `fz3-drift` 已删除，背景固定为原动画起始位姿 `transform:translate3d(-1.4%,-1%,0) scale(1.03)`（420-432 留注释说明原因）；② `.fz3-atmos-glow` 的 14s 呼吸动画 `fz3-breathe` 已删除，静态基线改为 `opacity:.55; transform:scale(1)`（872 行），呼吸改由 JS 每 500ms 写内联样式（见 8.5）；③ `.fz3-atmos-flash` 的 11s `steps(1)` 离散闪烁保留（实测几乎免费）；④ 其余分区与动效不变。
+
+**动画性能约定**：所有持续动画只用 `transform` / `opacity` 或纯 CSS `animation`，**不要**在 JS 里逐帧写 style；大光晕用静态径向渐变代替 `blur()/drop-shadow` 的逐帧重栅格化；页面隐藏时整层 `animation-play-state:paused`。**v1.2.0 追加**：禁止对全屏 `fixed` 层做逐帧/逐秒 CSS 动画或混合，小面积动画或低频写元素自身内联样式才是安全做法（见 8.5）。
 
 ---
 
@@ -223,7 +226,7 @@ DSH 新会话欢迎页的标题行结构：
 | `FairySkin` | 状态机（phase/mood） | `shell.overlay` order 24 | 全屏皮肤主层，唯一持有全局阶段状态的地方 |
 | `BootStage` | 局部 | FairySkin 内 | 开机视频 + HUD，完成后回调 |
 | `CoreGlyph` | memo | FairySkin | 眼标舞台，交给 FZ3 运行时；6 份 SVG 只渲染一次 |
-| `Atmos` | memo | `shell.overlay` order 12 | 静态氛围光 |
+| `Atmos` | memo | `shell.overlay` order 12 | React.memo + 500ms 环境时钟（呼吸）；静态氛围光层 |
 | `BrandMark` / `BrandName` | 纯展示 | sidebar 两个槽 | 官方赢（priority），靠 CSS 隐藏 + 自绘 |
 | `HeroBrandMark` | 纯展示 props({size,className}) | `conversation.hero.brand.mark` | 1.1.1；静态眼标替换鲸鱼 |
 | `VoiceAction` | 交互 | assistant-actions | 朗读按钮 + 自动朗读 |
@@ -232,7 +235,7 @@ DSH 新会话欢迎页的标题行结构：
 
 ---
 
-## 8. FZ3 动效运行时（client.js 917-1304）
+## 8. FZ3 动效运行时（client.js 918-1305）
 
 这是本插件性能优化最核心的部分：**原版用常驻 `requestAnimationFrame` 每帧计算并写 SVG style，本版改为 CSS 时间线 + 极少量事件定时器**。
 
@@ -272,6 +275,35 @@ const fz3EyeRuntime = (() => { ... return { mount, unmount, setState, suspend, r
 | 花屏频率/参数 | `FZ3_FAULT`（拍数、间隔、位移、亮度）与 `scheduleGlitch` 的随机区间 |
 | 思考态半闭眼形状 | `FAIRY_EYE_SVG` 里 `#fz3-lid-clip` 的 path（`.fz3-lid-clip-shape`） |
 | 大眼尺寸/位置 | CSS 变量 `--fz3-eye` / `--fz3-eye-cy` / `--fz3-eye-gap` |
+
+### 8.5 全屏动画层与 GPU：环境时钟（v1.2.0）
+
+**为什么全屏 CSS 动画在高刷屏上可怕**：合成器判断"这一层变了、要重新合成"。如果变化发生在**全屏尺寸的 fixed 层**上，合成范围就是整个视口——165 Hz 屏每秒重做 165 次整屏合成，GPU 占用随刷新率线性放大；60 Hz 屏只是被"层数 × 60 次"掩盖了同一份成本。插件里有两处这种层：`body::before`（fixed、`inset:-12%`、40s 漂移）和 `.fz3-atmos`（fixed `inset:0`、14s 呼吸的 `.fz3-atmos-glow`）。它们即使大部分被界面遮住，**渲染成本仍按层计算**。
+
+`mix-blend-mode:screen` 会进一步放大代价：这一整层每帧都要和下面所有内容重新混合，相当于给"整屏合成"再加一遍全内容读取。所以氛围层既是全屏层、又是混合层，是本次最大的单项开销之一（归因见 [docs/PERFORMANCE.md](PERFORMANCE.md) 第 9 节）。
+
+**当前实现**（`Atmos` 组件，client.js 1775-1806）：
+
+- `React.memo` 包裹；新增 `const glowRef = React.useRef(null)`，在 `React.useEffect` 里启动 `window.setInterval(tick, 500)`；
+- `tick` 里取 `t`，算 `gp = (t % 14000)/14000`、`ge = 0.5 - 0.5*Math.cos(2*Math.PI*gp)`（等价于原 ease-in-out 呼吸曲线）；
+- 写 `glow.style.opacity = (0.55 + 0.45*ge).toFixed(3)`、`glow.style.transform = 'scale(' + (1 + 0.06*ge).toFixed(4) + ')'`；
+- `document.hidden` 时跳过本次更新；effect 清理函数里 `clearInterval`；
+- CSS 里 `.fz3-atmos-glow` 保留静态基线 `opacity:.55; transform:scale(1)`，作为 JS 未运行/挂载前的**兜底**；`.fz3-atmos` 的 `mix-blend-mode:screen` 与 `opacity:.75` 不变（保留观感）。
+
+效果：呼吸仍然在，但只在 500ms 的更新点让合成器重做一次整屏混合（**2 次/秒**），而不是 165 次/秒。
+
+**为什么不用 CSS animation**：CSS 动画只要在跑，每次值变化就会让全屏层进入重合成，无法降频（`animation-timing-function` 只改曲线、不改更新频率）；用 `animation-play-state` 暂停又会让呼吸停住。
+
+**为什么不用 `steps()`**：把呼吸换成 `steps(24)` 离散仍然每秒变化 24 次（实测 11.0%，只比连续动画好一点）；`steps(1)` 的离散闪烁之所以几乎免费，是因为可见变化极少、两次变化之间合成器可完全缓存。
+
+**为什么放弃 `:root` CSS 变量定时驱动（教训）**：曾尝试保留背景漂移——每 500ms 在 `document.documentElement` 上写 `--fz3-drift-x/y/s`，让 `body::before` 的 transform 用 `var()` 跟随。GPU 确实降到 ~5.7%，但主线程变差：CDP Performance 20 秒窗口 `RecalcStyleDuration` **4.055 s**，同样窗口基线只有 **0.82 s**（约 +16% 主线程；写未注册的继承型自定义属性会触发整棵文档样式重算，43 次更新 × ~80ms）。最终放弃漂移、背景静态化。**结论：定时器不要驱动 `:root` 上的自定义属性；低频更新必须写在具体元素自身的 `style` 上，只影响该元素。**
+
+**维护规则（新增氛围效果前必读）**：
+
+- ❌ 不要对全屏 `fixed` 层做逐帧/逐秒的 CSS 动画、`mix-blend-mode` 或滤镜动画；
+- ✅ 动画只做在小面积元素上（眼徽、脉冲环、按钮、文字），或低频（≥500ms）写元素自身的内联 `opacity` / `transform`；
+- ✅ 若必须让全屏层动，先评估合成范围：能不能换成独立小元素、限制 `clip-path` / `contain` 范围，或只在切换时动一次；
+- ✅ 页面隐藏时暂停定时器（`document.hidden`），组件卸载时清理。
 
 ---
 
@@ -355,7 +387,8 @@ const fz3EyeRuntime = (() => { ... return { mount, unmount, setState, suspend, r
 4. 开机舞台：单路 `boot-opt.mp4`（原两路视频 + 全屏 `blur(46px)`）、进度条直写 DOM（不走 setState）；
 5. 轮询感知页面可见性（mood 900ms / health 5s 在 hidden 时停），请求去重；
 6. dock 定位缓存容器 + resize 合并（原来每 600ms 全量扫描 DOM 强制布局）；
-7. 资源压缩 + ETag/304/Range（9.0 MB → 2.9 MB 首屏运行时下载）。
+7. 资源压缩 + ETag/304/Range（9.0 MB → 2.9 MB 首屏运行时下载）；
+8. （v1.2.0）GPU 占用：两处全屏动画层（背景 40s 漂移、氛围光 14s 呼吸）静态化 / 改为 500ms 环境时钟，删除 `fz3-drift` / `fz3-breathe` 两个关键帧；眼徽等小面积动效全部保留。
 
 **同机 headless Chrome 10 秒稳态（主线程占一个核的比例）**：
 
@@ -364,6 +397,21 @@ const fz3EyeRuntime = (() => { ... return { mount, unmount, setState, suspend, r
 | 侧栏待机 | 31.2% | **1.8%** |
 | 模型思考中 | 30.9% | **1.6%** |
 | 问候页待机 | 41.1% | **2.5%** |
+
+**GPU（v1.2.0，headless Chrome 156 / 165 Hz / 1610×883 @1.5 / 20s 窗口，丢前 2 样本，同轮相对比较）**：
+
+| 场景 | v1.1.1（修改前） | 本版 v1.2.0 |
+| --- | --- | --- |
+| dock 待机 GPU 引擎平均 | 43.1% | **5.1%**（约 −88%） |
+| boot 阶段 | — | 9.85%（视频解码为主） |
+
+归因要点：只关眼睛四层呼吸 / 睫毛 / 脉冲环 −0.45、只关 body::after 网格层 −2.2（都可忽略）；只关氛围光呼吸 + 闪光 −6.2；只把背景漂移静态化 −19.7；漂移静态化 + 氛围光呼吸 / 闪光关 −37.9。也就是说开销主要在**两处全屏层**，不在 128px 眼徽；165 Hz 下每帧整屏合成把成本放大，而 `mix-blend-mode:screen` 进一步放大氛围层成本。
+
+改后验证：dock 稳态 5.1%；boot 9.85%（视频解码）；greet 切换瞬间前 3 秒 39/46/23%，之后回落到 5–6%；主线程仍处低水平（22 秒窗口 `TaskDuration` 20.462 s、`ScriptDuration` 0.075 s、`RecalcStyleDuration` 1.146 s、`LayoutDuration` 0.342 s；RecalcStyle 绝对量小、与基线同量级，远低于失败方案的 4.055 s）。
+
+真机对照（诚实写法）：真实桌面端 Electron（1624×977、dpr 1.5、未刷新仍跑旧 `client.js`）dock 待机实测约 **17.9%** GPU；用户原始反馈是核显下 80–90% vs 关插件约 10%。刷新到 v1.2.0 后的真机数字**待验证**，预计会回落到接近纯净 DSH 水平。
+
+归因表、交叉验证、失败方案（`:root` CSS 变量）与两张对比图在 [docs/PERFORMANCE.md](PERFORMANCE.md) 第 9 节。
 
 **取舍**：思考态眼睑不再随 1440ms 相位开合（固定半闭）。除此外外观/动效语义与上游一致；系统"减少动态效果"不被遵循（刻意保持完整动效）。
 
@@ -392,9 +440,9 @@ git commit -m "feat: ..."
 git push origin main
 ```
 
-- 版本号是 `package.json` 的 `version`（1.1.0 → 1.1.1）。插件安装目录的 `package.json` 不必同步（DSH 不看它，但保持一致性更省心）。
+- 版本号是 `package.json` 的 `version`（1.1.1 → 1.2.0）。插件安装目录的 `package.json` 不必同步（DSH 不看它，但保持一致性更省心）。
 - 发布远端需要 HTTPS 凭据（git credential manager 已存 SkyWingDN 的 token）。本机有代理 `http://127.0.0.1:7897`；若 push 失败，用 `git -c http.proxy= -c https.proxy= push` 直连重试。
-- 打 tag / release：`git tag v1.1.1 && git push origin v1.1.1`，再在 GitHub 建 release（可选）。
+- 打 tag / release：`git tag v1.2.0 && git push origin v1.2.0`，再在 GitHub 建 release（可选）。
 - 校验一致性：`Get-FileHash` 对比安装目录与仓库的 `client.js` / `index.js`。
 
 ### 15.3 安装目录与 profile
@@ -471,7 +519,7 @@ Invoke-WebRequest http://127.0.0.1:12427/fairy-zzz/mood        # {"mood":"idle",
 
 | 想做的事 | 步骤 |
 | --- | --- |
-| 改欢迎页问候语/时段文案 | 改 `greetLine()`（`client.js` 约 1790 行）与 `ZH.greet.*` 词条 |
+| 改欢迎页问候语/时段文案 | 改 `greetLine()`（`client.js` 约 1810 行）与 `ZH.greet.*` 词条 |
 | 换问候音频 | 替换 `assets/voice/greet-<slot>.mp3`（保持文件名，`GREETING()` 按时段拼路径） |
 | 换开机视频 | 替换 `assets/boot-opt.mp4`（建议 H.264 + faststart，控制在 2.5 MB 内），封面换 `poster.jpg` |
 | 换问好页背景 | 替换 `assets/hero.webp`（CSS 在 `client.js` 约 482 行） |
@@ -486,6 +534,7 @@ Invoke-WebRequest http://127.0.0.1:12427/fairy-zzz/mood        # {"mood":"idle",
 
 | 版本 | 变更 |
 | --- | --- |
+| 1.2.0 | GPU 占用优化：背景 40s 漂移静态化、氛围光 14s 呼吸改为 500ms JS 环境时钟、删除 `fz3-drift` / `fz3-breathe` 两个全屏动画关键帧；dock 待机 GPU 43.1% → 5.1%（约 −88%）、主线程仍处低水平（boot 9.85% / greet 瞬态属视频解码与过渡）；真机待验证 |
 | 1.1.1 | 新增欢迎页品牌位：接管 `conversation.hero.brand.mark`，把新会话页 DeepSeek 鲸鱼换成静态 Fairy 眼标（复用 `FAIRY_EYE_SVG`，保留官方 hover 动画类） |
 | 1.1.0 | 性能优化修改版：rAF → CSS 时间线、思考眼睑静态化、单路压缩视频、静态渐变、ETag/304/Range、资源 9.0 → 2.9 MB（主线程 31-41% → 1.6-2.5%）、去掉本地模型/引擎/缓存 |
 | 1.0.x | 上游 AssassinVIX/fairy-zzz-plugin 的原版 |

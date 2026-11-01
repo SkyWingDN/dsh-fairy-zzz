@@ -2,7 +2,7 @@
 
 This page records why and how the **performance-optimized edition** of
 dsh-fairy-zzz differs from the upstream plugin, plus the measurements used to
-validate the result. 中文在前，English summary at the end.
+validate the result. 中文在前，English summary at the end. Section 9 adds the v1.2.0 GPU-usage work.
 
 ## 1. 背景与目标
 
@@ -86,6 +86,7 @@ harness 与测量脚本属于一次性验证工具，**未随仓库发布**；�
 8. `React.memo` 包裹眼睛 / 氛围层，减少父组件重渲染波及；淡出结束后的图层加
    `visibility:hidden`，彻底停止绘制。
 9. 清理重复的 `body::after` 死规则等。
+10. （v1.2.0）GPU 占用优化：背景 40s 漂移动画静态化、氛围光 14s 呼吸改为 500ms JS 环境时钟、删除 `fz3-drift` / `fz3-breathe` 两个全屏动画关键帧（详见第 9 节）。
 
 ### index.js（host 路由）
 
@@ -143,6 +144,7 @@ harness 与测量脚本属于一次性验证工具，**未随仓库发布**；�
 - **代价 / 取舍**：思考态的半闭眼不再做持续开合呼吸（静态半闭眼）。这是本次唯一
   有意做的动效简化，也是拿掉约 27% 一个核的必要条件；想恢复的话，成本约为每秒 60 次
   整棵眼睛子树的裁切重算。
+- **GPU 取舍（v1.2.0）**：背景漂移不再移动、氛围光呼吸改由 500ms 环境时钟驱动，肉眼几乎不可察觉，但把 dock 待机 GPU 从 43.1% 降到 5.1%（约 -88%）。boot 阶段的视频解码与 greet 切换瞬间仍是短暂的 GPU 高点，属于可接受代价（见第 9 节）。
 
 ## 8. 复现方法
 
@@ -153,6 +155,91 @@ harness 与测量脚本属于一次性验证工具，**未随仓库发布**；�
 2. 用 headless Chrome + DevTools Protocol 的 `Performance.getMetrics` 记录 10 秒稳态窗口，
    分别统计 `TaskDuration`、`ScriptDuration`、`RecalcStyleDuration`、`LayoutDuration`；
 3. 用同样的参数跑两份 `client.js`（上游 / 本版），对比绝对值和比例即可。
+
+## 9. GPU 占用优化（v1.2.0）
+
+### 9.1 现象与目标
+
+用户实测：核显下开着插件 GPU 平均 **80–90%**，关掉插件约 **10%**；即使只是把插件挂在侧栏待机，风扇也一直在转。复现后定位到原因：在 **165 Hz 高刷屏**上，任何**全屏尺寸的 CSS 动画层**都会导致每帧整屏重新合成，GPU 占用随刷新率翻倍。插件里恰好有两处这种层。
+
+目标：165 Hz 屏待机时也接近空闲，同时保留呼吸观感（不靠删动效换数字）。
+
+### 9.2 测量方法
+
+- headless Chrome 156 真实加载插件页面，进入 DSH GUI 后等 dock 稳态再开始采样；
+- 视口 1610×883、dpr 1.5、165 Hz 显示器；
+- 窗口用 `SetWindowPos` 置顶，避免被其它窗口遮挡（被遮挡时页面被判定为 hidden、动画暂停，会测出 0）；
+- GPU 指标 = Windows 计数器 `\GPU Engine(*)\Utilization Percentage` 里该浏览器 GPU 进程的**引擎最大值**，每秒一个样本；
+- 每变体 12–20 秒采样、丢弃前 2 个样本（最终版本取 20 秒）；
+- **同轮内做相对比较**：跨轮 base 会漂移（37–43%），绝对值的量级可信，但不要跨轮对比。
+
+### 9.3 归因表（dock 待机，GPU 引擎平均占用，同一轮测量）
+
+| 变体 | GPU |
+| --- | --- |
+| v1.1.1 原样（所有氛围动画在跑） | 43.1% |
+| 只关眼睛四层呼吸 / 睫毛 / 脉冲环 | 42.6%（−0.45，可忽略） |
+| 只关 body::after 网格层 | 40.9%（−2.2，可忽略） |
+| 只关氛围光呼吸 + 闪光（glow/flash 动画停 + blend 改 normal + rim 去 blur） | 36.9%（−6.2） |
+| 氛围层整层 display:none | 29.9%（−13.2） |
+| 只把背景漂移静态化 | 23.4%（−19.7） |
+| 漂移静态化 + 氛围光呼吸 / 闪光关 | 5.2%（−37.9） |
+| v1.2.0 最终版（漂移静态 + JS 环境时钟呼吸） | 5.1% |
+
+交叉验证（以「背景漂移已静态化」为基线 22.6%）：
+
+- 把氛围光呼吸动画加回来 → **44.4%**；只加回闪光 `steps(1)` → **14.0%**；两者都不加 → **14.1%**；
+- 把 `mix-blend-mode:screen` 改成 `normal` → 20.35%（只省 2.3）；去掉 `.fz3-rim` 的 `blur(8px)` → 22.9%（无效）；
+- 把发光呼吸换成 `steps(24)` 离散 → 11.0%（仍然很贵）；
+- 同一 harness 下「纯 DSH、不启用插件」基线约 4.7–7%。
+
+结论一句话：**成本不在 128px 的眼徽动画，而在两处全屏动画层；165 Hz 下每帧整屏合成把成本放大了。**
+
+### 9.4 原理解释
+
+- 全屏 `position:fixed` 层只要每帧有变化，合成器就要重做整屏合成；165 Hz 即每秒 165 次，代价随刷新率线性放大。
+- 背景层 `body::before`：`fixed`、`inset:-12%`、多层渐变，带 40s 位移/缩放漂移动画——覆盖并超出整个视口。它大部分被界面遮住，但**渲染成本是按层算的**，看不见不等于不花钱。
+- 氛围层 `.fz3-atmos`：`fixed` `inset:0` + `mix-blend-mode:screen`，这一整层每帧都要和下面所有内容重新混合，代价被进一步放大。
+- 小面积元素（128px 眼徽、384px 脉冲环）的动画跑在合成器上，实测几乎免费。
+- 所以正确的优化对象是**两处全屏层**，而不是眼徽本身。
+
+### 9.5 改动清单（client.js，仅这三处 + 一个 JS 环境时钟）
+
+1. 删掉 `body::before` 的 `animation:fz3-drift ...`；背景层固定为原动画起始位姿 `transform:translate3d(-1.4%,-1%,0) scale(1.03)`；删掉 `@keyframes fz3-drift`（保留注释说明原因）。
+2. 删掉 `.fz3-atmos-glow` 的 `animation:fz3-breathe ...`，静态基线 `opacity:.55`、`transform:scale(1)`。
+3. 删掉 `@keyframes fz3-breathe`（保留注释）。
+4. 呼吸观感改由 JS 环境时钟驱动（Atmos 组件，`React.memo`）：
+   - 新增 `glowRef = React.useRef(null)` 与 `React.useEffect(...)`；
+   - `window.setInterval` 每 **500ms** 写一次 `glow.style.opacity = (0.55 + 0.45*ge).toFixed(3)`、`glow.style.transform = 'scale(' + (1 + 0.06*ge).toFixed(4) + ')'`；
+   - 其中 `gp = (t % 14000)/14000`、`ge = 0.5 - 0.5*cos(2π·gp)`（等价于原 ease-in-out 呼吸曲线）；
+   - `document.hidden` 时跳过该次更新；组件卸载时 `clearInterval`；JSX 里 glow div 加 `ref`。
+   - 效果：**呼吸观感保留**，但只在 500ms 的更新点让合成器重做一次整屏混合（2 次/秒），而不是 165 次/秒。
+5. 保留不动：眼徽四层呼吸、睫毛 15s 旋转、脉冲环、眼闪、花屏/故障、思考半闭眼、hero/对话界面过渡、`.fz3-atmos-flash`（11s `steps(1)` 离散闪烁，实测几乎免费）。
+
+### 9.6 失败方案与教训
+
+- **保留背景漂移（已放弃）**：用 JS 每 500ms 在 `document.documentElement` 上写 `--fz3-drift-x/y/s` 三个 CSS 变量，让 `body::before` 的 `transform` 用 `var()` 跟随。GPU 确实降到 ~5.7%，但**主线程变差**：CDP Performance 20 秒窗口 `RecalcStyleDuration` 4.055 s，而同样窗口基线只需 0.82 s（≈ +16% 主线程；每次写未注册的继承型自定义属性会触发整棵文档样式重算，43 次更新 × ~80ms）。教训：**定时器不要驱动 `:root` 上的自定义属性**；漂移最终放弃、背景静态化。
+- **prefers-reduced-motion 分支（已删除）**：曾加 `prefers-reduced-motion: reduce` 时早退，但原插件本来就没有这个降级逻辑，且 headless Chrome 默认报 `reduce=true` 导致无法测量，已删除，保持与原版一致的行为。
+
+### 9.7 改后数据
+
+- dock 稳态 GPU **5.1%**（43.1 → 5.1，约 **−88%**）；
+- boot 阶段 **9.85%**（主要是视频解码）；greet 切换瞬间前 3 秒 39/46/23%，之后回落到 5–6%；
+- 主线程仍处低水平（22 秒窗口：`TaskDuration` 20.462 s、`ScriptDuration` 0.075 s、`RecalcStyleDuration` 1.146 s、`LayoutDuration` 0.342 s；RecalcStyle 绝对量很小、与基线同量级，远低于失败方案的 4.055 s）；
+- 真机对照（诚实写法）：真实桌面端 Electron（1624×977、dpr 1.5、未刷新仍跑旧 `client.js`）dock 待机实测约 **17.9%** GPU；用户原始反馈是核显下 80–90% vs 关插件约 10%。刷新到 v1.2.0 后的真机数字**待验证**，预计会回落到接近纯净 DSH 的水平。
+
+### 9.8 图片
+
+![GPU attribution](img/gpu-attribution.png)
+![GPU before/after](img/gpu-before-after-dock.jpg)
+
+图注：上图为 dock 待机时逐项关闭各层的 GPU 归因；下图为整页截图的前后对比（BEFORE 43% / AFTER 5%）。
+
+### 9.9 取舍与后续可选项
+
+- 背景漂移不再移动——几乎不可见（背景本就被界面遮住，且固定为原动画起始位姿）。
+- boot 的视频解码与 greet 过渡仍是瞬态高点，属于可接受代价。
+- 未来若想恢复漂移：可把背景换成独立小元素并限制合成范围（例如只在一个小区域做动画），但**不要**用定时器改 `:root` CSS 变量。
 
 ---
 
@@ -180,6 +267,16 @@ This edition:
   `/voice-home` briefly; pauses polling while the page is hidden;
 - shrinks the runtime payload from ~9.0 MB to ~2.9 MB (`boot-opt.mp4` 2.3 MB,
   `hero.webp` 23 KB, greeting clips as MP3).
+- removes the two **full-screen animated layers** that dominated GPU cost on a
+  165 Hz display: the 40 s background drift is now static, and the 14 s
+  atmosphere-glow breath is driven by a **2 Hz JS ambient clock** that writes
+  inline `opacity` / `transform` (dock idle GPU 43.1% → 5.1%, about −88%; boot
+  stage 9.85% is mostly video decoding);
+- leaves small animations alone — the 128 px eye, 384 px pulse rings and the
+  discrete `steps(1)` flicker are nearly free; the pitfall to avoid is driving
+  `:root` custom properties from a timer (even at 2 Hz it triggered a
+  full-document style recalc: 4.055 s vs 0.82 s over a 20 s window), so the
+  background drift was dropped instead.
 
 Pixel-level comparison of frozen animation frames shows the boot screen is
 pixel-identical and idle / greeting screens differ only by 0.23–1.49 / 255 on

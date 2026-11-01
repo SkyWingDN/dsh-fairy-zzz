@@ -2,7 +2,7 @@
 
 **中文** · [English](#english)
 
-> **第三方修改版，非官方。** 本仓库由 [SkyWingDN](https://github.com/SkyWingDN) 基于 [AssassinVIX/fairy-zzz-plugin](https://github.com/AssassinVIX/fairy-zzz-plugin)（MIT）修改：主要工作是**性能优化与资源压缩**（待机主线程开销约 -94%，首屏资源约 -68%），并附带少量必要的行为调整（思考态眼睑由动态呼吸改为静态半闭）。原作者与素材来源见文末「致谢与许可」，性能细节见 [docs/PERFORMANCE.md](docs/PERFORMANCE.md)。本仓库**不包含** GPT-SoVITS 模型或推理引擎。
+> **第三方修改版，非官方。** 本仓库由 [SkyWingDN](https://github.com/SkyWingDN) 基于 [AssassinVIX/fairy-zzz-plugin](https://github.com/AssassinVIX/fairy-zzz-plugin)（MIT）修改：主要工作是**性能优化与资源压缩**（待机主线程开销约 -94%，首屏资源约 -68%，待机 GPU 占用约 -88%），并附带少量必要的行为调整（思考态眼睑由动态呼吸改为静态半闭）。原作者与素材来源见文末「致谢与许可」，性能细节见 [docs/PERFORMANCE.md](docs/PERFORMANCE.md)。本仓库**不包含** GPT-SoVITS 模型或推理引擎。
 
 把 DeepSeek Harness 的 Web 界面换成《绝区零》Fairy 的 H.D.D 终端：满屏开机动画 → 居中问好 → 收成会话区左侧的常驻眼徽，并可用本地 GPT-SoVITS 的 Fairy 音色把回复念出来。
 
@@ -25,7 +25,7 @@
   - `thinking/working` 期间**保持半闭**：用 clipPath 裁切整只眼球，眼睑形状固定在原呼吸的「张开」相位（静态半闭，不再随 1440ms 相位开合——这是本次唯一有意简化的动效，原因见 [docs/PERFORMANCE.md](docs/PERFORMANCE.md)）；只有非运行状态才完全睁眼；表情切换瞬间播放两段故障转场；
   - 外圈辉光 / 氛围光 / 眼闪改为**静态多层渐变**（不再使用实时 `drop-shadow` / `blur()` 逐帧重栅格化），大眼阶段稳定接近 60fps；
   - 页面隐藏时自动暂停故障与装饰动画；**系统「减少动态效果」（含 Windows 关闭动画效果）不再降级**——插件固定保持完整动效。
-  - **性能**：待机 / 思考时主线程约 1–2.5%（原版约 31–41%），常驻 rAF 归零；页面隐藏时暂停轮询与动画；首屏资源约 2.9 MB（原约 9.0 MB）。详见 [docs/PERFORMANCE.md](docs/PERFORMANCE.md)。
+  - **性能**：待机 / 思考时主线程约 1–2.5%（原版约 31–41%），常驻 rAF 归零；页面隐藏时暂停轮询与动画；首屏资源约 2.9 MB（原约 9.0 MB）；GPU 待机约 5%（原版约 43%，同机 165 Hz headless 实测）——真正的开销是两处全屏动画层，已把背景漂移静态化、氛围光呼吸改为 500ms 环境时钟。详见 [docs/PERFORMANCE.md](docs/PERFORMANCE.md)。
 - **品牌位替换**：隐藏官方 SVG 字标，在原位置叠上 Fairy 眼徽 + 斜体 `Fairy` 字标，位置由量测官方元素得到，随窗口自适应。
 - **欢迎页品牌位（1.1.1 新增）**：接管 `conversation.hero.brand.mark` 槽位，把新会话欢迎页「探索未至之境」标题左侧的 DeepSeek 鲸鱼 logo 换成同一个 Fairy 眼标；复用静态 SVG，不增加动画开销，悬停时跟随官方 `fish` 类一起轻微摆动。见 [docs/TECHNICAL.md](docs/TECHNICAL.md)。
 - **主题**：深蓝玻璃 + 青蓝霓虹 token、网格与扫描线壁纸、H.D.D 风滚动条与焦点光。
@@ -43,6 +43,22 @@
 | 问候页待机 | 41.1% | **2.5%** |
 
 首屏运行时下载从约 9.0 MB 降到约 2.9 MB；静态资源改为 ETag/304 协商缓存，刷新不再重传多 MB。测量方法、取舍与复测思路见 [docs/PERFORMANCE.md](docs/PERFORMANCE.md)。
+
+### GPU 占用（v1.2.0）
+
+用户实测：核显下开着插件 GPU 平均 80–90%，关掉插件约 10%。测量条件：headless Chrome 156 真实加载插件页面，165 Hz 显示器，视口 1610×883 @ dpr 1.5，20 秒采样窗口（丢弃前 2 个样本），同一轮内做相对比较。
+
+| 场景 | 修改前 v1.1.1 | 本版 v1.2.0 |
+| --- | --- | --- |
+| dock 待机 GPU 引擎平均占用 | 43.1% | **5.1%**（约 −88%） |
+| boot 开机阶段 | — | 9.9%（主要是视频解码） |
+
+结论：真正的开销是两处**全屏动画层**（背景 40s 漂移、氛围光 14s 呼吸），不是眼徽本身；小面积动画（128px 眼徽、384px 脉冲环）几乎免费。165 Hz 高刷屏上，任何全屏层只要每帧变化，整个屏幕就要重新合成，代价随刷新率翻倍。
+
+![GPU 归因：两处全屏动画层占了大头](docs/img/gpu-attribution.png)
+![dock 待机 GPU 前后对比（BEFORE 43% / AFTER 5%）](docs/img/gpu-before-after-dock.jpg)
+
+图注：上图为 dock 待机时逐项关闭各层的 GPU 归因；下图为整页截图的前后对比。完整数据、失败方案与复测方法见 [docs/PERFORMANCE.md](docs/PERFORMANCE.md) 第 9 节。
 
 ## 安装
 
@@ -90,6 +106,8 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1 -Uninstall  # 卸
 > **从 1.1.0 起**本仓库为性能优化修改版（仓库地址改为 SkyWingDN/dsh-fairy-zzz），包名与路由不变；升级时直接覆盖 `client.js`、`index.js`、`assets/` 后重启 DSH 即可。
 >
 > **1.1.1** 只改 `client.js`（新增欢迎页品牌位，无新资源），从 1.1.0 升级只需覆盖这一个文件并重启 DSH。
+> 
+> **1.2.0** 只改 `client.js`（GPU：背景漂移静态化 + 氛围光呼吸改为 JS 环境时钟；无新资源）——覆盖 `client.js` 后整页刷新即可。
 
 
 > `presets/fairy-mode.patch.yml` 是**可选**的「Fairy 模式」agent 预设（毒舌 AI 腔、称你为「主人」）。
@@ -190,7 +208,8 @@ index.js             # 宿主：静态资源（ETag/304/Range）、TTS 队列与
 assets/              # boot-opt.mp4 / poster.jpg / hero.webp / icon-180.png / voice/*.mp3
 presets/             # 可选的「Fairy 模式」agent 预设
 screenshots/         # 列表用截图
-docs/                # 原理说明（TECHNICAL.md）、性能报告与对比图（PERFORMANCE.md）
+docs/                # 原理说明（TECHNICAL.md）、性能报告（PERFORMANCE.md，含第 9 节 GPU 归因与前后对比）
+docs/img/            # 文档配图：before-after-dock-eye.png、hero-brand-mark.png、gpu-attribution.png、gpu-before-after-dock.jpg
 licenses/            # 第三方许可全文（Apache-2.0 / Fairy-DSH NOTICE）
 install-windows.ps1  # Windows 安装/卸载脚本
 ```
@@ -205,7 +224,7 @@ install-windows.ps1  # Windows 安装/卸载脚本
 
 ---
 
-> **Unofficial modified edition.** This repository is maintained by [SkyWingDN](https://github.com/SkyWingDN) and based on [AssassinVIX/fairy-zzz-plugin](https://github.com/AssassinVIX/fairy-zzz-plugin) (MIT). The main work here is **performance optimization and asset compression** (idle main-thread cost about -94%, initial payload about -68%), plus one deliberate motion simplification (the thinking eyelid is a static half-closed shape instead of a per-frame SVG clip animation). See [docs/PERFORMANCE.md](docs/PERFORMANCE.md) for numbers and attribution. **This repository contains no GPT-SoVITS model or inference engine.**
+> **Unofficial modified edition.** This repository is maintained by [SkyWingDN](https://github.com/SkyWingDN) and based on [AssassinVIX/fairy-zzz-plugin](https://github.com/AssassinVIX/fairy-zzz-plugin) (MIT). The main work here is **performance optimization and asset compression** (idle main-thread cost about -94%, initial payload about -68%, idle GPU usage about -88%), plus one deliberate motion simplification (the thinking eyelid is a static half-closed shape instead of a per-frame SVG clip animation). See [docs/PERFORMANCE.md](docs/PERFORMANCE.md) for numbers and attribution. **This repository contains no GPT-SoVITS model or inference engine.**
 
 # English
 
@@ -230,7 +249,7 @@ It turns the DSH web interface into Fairy's H.D.D terminal: a full-screen boot a
 - **State animations** (driven by CSS keyframes only — no resident JS loop; geometry and timings ported from Fairy-DSH):
   - `idle` — four-layer eyeball breathing (1440 ms master clock, 45/90/180 ms layer offsets, `cubic-bezier(.72,0,.28,1)`), 15 s lash rotation (matching the reference doc / Fairy-DSH implementation; the official cutscene is faster — adjust `FZ3_LASH_PERIOD_S` and the CSS `animation-duration` together if you prefer), five concentric lash-pulse rings (4 s cycle), and a **static outer halo** (the reference halo does not breathe, which also avoids repaints);
   - random eye flicker every 1.75–3.6 s, 155–255 ms each;
-  - **Performance**: ~1–2.5% of one CPU core at idle / thinking (upstream: ~31–41%), zero resident rAF requests; polling and animations pause on hidden pages; initial payload ~2.9 MB (upstream ~9.0 MB). Details in [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
+  - **Performance**: ~1–2.5% of one CPU core at idle / thinking (upstream: ~31–41%), zero resident rAF requests; polling and animations pause on hidden pages; initial payload ~2.9 MB (upstream ~9.0 MB); idle GPU ~5% (v1.1.1: ~43% on the same 165 Hz display, headless measurement) — the real cost was two full-screen animated layers, so the background drift is now static and the atmosphere breath runs on a 500 ms JS ambient clock. Details in [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
   - random signal glitches may appear in **any expression state**, using the reference-documented parameters: one every 2.3–4.6 s, alternating `threads` (feTurbulence horizontal tearing, 4 pulses, 30–42 ms gaps, 34–76 ms fade, 17–29 px displacement) and `blocks` (five horizontal slices, 2 or 4 pulses, 56–104 ms gaps, 48–96 ms fade, 1.4–3 px slice offsets); visual vars are x ±0.9 px, skew ±0.24°, brightness 1.02–1.14, contrast 1.02–1.16. Expression changes play a two-burst strong transition glitch (2 threads pulses → 28 ms → 6 pulses, first 2 blocks, 40 ms per pulse, 28 ms cleanup, with the raised transition strength ranges); fault slices clone the eye body only (the outer halo is no longer duplicated, so no offset ghosting), and the lash angle locked during a blocks fault is re-anchored continuously when the fault ends; fault visuals are force-cleared after a 900 ms hard cap;
   - `thinking` / `working` — the eye **stays half-closed** while the agent runs: the reference clip mechanism clips the whole eye group, but the eyelid shape is now static (frozen at the open phase of the old breath animation) instead of breathing on the 1440 ms phase; it opens fully when nothing is running; expression changes play a two-burst glitch transition. This is the only deliberate motion simplification (see [docs/PERFORMANCE.md](docs/PERFORMANCE.md));
   - the outer halo, atmosphere glow and flash are **static layered gradients** instead of live `drop-shadow` / `blur()` (no per-frame re-rasterisation), so the big 330 px stage stays at ~60 fps;
@@ -253,6 +272,22 @@ Initial download dropped from ~9.0 MB to ~2.9 MB, and static assets now use ETag
 - **Theme** — deep-blue glass with cyan neon tokens, grid and scanline wallpaper, an H.D.D-style scrollbar and focus glow.
 - **Voice** — the opening greeting is a pre-recorded MP3 and needs no engine; later replies can be read aloud automatically or with a per-message button through a local GPT-SoVITS (CPU inference). **This repository ships neither model nor engine**; deploy your own as described below.
 - **Settings panel** — DSH's *Settings → Fairy* manages the read-aloud switch, engine status, engine directory, sampling, replay and tests.
+
+### GPU usage (v1.2.0)
+
+On the user's machine: with the plugin on, integrated graphics average 80–90% GPU; with it off, about 10%. Measurement setup: headless Chrome 156 loading the real plugin, 165 Hz display, 1610×883 viewport at dpr 1.5, 20 s sampling window (first 2 samples dropped), relative comparison within the same run.
+
+| Scenario | Before (v1.1.1) | This edition v1.2.0 |
+| --- | --- | --- |
+| Dock idle, GPU engine average | 43.1% | **5.1%** (about −88%) |
+| Boot stage | — | 9.9% (mostly video decoding) |
+
+Takeaway: the real cost was two **full-screen animated layers** — the 40 s background drift and the 14 s atmosphere-glow breath — not the eye badge itself; small animations (the 128 px eye and the 384 px pulse rings) are almost free. On a 165 Hz panel, any full-screen layer that changes every frame forces the whole screen to be re-composited, and the cost scales with the refresh rate.
+
+![GPU attribution: two full-screen animated layers cost most of the GPU](docs/img/gpu-attribution.png)
+![Dock-idle GPU before/after (BEFORE 43% / AFTER 5%)](docs/img/gpu-before-after-dock.jpg)
+
+Caption: the first image attributes GPU cost by switching each layer off while docked; the second is the full-page before/after comparison. Full data, failed approaches and how to re-measure: [docs/PERFORMANCE.md](docs/PERFORMANCE.md), section 9.
 
 > This is the **performance-optimized modified edition**. The original plugin and artwork come from [AssassinVIX/fairy-zzz-plugin](https://github.com/AssassinVIX/fairy-zzz-plugin); use the upstream repository if you want the unmodified version.
 
@@ -293,7 +328,9 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1 -Uninstall  # uni
 
 > **Since 1.1.0** this repository is the performance-optimized edition (now at SkyWingDN/dsh-fairy-zzz). The package name and routes are unchanged; to upgrade, overwrite `client.js`, `index.js` and `assets/`, then restart DSH.
 >
-> **1.1.1** only touches `client.js` (new welcome-hero brand mark, no new assets), so upgrading from 1.1.0 means replacing that single file and restarting DSH.
+> **1.1.1** only touches `client.js` (new welcome-hero brand mark, no new assets), so upgrading from 1.1.0 means replacing that single file and restarting DSH.  
+> 
+> **1.2.0** only touches `client.js` (GPU: static background drift + JS-driven atmosphere breather; no new assets) — replace `client.js` and reload the page.
 
 The script finds your profile, copies the plugin into `node_modules\dsh-fairy-zzz`, adds the patch and switches a light theme to dark. If you would rather not let a script edit files, use option 1 or 2.
 
@@ -395,7 +432,8 @@ index.js             # host: static assets (ETag/304/Range), TTS queue and cache
 assets/              # boot-opt.mp4 / poster.jpg / hero.webp / icon-180.png / voice/*.mp3
 presets/             # optional Fairy mode agent preset
 screenshots/         # screenshots used above
-docs/                # technical guide (TECHNICAL.md), performance report and comparison image
+docs/                # technical guide (TECHNICAL.md), performance report (PERFORMANCE.md, incl. the v1.2.0 GPU section)
+docs/img/            # doc images: before-after-dock-eye.png, hero-brand-mark.png, gpu-attribution.png, gpu-before-after-dock.jpg
 licenses/            # third-party license texts (Apache-2.0 / Fairy-DSH NOTICE)
 install-windows.ps1  # Windows install/uninstall script
 ```
