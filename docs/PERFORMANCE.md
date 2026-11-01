@@ -2,7 +2,7 @@
 
 This page records why and how the **performance-optimized edition** of
 dsh-fairy-zzz differs from the upstream plugin, plus the measurements used to
-validate the result. 中文在前，English summary at the end. Section 9 adds the v1.2.0 GPU-usage work; §9.10 covers the v1.2.1 dead-code / dead-style cleanup, §9.11 checks the v1.3.0 interaction additions (usage bubble, drag, themes) and why they add no resident cost.
+validate the result. 中文在前，English summary at the end. Section 9 adds the v1.2.0 GPU-usage work; §9.10 covers the v1.2.1 dead-code / dead-style cleanup, §9.11 checks the v1.3.0 interaction additions (usage bubble, drag, themes) and why they add no resident cost, §9.12 covers the v1.3.1 interaction-path rewrite, and §9.13 covers the v1.3.2 conversation-region drag bounds.
 
 ## 1. 背景与目标
 
@@ -258,12 +258,64 @@ v1.2.1 只删代码、不碰渲染与动画路径，因此本节 GPU / 主线程
 v1.3.0 新增的用量气泡、眼徽拖拽 / 显隐、外观三档与欢迎页文案改写，全部避开常驻动画 / 定时器路径，因此第 3 / 9 节的 GPU / 主线程数据继续有效：
 
 - 用量气泡只在点击 / 轮末展开时挂载，关闭即卸载；只有展开期间才有 1s 倒计时（归零回调父层重拉一次）；不使用 `backdrop-filter`（对比参考实现的全屏实时模糊，高刷屏上每帧都要重算）。
-- 外观三档只改 `html[data-fz3-theme]`，CSS 侧全部是静态覆盖（CSS 894-929 行），不触发动画 / 布局循环；主题探测只在挂载与 theme 变化时跑。
-- 眼徽拖拽用 `pointermove` 事件直接写 `:root` 的两个变量（`--fz3-dock-x/y`），仅指针按住期间发生，松开即结束 —— 这是 §9.6 教训的**明确例外**：驱动源是人手交互而非定时器，没有常驻重算。
+- 外观三档只改 `html[data-fz3-theme]`，CSS 侧全部是静态覆盖（CSS 936-971 行），不触发动画 / 布局循环；主题探测只在挂载与 theme 变化时跑。
+- 眼徽拖拽用 `pointermove` 事件直接写 `:root` 的两个变量（`--fz3-dock-x/y`），仅指针按住期间发生，松开即结束 —— 这是 §9.6 教训的**明确例外**：驱动源是人手交互而非定时器，没有常驻重算。（v1.3.1 起这条写法也改掉了，见 9.12：拖动只写元素自身 `transform`。）
 - 欢迎页文案改写用 `MutationObserver`（childList + characterData、60ms 去抖）替代参考实现的 900ms 轮询，空闲时零定时器。
 - host 侧 `GET /fairy-zzz/usage` 走 3s 记忆化 + 增量 zstd 帧解析（冷 505–608ms / 热 ~20ms），前端只在气泡展开时请求。
 - 代码体积：`client.js` 140,594 B / 2,882 行（CSS 文本 489 行）、`index.js` 47,855 B / 1,391 行；仍是零构建、运行期零依赖。
 
+### 9.12 v1.3.1：拖拽与用量气泡的交互路径重做
+
+v1.3.1 不新增任何常驻动画，改的是两条**用户交互路径**的成本，并补上拖拽吸附。
+
+**拖拽为什么卡**：v1.3.0 的 `onCoreMove` 每个 `pointermove` 都写 `document.documentElement.style` 的 `--fz3-dock-x/y`。这两个变量被 `.fz3-core` 的 `left/top` 使用，改它等于让**整页样式失效 + 重新布局 + 全屏重绘**；165 Hz 屏每秒产生 165 个事件，每个都触发一次全文档 recalc。
+
+v1.3.1 的做法：
+
+| 项 | v1.3.0（旧） | v1.3.1（新） |
+| --- | --- | --- |
+| 拖动中的几何写入 | 每个 `pointermove` 写 `:root` 两个变量 → 全文档 recalc + layout | 只写**元素自身** `style.transform` → 只走合成器，不触发 layout / paint |
+| 事件节流 | 无（每秒 165 次全部执行） | `requestAnimationFrame` 合并，一帧最多写一次 |
+| React 开销 | 拖动期间可能因气泡 state 每帧重渲染 | 移动期间**不 setState**，仅超过 4px 时置一次 `dragging` |
+| 事件监听 | 元素上的 pointer capture | `window` 捕获阶段监听 move/up/cancel，统一在 `detachDrag` 移除 |
+| 拖拽期视觉降压 | 无 | 关掉脉冲环、`.fz3-atmos` 内联 `mix-blend-mode:normal`（临时去掉全屏混合） |
+| 松手 | 慢过渡（1.35 s） | 先落位写存储，再 `el.animate()` 170 ms 补间余量 |
+
+**吸附**：`SNAP_EDGE = 64`。松手时距**会话内容区**任一边（v1.3.1 为整个视口；v1.3.2 起收紧，见 9.13）≤64px 即贴边，角落两轴同时吸（离边为「半个核 + 6px」，核不会切出屏幕）。贴边约 60 ms 完成，再用 170 ms 补间消除视觉跳变。
+
+**遮挡让位**：右下角常驻的 `dsh-whale-widget` 根节点 `z-index:9999`，插件层只有 `z-index:20`。旧实现只比较 `elementsFromPoint()[0]`，拖动时命中的还是自己，于是永远不避让。新实现用 `ourStackZ()`（从 `.fz3-layer` 父级向上找第一个非 static 的 `z-index`，实测 20）与 `foreignZAt(x,y)`（`elementsFromPoint` 过滤插件层后取祖先链最高数值 `z-index`）比较，被盖住就沿吸附边向内 72 → 144 → 216 → 288 → 360px 试位。
+
+**用量气泡为什么慢**：v1.3.0 每次点击都 `Promise.all([fetchUsage(), fetchBalance()])`，`/usage` 在宿主侧要扫会话日志（冷 505–608 ms），用户看到约半秒骨架屏。
+
+v1.3.1 加了模块级预取缓存：`USAGE_TTL = 60_000`、`BALANCE_TTL = 30_000`；进入 dock 后 700 ms 调一次 `prefetchUsage()`；点击有新鲜缓存就**立即出数**（实测 65–166 ms），后台同时刷新；完全没缓存才显示骨架。页面隐藏超过 TTL 后再可见时补一次 `loadUsage(false)`。
+
+**点外关闭**：气泡打开期间挂 `document` 捕获阶段 `pointerdown`，目标不在 `.fz3-bubble` / `.fz3-core` 内即关闭；`Escape` 同样关闭；关闭 / 卸载时移除监听。
+
+**headless 实测（Chrome，1602×944 @ dpr1.5，165 Hz 显示器）**：
+
+| 指标 | 结果 |
+| --- | --- |
+| 拖拽 24 次 `pointermove` 总耗时 | 146–201 ms |
+| 长任务（`PerformanceObserver('longtask')`） | 0 个 |
+| 拖动中 `--fz3-dock-x` | 保持不变（旧实现会连续跳变） |
+| 左边缘吸附落点 | 60 ms 后 `rect.x = 10`，`--fz3-dock-x = 74px`（中心） |
+| 右下角（鲸鱼遮挡）落点 | 自动上移 72px → `--fz3-dock-x = 1528px`、`--fz3-dock-y = 798px` |
+| 点击出气泡（有缓存） | 65–166 ms |
+| 控制台错误 / 页面异常 | 0 |
+
+代码体积：`client.js` 3,119 行 / 151,180 B（CSS 文本 492 行，比 v1.3.0 只多交互态 3 行）。
+
+### 9.13 v1.3.2：拖拽 / 吸附边界收进会话内容区
+
+v1.3.1 的吸附以**整个视口**为边界，眼徽可以被拖到左侧栏、标题栏上，贴边时也会贴着窗口四条边。v1.3.2 把可拖拽 / 可吸附区域限制在**会话内容区**：左 = 侧栏右缘，上 = 标题栏底缘，右 / 下 = 窗口边缘。
+
+- `measureRegion()`（client.js 2156）读 `[class*="_sidebarCol"]` 的右缘与首个 `header`（`height<120 && top<=12 && width>vw*0.3`）的底缘；宿主 bundle 里 tabs 就在 `header` 内部（`.an3WzG_header:has(.an3WzG_tabs)` 时 min-height:76px），所以打开会话后 header 变高，量到的上边界自动跟着下移。
+- `regionBounds()`（2177）做 clamp 兜底，`clampPos`（2251）、默认停靠（2395）、`snapPos`（2654）、`avoidOcclusion`（2707）都改用区域边界；`onCoreDown`（2724）在每次 `pointerdown` 时重量一次，拖动期不读布局。
+- 量不到侧栏 / 标题栏（例如宿主改版类名）时退回整个视口，行为退化为 v1.3.1，不会卡死或把眼徽锁死在一个点。
+
+headless 实测（1602×944 @ dpr1.5）：默认停靠 `--fz3-dock-x=358px`、`--fz3-dock-y=492px`（核 rect x=295..423，完全在 x≥280 的会区内；旧版左缘 278 压到侧栏 2px）；拖到最左落位 x=354=280+74（rect.x=290）；拖到最上 y=114=40+74（rect.y=50）；右下角吸附 + 鲸鱼遮挡让位仍为 x=1528 / y=798；localStorage 写入 `{"x":354,"y":320}`；24 次 pointermove 146–201 ms、零长任务，无 console error。
+
+代码体积：`client.js` 3,180 行 / 154,438 B（只加区域测量约 61 行，无 CSS 变化、无新资源）。
 ---
 
 ## English summary
@@ -310,6 +362,23 @@ This edition:
   −14%) while touching no render path, so the GPU / CPU numbers above stand.
 - adds (v1.3.0) the on-demand usage / balance bubble, draggable & hideable eye badge, three-way appearance mode and rewritten welcome copy; every addition is on-demand, static or pointer-driven (no resident animation or timer): the bubble mounts only while open with a 1 s countdown and no `backdrop-filter`, themes flip a single `html[data-fz3-theme]` attribute over static CSS, drag writes two `:root` variables only while the pointer is down, welcome copy uses a debounced `MutationObserver` instead of 900 ms polling, and the host parses session logs incrementally for `GET /fairy-zzz/usage` (cold 505–608 ms, warm ~20 ms, 3 s memo, requested only when the bubble opens). The GPU / CPU numbers above remain valid; `client.js` is now 140,594 B / 2,882 lines.
 
+- adds (v1.3.1) a transform-only drag path: while dragging, the eye badge writes only its own
+  `transform` (rAF-coalesced, no React state updates) and never the `:root` custom properties —
+  the v1.3.0 approach invalidated styles for the whole document on every `pointermove`; 24 moves
+  now cost 146–201 ms with **zero long tasks**. Releasing snaps to a viewport edge when within
+  64 px (corners on both axes) with a 170 ms tween, and the badge steps aside from foreign overlays
+  with a higher stacking `z-index` (the 9999 `dsh-whale-widget`) instead of landing underneath them.
+  The usage bubble opens from a prefetched cache (65–166 ms; TTL 60 s / 30 s, prefetched once at
+  dock) instead of a cold `/usage` scan (~0.5 s), closes on outside click / `Escape`, and the
+  settings page no longer prints the "local CPU inference" suffix. `client.js` is now 151,180 B /
+  3,119 lines with no new resident animation or timer.
+- adds (v1.3.2) conversation-region drag bounds: the drag area and the snap edges are limited to the
+  conversation content area (right of the sidebar, below the header; right/bottom are the window
+  edges). The region is measured with one `getBoundingClientRect` pass on pointer-down
+  (`[class*="_sidebarCol"]` plus the first short `header`; the header contains the chat tabs, so it
+  grows automatically in an open conversation) and falls back to the full viewport when either
+  element is missing. `client.js` is now 154,438 B / 3,180 lines; no CSS or asset changes and no
+  resident cost.
 Pixel-level comparison of frozen animation frames shows the boot screen is
 pixel-identical and idle / greeting screens differ only by 0.23–1.49 / 255 on
 average (the eye halo is the only visible region, from switching from a live

@@ -316,6 +316,48 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /* 用量/余额预取缓存：到坞后空闲预取一次；点眼徽时先用缓存秒开、再后台刷新。
+       宿主 /usage 冷启动要解压会话日志（~0.5s），余额要走一次远端，全部挪到用户点击之前完成。 */
+    const usageCache = { usage: null, usageAt: 0, balance: null, balanceAt: 0, usagePromise: null, balancePromise: null }
+    const USAGE_TTL = 60_000
+    const BALANCE_TTL = 30_000
+    function loadUsage(force) {
+      if (!force && usageCache.usage && Date.now() - usageCache.usageAt < USAGE_TTL) return Promise.resolve(usageCache.usage)
+      if (usageCache.usagePromise) return usageCache.usagePromise
+      usageCache.usagePromise = fetchUsage()
+        .then((usage) => {
+          if (usage) {
+            usageCache.usage = usage
+            usageCache.usageAt = Date.now()
+          }
+          return usage || usageCache.usage
+        })
+        .finally(() => {
+          usageCache.usagePromise = null
+        })
+      return usageCache.usagePromise
+    }
+    function loadBalance(force) {
+      if (!force && usageCache.balance && Date.now() - usageCache.balanceAt < BALANCE_TTL) return Promise.resolve(usageCache.balance)
+      if (usageCache.balancePromise) return usageCache.balancePromise
+      usageCache.balancePromise = fetchBalance()
+        .then((balance) => {
+          if (balance) {
+            usageCache.balance = balance
+            usageCache.balanceAt = Date.now()
+          }
+          return balance || usageCache.balance
+        })
+        .finally(() => {
+          usageCache.balancePromise = null
+        })
+      return usageCache.balancePromise
+    }
+    function prefetchUsage() {
+      loadUsage(false)
+      loadBalance(false)
+    }
+
     function yuan(value) {
       if (!Number.isFinite(value)) return '—'
       if (value === 0) return '¥0'
@@ -939,8 +981,11 @@ html[data-fz3-theme="light"] .fz3-set-segbtn:hover{color:#141a2e}
 /* ---------- 眼徽交互：点一下弹用量气泡，按住可以拖到任意位置 ---------- */
 .fz3-layer[data-phase="dock"] .fz3-core{pointer-events:auto;cursor:pointer}
 .fz3-layer[data-drag="1"][data-phase="dock"] .fz3-core{cursor:grab;touch-action:none}
-.fz3-layer[data-dragging="1"][data-phase="dock"] .fz3-core{transition:none;cursor:grabbing}
-.fz3-layer[data-dragging="1"][data-phase="dock"] .fz3-core svg{transition:none;transform:scale(1.05)}
+.fz3-layer[data-dragging="1"][data-phase="dock"] .fz3-core{transition:none;cursor:grabbing;will-change:transform}
+.fz3-layer[data-dragging="1"][data-phase="dock"] .fz3-core svg{transition:none;transform:none}
+/* 拖动期临时关掉最贵的两处合成：300% 的脉冲环与全屏 mix-blend 氛围层（松手即恢复） */
+.fz3-layer[data-dragging="1"] .fz3-eye-pulse{display:none}
+.fz3-layer[data-dragging="1"] .fz3-atmos{mix-blend-mode:normal}
 .fz3-eye-svg{transition:transform .28s ease}
 .fz3-layer[data-phase="dock"] .fz3-core:hover .fz3-eye-svg{transform:scale(1.07)}
 
@@ -1594,7 +1639,7 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
         : voiceState.speaking
           ? '正在播放…'
           : enginePhase === 'ready'
-            ? '已就绪 · GPT-SoVITS（本地 CPU 推理）'
+            ? '已就绪 · GPT-SoVITS'
             : enginePhase === 'loading'
               ? '模型加载中，请稍候…'
               : enginePhase === 'error'
@@ -2102,6 +2147,47 @@ function BubbleCard({ data, onMeasure, onFlip }) {
       })
       const dragRef = useRef(null)
       const coreRef = useRef(null)
+      /* 可拖拽 / 吸附的范围（v1.3.2）：不再是整个视口，而是「会话内容区」——
+         左边界 = 左侧栏右缘，上边界 = 顶部标题栏底缘，右 / 下到窗口边缘。
+         由 dock 测量 effect 写入；还没测到就退回整个视口。 */
+      const regionRef = useRef(null)
+      /* 现场量一次「会话内容区」边界（左=侧栏右缘，上=标题栏底缘，右下=窗口边缘）。
+         只在挂载测量 / 按下指针时调用，拖动过程中不再读布局。 */
+      const measureRegion = () => {
+        const vw = window.innerWidth
+        const vh = window.innerHeight
+        try {
+          const sidebar = document.querySelector('[class*="_sidebarCol"]')
+          const sr = sidebar ? sidebar.getBoundingClientRect() : null
+          const left = sr && sr.width > 0 && sr.right < vw * 0.6 ? Math.round(sr.right) : 0
+          let top = 0
+          const headers = document.querySelectorAll('header')
+          for (const hr of headers) {
+            const r = hr.getBoundingClientRect()
+            if (r.height > 0 && r.height < 120 && r.top <= 12 && r.width > vw * 0.3 && r.left > left - 8) {
+              top = Math.round(r.bottom)
+              break
+            }
+          }
+          return { left, top, right: vw, bottom: vh }
+        } catch (err) {
+          return { left: 0, top: 0, right: vw, bottom: vh }
+        }
+      }
+      const regionBounds = () => {
+        const vw = window.innerWidth
+        const vh = window.innerHeight
+        const r = regionRef.current
+        if (r && r.right - r.left > 200 && r.bottom - r.top > 200) {
+          return {
+            left: Math.max(0, Math.min(r.left, vw - 240)),
+            top: Math.max(0, Math.min(r.top, vh - 240)),
+            right: Math.min(vw, Math.max(r.right, 240)),
+            bottom: Math.min(vh, Math.max(r.bottom, 240)),
+          }
+        }
+        return { left: 0, top: 0, right: vw, bottom: vh }
+      }
 
       /* 用量气泡：null = 收起；mode = 'usage'（余额·今日·峰谷）| 'turn'（本轮·峰谷） */
       const [bubble, setBubble] = useState(null)
@@ -2137,12 +2223,19 @@ function BubbleCard({ data, onMeasure, onFlip }) {
         const el = coreRef.current
         if (!el) return
         const pos = bubblePlace(el.getBoundingClientRect())
-        setBubble({ mode, ...pos, loading: true })
+        /* 有缓存就立刻显示（loading=false），后台再刷新一次；没有缓存才走骨架占位 */
+        const cachedUsage = usageCache.usage && Date.now() - usageCache.usageAt < USAGE_TTL ? usageCache.usage : null
+        const cachedBalance =
+          mode === 'usage' && usageCache.balance && Date.now() - usageCache.balanceAt < BALANCE_TTL ? usageCache.balance : null
+        setBubble({ mode, ...pos, loading: !cachedUsage, usage: cachedUsage, balance: cachedBalance })
         if (bubbleTimer.current) {
           clearTimeout(bubbleTimer.current)
           bubbleTimer.current = null
         }
-        const [usage, balance] = await Promise.all([fetchUsage(), mode === 'usage' ? fetchBalance() : Promise.resolve(null)])
+        const [usage, balance] = await Promise.all([
+          loadUsage(!cachedUsage),
+          mode === 'usage' ? loadBalance(!cachedBalance) : Promise.resolve(null),
+        ])
         /* 请求回来时图层可能已经卸载，别再 setState / 挂 18s 定时器 */
         if (!aliveRef.current) return
         setBubble((prev) => (prev && prev.mode === mode ? { ...prev, ...pos, loading: false, usage, balance } : prev))
@@ -2159,9 +2252,14 @@ function BubbleCard({ data, onMeasure, onFlip }) {
         const root = document.documentElement
         const size = parseFloat(getComputedStyle(root).getPropertyValue('--fz3-dock-size')) || 128
         const half = size / 2 + 4
+        const reg = regionBounds()
+        const minX = reg.left + half
+        const maxX = Math.max(minX, reg.right - half)
+        const minY = reg.top + half
+        const maxY = Math.max(minY, reg.bottom - half)
         return {
-          x: Math.round(Math.min(Math.max(Number(x) || 0, half), window.innerWidth - half)),
-          y: Math.round(Math.min(Math.max(Number(y) || 0, half), window.innerHeight - half)),
+          x: Math.round(Math.min(Math.max(Number(x) || 0, minX), maxX)),
+          y: Math.round(Math.min(Math.max(Number(y) || 0, minY), maxY)),
         }
       }, [])
 
@@ -2291,13 +2389,26 @@ function BubbleCard({ data, onMeasure, onFlip }) {
             }
           }
           if (best) {
-            const size = parseFloat(getComputedStyle(root).getPropertyValue('--fz3-dock-size')) || 128
-            let cx = Math.round(best.left + size / 2 - 2)
-            let cy = Math.round(best.top + best.height * 0.5)
-            if (cx < vw * 0.16 || cx > vw * 0.46) cx = Math.round(vw * 0.25)
-            if (cy < window.innerHeight * 0.22 || cy > window.innerHeight * 0.82) cy = Math.round(window.innerHeight * 0.52)
-            root.style.setProperty('--fz3-dock-x', cx + 'px')
-            root.style.setProperty('--fz3-dock-y', cy + 'px')
+            /* 拖拽 / 吸附的范围（v1.3.2）= 会话内容区，而不是整个窗口：
+               左边界取左侧栏右缘，上边界取顶部标题栏底缘，右 / 下到窗口边缘。 */
+            const vh = window.innerHeight
+            const region = measureRegion()
+            if (!region.left) region.left = Math.round(best.left)
+            regionRef.current = region
+            if (customPos) {
+              const c = clampPos(customPos.x, customPos.y)
+              root.style.setProperty('--fz3-dock-x', c.x + 'px')
+              root.style.setProperty('--fz3-dock-y', c.y + 'px')
+            } else {
+              const size = parseFloat(getComputedStyle(root).getPropertyValue('--fz3-dock-size')) || 128
+              const half = size / 2 + 4
+              let cx = Math.round(region.left + half + 10)
+              let cy = Math.round(region.top + (region.bottom - region.top) * 0.5)
+              cx = Math.min(Math.max(cx, region.left + half), region.right - half)
+              cy = Math.min(Math.max(cy, region.top + half), region.bottom - half)
+              root.style.setProperty('--fz3-dock-x', cx + 'px')
+              root.style.setProperty('--fz3-dock-y', cy + 'px')
+            }
           }
           return !!best
         }
@@ -2421,6 +2532,41 @@ function BubbleCard({ data, onMeasure, onFlip }) {
         openBubble('turn')
       }, [mood, phase, openBubble])
       useEffect(() => closeBubble, [closeBubble])
+      /* 气泡打开后：点页面任意其他地方 / 按 Esc 收起（点眼徽或气泡内部不算，避免刚开就关） */
+      useEffect(() => {
+        if (!bubble) return undefined
+        const onDown = (e) => {
+          const t = e.target
+          if (t && typeof t.closest === 'function' && (t.closest('.fz3-bubble') || t.closest('.fz3-core'))) return
+          closeBubble()
+        }
+        const onKey = (e) => {
+          if (e.key === 'Escape') closeBubble()
+        }
+        document.addEventListener('pointerdown', onDown, true)
+        document.addEventListener('keydown', onKey, true)
+        return () => {
+          document.removeEventListener('pointerdown', onDown, true)
+          document.removeEventListener('keydown', onKey, true)
+        }
+      }, [bubble, closeBubble])
+      /* 到坞后空闲预取用量与余额：点眼徽时直接用缓存秒开 */
+      useEffect(() => {
+        if (phase !== 'dock' || eyeHidden) return undefined
+        let alive = true
+        const timer = setTimeout(() => {
+          if (alive) prefetchUsage()
+        }, 700)
+        const onVis = () => {
+          if (!document.hidden && alive && Date.now() - usageCache.usageAt > USAGE_TTL) loadUsage(false)
+        }
+        document.addEventListener('visibilitychange', onVis)
+        return () => {
+          alive = false
+          clearTimeout(timer)
+          document.removeEventListener('visibilitychange', onVis)
+        }
+      }, [phase, eyeHidden])
 
       useEffect(() => {
         let alive = true
@@ -2498,19 +2644,140 @@ function BubbleCard({ data, onMeasure, onFlip }) {
         openBubble('usage')
       }, [bubble, phase, openBubble, closeBubble])
 
+      /* ——— 拖拽（v1.3.1）———
+         旧实现每个 pointermove 都改 :root 的 --fz3-dock-x/y，会让整页样式失效并触发布局 + 重绘，
+         165Hz 屏上很卡。现在拖动期间只写核心元素自己的 transform（合成器线程），rAF 合并事件，
+         松手才提交 left/top；拖动时顺带关掉脉冲环与全屏 mix-blend 合成。 */
+      /* 吸附范围（v1.3.2）：松手时离「会话内容区」四边 64px 以内就贴边（角落两轴同时吸）。
+         范围来自 regionBounds()：左 = 侧栏右缘，上 = 标题栏底缘，右 / 下 = 窗口边缘。 */
+      const SNAP_EDGE = 64
+      const snapPos = (pos, half) => {
+        const reg = regionBounds()
+        const m = half + 6
+        let x = pos.x
+        let y = pos.y
+        if (x - reg.left - m <= SNAP_EDGE) x = reg.left + m
+        else if (reg.right - m - x <= SNAP_EDGE) x = reg.right - m
+        if (y - reg.top - m <= SNAP_EDGE) y = reg.top + m
+        else if (reg.bottom - m - y <= SNAP_EDGE) y = reg.bottom - m
+        return { x: Math.round(x), y: Math.round(y) }
+      }
+      /* 吸附目标若正好被别的浮层盖住（例如右下角的鲸鱼挂件 z-index 9999，比覆盖层高），
+         就沿吸附边往里让开，避免眼徽被压在下面既看不见也点不到。 */
+      /* 我们这层挂在 overlay 槽里，参与堆叠的是最近带 z-index 的祖先（实测 z=20）；
+         逐个取该点上方非本插件元素的最高 z-index 来比较，判断是否被盖住。 */
+      const ourStackZ = () => {
+        try {
+          const layer = document.querySelector('.fz3-layer')
+          let el = layer ? layer.parentElement : null
+          while (el) {
+            const cs = getComputedStyle(el)
+            const z = parseInt(cs.zIndex, 10)
+            if (!Number.isNaN(z) && cs.position !== 'static') return z
+            el = el.parentElement
+          }
+        } catch (err) {}
+        return 0
+      }
+      const foreignZAt = (x, y) => {
+        let best = 0
+        try {
+          const stack = document.elementsFromPoint(x, y)
+          for (const el of stack) {
+            if (!el || (el.closest && el.closest('.fz3-layer'))) continue
+            let node = el
+            let z = 0
+            while (node) {
+              const cs = getComputedStyle(node)
+              const val = parseInt(cs.zIndex, 10)
+              if (!Number.isNaN(val) && cs.position !== 'static') {
+                z = val
+                break
+              }
+              node = node.parentElement
+            }
+            if (z > best) best = z
+          }
+        } catch (err) {
+          return 0
+        }
+        return best
+      }
+      const occludedAt = (x, y) => foreignZAt(x, y) > ourStackZ()
+      const avoidOcclusion = (pos, half) => {
+        const m = half + 6
+        const reg = regionBounds()
+        if (!occludedAt(pos.x, pos.y)) return pos
+        const xDir = pos.x === reg.left + m ? 1 : pos.x === reg.right - m ? -1 : 0
+        const yDir = pos.y === reg.top + m ? 1 : pos.y === reg.bottom - m ? -1 : 0
+        for (const step of [72, 144, 216, 288, 360]) {
+          const cands = []
+          if (yDir) cands.push({ x: pos.x, y: pos.y + yDir * step })
+          if (xDir) cands.push({ x: pos.x + xDir * step, y: pos.y })
+          for (const cand of cands) {
+            if (cand.x < reg.left + m || cand.x > reg.right - m || cand.y < reg.top + m || cand.y > reg.bottom - m) continue
+            if (!occludedAt(cand.x, cand.y)) return { x: Math.round(cand.x), y: Math.round(cand.y) }
+          }
+        }
+        return pos
+      }
       const onCoreDown = (e) => {
         if (!dragOn || phase !== 'dock') return
         if (typeof e.button === 'number' && e.button !== 0) return
-        const r = e.currentTarget.getBoundingClientRect()
+        /* 拖拽/吸附前重新量一次范围：打开会话、折叠侧栏后标题栏高度可能变，不能只信挂载时那次 */
+        regionRef.current = measureRegion()
+        const el = e.currentTarget
+        const r = el.getBoundingClientRect()
+        /* 拖动期间禁用 left/top 的 1.35s 过渡，落位由手势/吸附动画接管 */
+        el.style.transition = 'none'
+        /* 拖动时先收起气泡：气泡跟随会带来每帧 React 重渲染，也是卡顿来源之一 */
+        if (bubble) closeBubble()
         dragRef.current = {
           id: e.pointerId,
           dx: e.clientX - (r.left + r.width / 2),
           dy: e.clientY - (r.top + r.height / 2),
           sx: e.clientX,
           sy: e.clientY,
+          startX: r.left + r.width / 2,
+          startY: r.top + r.height / 2,
+          half: r.width / 2 + 4,
+          cur: { x: r.left + r.width / 2, y: r.top + r.height / 2 },
           moved: false,
+          frame: 0,
+          el,
         }
-        try { e.currentTarget.setPointerCapture(e.pointerId) } catch {}
+        try { el.setPointerCapture(e.pointerId) } catch (err) {}
+        /* move/up/cancel 挂到 window：拖出眼徽范围、甚至拖出窗口也能正常跟随与落位
+           （只靠元素自身的 pointer capture 在某些输入路径下会丢事件） */
+        /* 全屏氛围层是独立挂载（不在 .fz3-layer 内），拖动期直接临时关掉它的 mix-blend 合成 */
+        try {
+          const atmos = document.querySelector('.fz3-atmos')
+          if (atmos) {
+            atmos.style.mixBlendMode = 'normal'
+            drag.atmos = atmos
+          }
+        } catch (err) {}
+        const drag = dragRef.current
+        drag.move = (ev) => onCoreMove(ev)
+        drag.up = (ev) => onCoreUp(ev)
+        drag.cancel = (ev) => onCoreCancel(ev)
+        window.addEventListener('pointermove', drag.move, true)
+        window.addEventListener('pointerup', drag.up, true)
+        window.addEventListener('pointercancel', drag.cancel, true)
+      }
+      const detachDrag = (drag) => {
+        if (drag.move) window.removeEventListener('pointermove', drag.move, true)
+        if (drag.up) window.removeEventListener('pointerup', drag.up, true)
+        if (drag.cancel) window.removeEventListener('pointercancel', drag.cancel, true)
+        if (drag.atmos) drag.atmos.style.mixBlendMode = ''
+      }
+      const paintDrag = (drag) => {
+        drag.frame = 0
+        const el = drag.el
+        if (!el) return
+        const dx = Math.round(drag.cur.x - drag.startX)
+        const dy = Math.round(drag.cur.y - drag.startY)
+        el.style.transform = 'translate(-50%,-50%) translate3d(' + dx + 'px,' + dy + 'px,0)'
       }
       const onCoreMove = (e) => {
         const drag = dragRef.current
@@ -2520,39 +2787,72 @@ function BubbleCard({ data, onMeasure, onFlip }) {
           drag.moved = true
           setDragging(true)
         }
-        applyPos(clampPos(e.clientX - drag.dx, e.clientY - drag.dy))
-        /* 气泡跟着眼徽走：拖动中每个 move 重算一次挂点，靠近右边界自动翻到左侧 */
-        if (bubble) {
-          const el = coreRef.current
+        const half = drag.half
+        const reg = regionBounds()
+        const cx = Math.round(Math.min(Math.max(e.clientX - drag.dx, reg.left + half), reg.right - half))
+        const cy = Math.round(Math.min(Math.max(e.clientY - drag.dy, reg.top + half), reg.bottom - half))
+        drag.cur = { x: cx, y: cy }
+        if (!drag.frame) drag.frame = window.requestAnimationFrame(() => paintDrag(drag))
+      }
+      const finishDrag = (drag, allowClick) => {
+        const el = drag.el
+        if (drag.frame) {
+          window.cancelAnimationFrame(drag.frame)
+          drag.frame = 0
+        }
+        if (!drag.moved) {
           if (el) {
-            const next = bubblePlace(el.getBoundingClientRect())
-            setBubble((prev) =>
-              prev && (prev.x !== next.x || prev.y !== next.y || prev.side !== next.side) ? { ...prev, ...next } : prev,
-            )
+            el.style.transform = ''
+            el.style.transition = ''
           }
+          if (allowClick) toggleBubble()
+          return
+        }
+        /* 先落位（transition 关着，不产生 1.35s 长过渡），再把 transform 从松手点补间回 0，
+           做出「被吸过去」的最后一段动画；动画结束恢复常规过渡。 */
+        const target = avoidOcclusion(snapPos(drag.cur, drag.half), drag.half)
+        const offX = Math.round(drag.cur.x - target.x)
+        const offY = Math.round(drag.cur.y - target.y)
+        applyPos(target)
+        setCustomPos(target)
+        writeStored(POS_KEY, target)
+        if (!el) return
+        el.style.transform = 'translate(-50%,-50%) translate3d(' + offX + 'px,' + offY + 'px,0)'
+        const cleanup = () => {
+          if (!el) return
+          el.style.transform = ''
+          el.style.transition = ''
+        }
+        try {
+          const anim = el.animate(
+            [
+              { transform: 'translate(-50%,-50%) translate3d(' + offX + 'px,' + offY + 'px,0)' },
+              { transform: 'translate(-50%,-50%) translate3d(0px,0px,0)' },
+            ],
+            { duration: 170, easing: 'cubic-bezier(.2,.9,.25,1)' },
+          )
+          anim.onfinish = cleanup
+          anim.oncancel = cleanup
+        } catch (err) {
+          cleanup()
         }
       }
       const onCoreUp = (e) => {
         const drag = dragRef.current
         if (!drag || drag.id !== e.pointerId) return
         dragRef.current = null
+        detachDrag(drag)
         setDragging(false)
-        /* 只是点了一下、没拖动 → 展开/收起用量气泡 */
-        if (!drag.moved) {
-          toggleBubble()
-          return
-        }
-        const r = e.currentTarget.getBoundingClientRect()
-        const next = clampPos(r.left + r.width / 2, r.top + r.height / 2)
-        setCustomPos(next)
-        writeStored(POS_KEY, next)
+        finishDrag(drag, true)
       }
-      /* 指针被系统取消（触摸滚动被外层接管等）只清拖拽态，绝不能当成一次点击 */
+      /* 指针被系统取消（触摸滚动被外层接管等）不当成一次点击；已移动过就落位，否则复位 */
       const onCoreCancel = (e) => {
         const drag = dragRef.current
         if (!drag || drag.id !== e.pointerId) return
         dragRef.current = null
+        detachDrag(drag)
         setDragging(false)
+        finishDrag(drag, false)
       }
 
       /* ———————————————————— */
@@ -2653,9 +2953,6 @@ function BubbleCard({ data, onMeasure, onFlip }) {
                 className: 'fz3-core',
                 'data-phase': phase,
                 onPointerDown: onCoreDown,
-                onPointerMove: onCoreMove,
-                onPointerUp: onCoreUp,
-                onPointerCancel: onCoreCancel,
                 onClick: dragOn ? undefined : toggleBubble,
                 onKeyDown: (e) => {
                   if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {

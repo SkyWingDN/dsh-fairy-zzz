@@ -12,17 +12,17 @@
 | [Chengzhibense/Fairy-DSH](https://github.com/Chengzhibense/Fairy-DSH) · Chengzhibense（B 站「橙汁本色」，[BV1SD4C63EZz](https://www.bilibili.com/video/BV1SD4C63EZz/)） | Apache-2.0 | 眼标 SVG，以及眼睑 / 呼吸 / 故障动效的几何与时长 |
 | 素材：开机视频、Fairy 角色形象 | 版权归 miHoYo / HoYoverse | 仅用于个人桌面改造，**请勿商用或二次分发素材** |
 
-> **本修改版新增的内容**：性能优化（常驻 rAF 归零、全屏动画静态化、资源压缩约 −68%）、v1.3.0 的「余额 / 今日花费 / 峰谷」气泡、眼徽拖拽与显隐、外观三档、欢迎页文案改写、宿主 `GET /fairy-zzz/usage` 路由，以及一批稳定性 bug 修复。完整署名与许可条款见文末「致谢与许可」、`NOTICE-fairy-dsh.md` 与 `licenses/`。
+> **本修改版新增的内容**：性能优化（常驻 rAF 归零、全屏动画静态化、资源压缩约 −68%）、v1.3.0 的「余额 / 今日花费 / 峰谷」气泡、眼徽拖拽与显隐、外观三档、欢迎页文案改写、宿主 `GET /fairy-zzz/usage` 路由，以及一批稳定性 bug 修复；1.3.1 再把拖拽改为 transform-only + 四边吸附、用量改预取（点开即显）、气泡支持点外 / Esc 关闭；1.3.2 把拖拽与吸附范围收进会话内容区。完整署名与许可条款见文末「致谢与许可」、`NOTICE-fairy-dsh.md` 与 `licenses/`。
 
 ---
 
 # Fairy Ⅲ · 绝区零 H.D.D 皮肤（性能优化修改版）
 
-**中文** · [English](#english) · **v1.3.0**
+**中文** · [English](#english) · **v1.3.2**
 
 > **第三方修改版，非官方。** 本仓库由 [SkyWingDN](https://github.com/SkyWingDN) 基于 [AssassinVIX/fairy-zzz-plugin](https://github.com/AssassinVIX/fairy-zzz-plugin)（MIT）修改：主要工作是**性能优化与资源压缩**（待机主线程开销约 -94%，首屏资源约 -68%，待机 GPU 占用约 -88%），并附带少量必要的行为调整（思考态眼睑由动态呼吸改为静态半闭）。原作者与素材来源见文末「致谢与许可」，性能细节见 [docs/PERFORMANCE.md](docs/PERFORMANCE.md)。本仓库**不包含** GPT-SoVITS 模型或推理引擎。
 
-把 DeepSeek Harness 的 Web 界面换成《绝区零》Fairy 的 H.D.D 终端：满屏开机动画 → 居中问好 → 收成会话区左侧的常驻眼徽，并可用本地 GPT-SoVITS 的 Fairy 音色把回复念出来。1.3.0 起眼徽还是交互入口：点一下看余额 / 今日花费与峰谷倒计时，按住可拖动，设置里可隐藏，外观支持跟随 / 深色 / 浅色。
+把 DeepSeek Harness 的 Web 界面换成《绝区零》Fairy 的 H.D.D 终端：满屏开机动画 → 居中问好 → 收成会话区左侧的常驻眼徽，并可用本地 GPT-SoVITS 的 Fairy 音色把回复念出来。1.3.0 起眼徽还是交互入口：点一下看余额 / 今日花费与峰谷倒计时，按住可拖动，设置里可隐藏，外观支持跟随 / 深色 / 浅色。1.3.1 把拖拽改成只写元素自身 `transform`（165 Hz 下不再掉帧）；1.3.2 再把拖拽与吸附限制在会话内容区内（左不越过侧栏、上不越过标题栏），松手吸附到该区域四边（角落两轴同时吸），点气泡外任意位置或按 Esc 即可关闭。
 
 ![开机动画](screenshots/01-boot.png)
 ![居中问好](screenshots/02-greet.png)
@@ -43,14 +43,14 @@
   - `thinking/working` 期间**保持半闭**：用 clipPath 裁切整只眼球，眼睑形状固定在原呼吸的「张开」相位（静态半闭，不再随 1440ms 相位开合——这是本次唯一有意简化的动效，原因见 [docs/PERFORMANCE.md](docs/PERFORMANCE.md)）；只有非运行状态才完全睁眼；表情切换瞬间播放两段故障转场；
   - 外圈辉光 / 氛围光 / 眼闪改为**静态多层渐变**（不再使用实时 `drop-shadow` / `blur()` 逐帧重栅格化），大眼阶段稳定接近 60fps；
   - 页面隐藏时自动暂停故障与装饰动画；**系统「减少动态效果」（含 Windows 关闭动画效果）不再降级**——插件固定保持完整动效。
-  - **性能**：待机 / 思考时主线程约 1–2.5%（原版约 31–41%），常驻 rAF 归零；页面隐藏时暂停轮询与动画；首屏资源约 2.9 MB（原约 9.0 MB）；GPU 待机约 5%（原版约 43%，同机 165 Hz headless 实测）——真正的开销是两处全屏动画层，已把背景漂移静态化、氛围光呼吸改为 500ms 环境时钟。v1.2.1 清理死代码 / 死样式后 `client.js` 从 109 KB 降到 94 KB（约 −14%，无行为变化）。详见 [docs/PERFORMANCE.md](docs/PERFORMANCE.md)。v1.3.0 新增的气泡 / 拖拽 / 主题三档都是按需、静态或交互期路径，没有新增常驻动画或定时器；代码体积 `client.js` 140,594 B / 2,882 行、`index.js` 47,855 B / 1,391 行（零构建、运行期零依赖）。
+  - **性能**：待机 / 思考时主线程约 1–2.5%（原版约 31–41%），常驻 rAF 归零；页面隐藏时暂停轮询与动画；首屏资源约 2.9 MB（原约 9.0 MB）；GPU 待机约 5%（原版约 43%，同机 165 Hz headless 实测）——真正的开销是两处全屏动画层，已把背景漂移静态化、氛围光呼吸改为 500ms 环境时钟。v1.2.1 清理死代码 / 死样式后 `client.js` 从 109 KB 降到 94 KB（约 −14%，无行为变化）。详见 [docs/PERFORMANCE.md](docs/PERFORMANCE.md)。v1.3.0 的气泡 / 拖拽 / 主题三档都是按需、静态或交互期路径，没有新增常驻动画或定时器；v1.3.1 把拖拽从「每帧改 `:root` 变量」改成「只写元素自身 `transform` + rAF 合并」（24 次 pointermove 合计 146–201ms、零长任务），并给气泡加了用量预取缓存。代码体积 `client.js` 151,180 B / 3,119 行、`index.js` 47,855 B / 1,391 行（零构建、运行期零依赖）。
 - **品牌位替换**：隐藏官方 SVG 字标，在原位置叠上 Fairy 眼徽 + 斜体 `Fairy` 字标，位置由量测官方元素得到，随窗口自适应。
 - **欢迎页品牌位（1.1.1 新增）**：接管 `conversation.hero.brand.mark` 槽位，把新会话欢迎页「探索未至之境」标题左侧的 DeepSeek 鲸鱼 logo 换成同一个 Fairy 眼标；复用静态 SVG，不增加动画开销，悬停时跟随官方 `fish` 类一起轻微摆动。见 [docs/TECHNICAL.md](docs/TECHNICAL.md)。
 - **主题**：深蓝玻璃 + 青蓝霓虹 token、网格与扫描线壁纸、H.D.D 风滚动条与焦点光。
 - **语音**：开场问候是预录 mp3（不依赖引擎）；后续回复可自动朗读或点按钮朗读，走本地 GPT-SoVITS（CPU 推理）。**本仓库不含模型与引擎**，需按下方说明自行部署。
 - **设置面板**：DSH 的「设置 → Fairy」里集中管理朗读开关、引擎状态、引擎目录、试听/重播/测试、眼徽拖动 / 显隐 / 复位与外观三档。
-- **用量 / 花费气泡（1.3.0 新增）**：点一下眼徽弹出「账户余额 / 今日花费 / 峰谷倒计时」气泡，每轮回答结束还会自动弹一次本轮结算（18s 自动关）；数据由宿主 `/fairy-zzz/usage` 增量解析会话日志得到，只在气泡展开时请求。
-- **拖拽与外观（1.3.0 新增）**：按住眼徽可拖到任意位置（重启后保持），设置里能关闭拖动、隐藏眼徽或复位；外观支持「跟随宿主 / 强制深色 / 强制浅色」三档；欢迎页标题与「预览版」徽章文案也已改写。
+- **用量 / 花费气泡（1.3.0 新增）**：点一下眼徽弹出「账户余额 / 今日花费 / 峰谷倒计时」气泡，每轮回答结束还会自动弹一次本轮结算（18s 自动关）；数据由宿主 `/fairy-zzz/usage` 增量解析会话日志得到；dock 后 700ms 空闲预取，点开即显（实测 65–166ms）；点气泡外任意位置或按 Esc 关闭。
+- **拖拽与外观（1.3.0 新增，1.3.1 重写）**：按住眼徽可拖到任意位置（重启后保持），**松手时距会话内容区边缘 64px 内会吸附到四边（角落两轴同时吸）**；拖拽与停靠都被限制在会话内容区里（左边界 = 侧栏右缘、上边界 = 标题栏底缘，右 / 下 = 窗口边缘），不会盖住侧栏或标题栏；拖动只写眼徽自身的 `transform`、用 `requestAnimationFrame` 合并，165 Hz 下无长任务（旧实现每个 `pointermove` 都改 `:root` 变量，整页样式重算）；落点若被 `z-index` 更高的悬浮组件（如 dsh-whale-widget 鲸鱼挂件）盖住，会自动沿吸附边让位；设置里能关闭拖动、隐藏眼徽或复位；外观支持「跟随宿主 / 强制深色 / 强制浅色」三档；欢迎页标题与「预览版」徽章文案也已改写。
 
 | 用量 / 花费气泡 | 浅色外观 |
 | --- | --- |
@@ -136,6 +136,10 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1 -Uninstall  # 卸
 > **1.2.1** 只改 `client.js` 与 `index.js`（删除死代码与死样式，**无行为变化**；无新资源）——覆盖这两个文件后整页刷新即可；`client.js` 从 109 KB 降到 94 KB（约 −14%）。
 > 
 > **1.3.0** 改 `client.js`、`index.js` 与 `package.json`（新增用量 / 花费气泡、眼徽拖拽与显隐、外观三档、欢迎页文案，宿主新增 `/usage` 路由；`package.json` 版本号 1.3.0；无新资源，新增两张文档图见 `docs/img/usage-bubble.jpg`、`theme-light.jpg`）——覆盖后**重启 DSH**（host 路由变了）并整页刷新。
+> 
+> **1.3.1** 只改 `client.js` 与 `package.json`（拖拽重写为 transform-only + 四边吸附 + 遮挡让位、用量预取缓存、气泡点外 / Esc 关闭、设置页删掉「（本地 CPU 推理）」后缀；无新资源）——覆盖 `client.js` 后整页刷新即可。
+> 
+> **1.3.2** 只改 `client.js` 与 `package.json`（拖拽 / 吸附范围限制在会话内容区，边界在指针按下时实时测量，打开会话导致标题栏变高也会自动适配；无新资源）——覆盖 `client.js` 后整页刷新即可。
 
 
 > `presets/fairy-mode.patch.yml` 是**可选**的「Fairy 模式」agent 预设（毒舌 AI 腔、称你为「主人」）。
@@ -219,7 +223,7 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1 -Uninstall  # 卸
 
 - 官方字标是内联 SVG，没有可替换的文本节点；`sidebar.brand.mark/name` 又是 `single` 槽位、宿主先注册者常驻，所以皮肤用「隐藏官方字标 + 在同一位置叠自己的字标」来实现，不是真正的槽位替换。官方的 DOM 结构一改就可能要跟着调选择器。
 - 桌面壳的窗口标题、菜单、侧栏条目文案属于应用本身，插件改不了。
-- 与其它抢占左下/右下角落的插件（鲸鱼挂件、桌宠）同时开时观感会打架。
+- 与其它抢占左下/右下角落的插件（鲸鱼挂件、桌宠）同时开时，v1.3.1 起会自动沿吸附边让位到不被遮挡的位置；若对方覆盖面积过大仍可能找不到空位。
 - 语音引擎是可选外部依赖，本仓库**不含**模型 / 引擎 / 参考音频，需自行部署（不提供模型下载）。
 - 强制浅色会覆盖插件与宿主大部分外壳，但宿主少数内部组件（如输入框）仍沿用自身深色样式。
 
@@ -277,14 +281,14 @@ install-windows.ps1  # Windows 安装/卸载脚本
 | [Chengzhibense/Fairy-DSH](https://github.com/Chengzhibense/Fairy-DSH) · Chengzhibense (Bilibili: 橙汁本色, [BV1SD4C63EZz](https://www.bilibili.com/video/BV1SD4C63EZz/)) | Apache-2.0 | Eye-badge SVG and the geometry/timings of the eyelid, breathing and glitch animations |
 | Assets: boot video, Fairy character | Copyright miHoYo / HoYoverse | Personal desktop use only — **do not redistribute the assets or use them commercially** |
 
-> **What this edition adds**: performance work (no resident rAF, static full-screen layers, ~68% smaller first-load assets), the 1.3.0 balance / today-cost / peak-hour bubble, draggable and hideable eye badge, three appearance modes, rewritten welcome-page copy, the host-side `GET /fairy-zzz/usage` route, and a batch of stability fixes. Full attribution and license terms: "Credits & license" at the end, `NOTICE-fairy-dsh.md` and `licenses/`.
+> **What this edition adds**: performance work (no resident rAF, static full-screen layers, ~68% smaller first-load assets), the 1.3.0 balance / today-cost / peak-hour bubble, draggable and hideable eye badge, three appearance modes, rewritten welcome-page copy, the host-side `GET /fairy-zzz/usage` route, and a batch of stability fixes; 1.3.1 then rewrites dragging as transform-only with four-edge snapping, prefetches the usage data (instant bubble), and closes the bubble on any outside click / Esc; 1.3.2 then confines dragging and snapping to the conversation content area (never over the sidebar or header). Full attribution and license terms: "Credits & license" at the end, `NOTICE-fairy-dsh.md` and `licenses/`.
 
 
-[中文](README.md) · **English** · **v1.3.0**
+[中文](README.md) · **English** · **v1.3.2**
 
 An **unofficial, performance-optimized edition** of the **Fairy Ⅲ · Zenless Zone Zero H.D.D skin** for DeepSeek Harness.
 
-It turns the DSH web interface into Fairy's H.D.D terminal: a full-screen boot animation, then a centered greeting, then the emblem tucks itself into a permanent eye badge at the left edge of the conversation area — and replies can be read aloud in a local GPT-SoVITS Fairy voice. Since 1.3.0 the badge is also an interaction point: click it for the account balance / today's cost / peak-hour countdown, hold and drag it anywhere, hide it in Settings, and pick follow-host / dark / light appearance.
+It turns the DSH web interface into Fairy's H.D.D terminal: a full-screen boot animation, then a centered greeting, then the emblem tucks itself into a permanent eye badge at the left edge of the conversation area — and replies can be read aloud in a local GPT-SoVITS Fairy voice. Since 1.3.0 the badge is also an interaction point: click it for the account balance / today's cost / peak-hour countdown, hold and drag it anywhere, hide it in Settings, and pick follow-host / dark / light appearance. Since 1.3.1 dragging only writes the badge's own `transform` (no dropped frames on a 165 Hz panel), and on release the badge snaps to an edge; since 1.3.2 both dragging and snapping stay inside the conversation content area (never over the sidebar or the header), and the region is re-measured on every pointer-down so a taller header in an open conversation adapts automatically. Click anywhere outside the bubble or press Esc to close it.
 
 ![Boot animation](screenshots/01-boot.png)
 ![Centered greeting](screenshots/02-greet.png)
@@ -301,15 +305,15 @@ It turns the DSH web interface into Fairy's H.D.D terminal: a full-screen boot a
 - **State animations** (driven by CSS keyframes only — no resident JS loop; geometry and timings ported from Fairy-DSH):
   - `idle` — four-layer eyeball breathing (1440 ms master clock, 45/90/180 ms layer offsets, `cubic-bezier(.72,0,.28,1)`), 15 s lash rotation (matching the reference doc / Fairy-DSH implementation; the official cutscene is faster — adjust `FZ3_LASH_PERIOD_S` and the CSS `animation-duration` together if you prefer), five concentric lash-pulse rings (4 s cycle), and a **static outer halo** (the reference halo does not breathe, which also avoids repaints);
   - random eye flicker every 1.75–3.6 s, 155–255 ms each;
-  - **Performance**: ~1–2.5% of one CPU core at idle / thinking (upstream: ~31–41%), zero resident rAF requests; polling and animations pause on hidden pages; initial payload ~2.9 MB (upstream ~9.0 MB); idle GPU ~5% (v1.1.1: ~43% on the same 165 Hz display, headless measurement) — the real cost was two full-screen animated layers, so the background drift is now static and the atmosphere breath runs on a 500 ms JS ambient clock. After the v1.2.1 dead-code cleanup `client.js` is 94 KB instead of 109 KB (about −14%, no behaviour change). Since 1.3.0 the bubble / drag / theme additions are on-demand, static or interaction-time paths with no resident animation or timer; `client.js` is now 140,594 B / 2,882 lines and `index.js` 47,855 B / 1,391 lines (zero build, zero runtime dependencies). Details in [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
+  - **Performance**: ~1–2.5% of one CPU core at idle / thinking (upstream: ~31–41%), zero resident rAF requests; polling and animations pause on hidden pages; initial payload ~2.9 MB (upstream ~9.0 MB); idle GPU ~5% (v1.1.1: ~43% on the same 165 Hz display, headless measurement) — the real cost was two full-screen animated layers, so the background drift is now static and the atmosphere breath runs on a 500 ms JS ambient clock. After the v1.2.1 dead-code cleanup `client.js` is 94 KB instead of 109 KB (about −14%, no behaviour change). Since 1.3.0 the bubble / drag / theme additions are on-demand, static or interaction-time paths with no resident animation or timer; v1.3.1 moved dragging from "rewrite `:root` variables every frame" to "write the badge's own `transform`, coalesced with requestAnimationFrame" (24 pointermove events: 146–201 ms total, zero long tasks) and added a usage prefetch cache for the bubble; `client.js` is now 151,180 B / 3,119 lines and `index.js` 47,855 B / 1,391 lines (zero build, zero runtime dependencies). Details in [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
   - random signal glitches may appear in **any expression state**, using the reference-documented parameters: one every 2.3–4.6 s, alternating `threads` (feTurbulence horizontal tearing, 4 pulses, 30–42 ms gaps, 34–76 ms fade, 17–29 px displacement) and `blocks` (five horizontal slices, 2 or 4 pulses, 56–104 ms gaps, 48–96 ms fade, 1.4–3 px slice offsets); visual vars are x ±0.9 px, skew ±0.24°, brightness 1.02–1.14, contrast 1.02–1.16. Expression changes play a two-burst strong transition glitch (2 threads pulses → 28 ms → 6 pulses, first 2 blocks, 40 ms per pulse, 28 ms cleanup, with the raised transition strength ranges); fault slices clone the eye body only (the outer halo is no longer duplicated, so no offset ghosting), and the lash angle locked during a blocks fault is re-anchored continuously when the fault ends; fault visuals are force-cleared after a 900 ms hard cap;
   - `thinking` / `working` — the eye **stays half-closed** while the agent runs: the reference clip mechanism clips the whole eye group, but the eyelid shape is now static (frozen at the open phase of the old breath animation) instead of breathing on the 1440 ms phase; it opens fully when nothing is running; expression changes play a two-burst glitch transition. This is the only deliberate motion simplification (see [docs/PERFORMANCE.md](docs/PERFORMANCE.md));
   - the outer halo, atmosphere glow and flash are **static layered gradients** instead of live `drop-shadow` / `blur()` (no per-frame re-rasterisation), so the big 330 px stage stays at ~60 fps;
   - faults and decorative motion pause on hidden pages; the plugin deliberately ignores the system "reduce motion" setting (including Windows' animation-effects switch) and always keeps the full motion.
 - **Brand slot replacement** — the official SVG wordmark is hidden and the Fairy eye badge plus an italic `Fairy` wordmark are overlaid in the same spot, positioned from measurements of the official element so it stays responsive.
 - **Welcome-hero brand mark (new in 1.1.1)** — the plugin takes over the `conversation.hero.brand.mark` slot, so the DeepSeek whale logo left of the “探索未至之境” headline on the new-session welcome page becomes the same Fairy eye badge. It reuses the static SVG (no extra animation cost) and inherits the official `fish` hover wiggle. See [docs/TECHNICAL.md](docs/TECHNICAL.md).
-- **Usage / cost bubble (new in 1.3.0)** — click the badge to open a bubble with the account balance, today's cost (Beijing-time day, peak / off-peak pricing) and a peak-hour countdown; after every finished turn the plugin also pops a one-shot "this turn" summary (auto-closes after 18 s). Data comes from the host's `GET /fairy-zzz/usage`, which parses session logs incrementally and is only requested while the bubble is open.
-- **Dragging & appearance (new in 1.3.0)** — hold and drag the badge anywhere (its position persists across restarts); Settings can disable dragging, hide the badge or reset its position; appearance supports follow-host / force-dark / force-light; the welcome-page headline and "preview" badge copy were rewritten.
+- **Usage / cost bubble (new in 1.3.0)** — click the badge to open a bubble with the account balance, today's cost (Beijing-time day, peak / off-peak pricing) and a peak-hour countdown; after every finished turn the plugin also pops a one-shot "this turn" summary (auto-closes after 18 s). Data comes from the host's `GET /fairy-zzz/usage`, which parses session logs incrementally; it is prefetched 700 ms after docking, so opening the bubble takes 65–166 ms; click anywhere outside the bubble or press Esc to close it.
+- **Dragging & appearance (new in 1.3.0, rewritten in 1.3.1)** — hold and drag the badge anywhere (its position persists across restarts); **on release it snaps to the edge of the conversation content area when within 64 px (both axes in a corner)**; the drag area and the snap edges are limited to that region (left = right edge of the sidebar, top = bottom edge of the header, right/bottom = window edges) and re-measured on pointer-down; dragging writes only the badge's own `transform` and coalesces with `requestAnimationFrame` (no long tasks on a 165 Hz panel — the old code rewrote `:root` variables on every `pointermove`, forcing a full-page style recalculation); if the landing spot is covered by a higher-`z-index` floating widget (e.g. the dsh-whale-widget mascot), it slides inward along the snapped edge until visible; Settings can disable dragging, hide the badge or reset its position; appearance supports follow-host / force-dark / force-light; the welcome-page headline and "preview" badge copy were rewritten.
 
 | Usage / cost bubble | Light appearance |
 | --- | --- |
@@ -346,6 +350,16 @@ Takeaway: the real cost was two **full-screen animated layers** — the 40 s bac
 ![Dock-idle GPU before/after (BEFORE 43% / AFTER 5%)](docs/img/gpu-before-after-dock.jpg)
 
 Caption: the first image attributes GPU cost by switching each layer off while docked; the second is the full-page before/after comparison. Full data, failed approaches and how to re-measure: [docs/PERFORMANCE.md](docs/PERFORMANCE.md), section 9.
+
+### Interaction performance (v1.3.1)
+
+Same machine, headless Chrome, 1602×944 at dpr 1.5, 165 Hz:
+
+| Metric | v1.3.0 | v1.3.1 |
+| --- | --- | --- |
+| 24 `pointermove` events while dragging | every event rewrote `:root` variables → whole-page style recalculation | **146–201 ms** (rAF-coalesced, no long tasks) |
+| Click badge → bubble data | fetched `/usage` + balance on every open (~0.5 s+) | **65–166 ms** (prefetched 700 ms after docking) |
+| Release → final position | — | snapped within 60 ms (`transform` tween 170 ms, no 1.35 s glide) |
 
 > This is the **performance-optimized modified edition**. The original plugin and artwork come from [AssassinVIX/fairy-zzz-plugin](https://github.com/AssassinVIX/fairy-zzz-plugin); use the upstream repository if you want the unmodified version.
 
@@ -393,6 +407,10 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1 -Uninstall  # uni
 > **1.2.1** only touches `client.js` and `index.js` (dead code and dead CSS removed, **no behaviour change**; no new assets) — replace those two files and reload the page. `client.js` drops from 109 KB to 94 KB (about −14%).
 > 
 > **1.3.0** touches `client.js`, `index.js` and `package.json` (usage / cost bubble, draggable & hideable eye badge, three appearance modes, rewritten welcome copy, new host `/usage` route; version bumped to 1.3.0; no new assets — the two new doc images are `docs/img/usage-bubble.jpg` and `docs/img/theme-light.jpg`) — replace them, **restart DSH** (the host routes changed) and reload the page.
+> 
+> **1.3.1** only touches `client.js` and `package.json` (dragging rewritten as transform-only with four-edge snapping and occlusion avoidance, usage prefetch cache, outside-click / Esc to close the bubble, the "（本地 CPU 推理）" suffix removed from Settings; no new assets) — replace `client.js` and reload the page.
+> 
+> **1.3.2** only touches `client.js` and `package.json` (dragging and snapping confined to the conversation content area, with the region re-measured on pointer-down so a taller header in an open conversation adapts; no new assets) — replace `client.js` and reload the page.
 
 The script finds your profile, copies the plugin into `node_modules\dsh-fairy-zzz`, adds the patch and switches a light theme to dark. If you would rather not let a script edit files, use option 1 or 2.
 
