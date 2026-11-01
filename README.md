@@ -1,10 +1,28 @@
+<div align="center">
+
+**⚠️ 第三方修改版（非官方）· 本仓库基于他人作品修改**
+
+</div>
+
+> 本仓库**不是原创项目**，而是在下面这些开源作品的基础上修改而来；除特别声明外，修改部分由 [SkyWingDN](https://github.com/SkyWingDN) 完成。
+
+| 来源项目 / 作者 | 许可 | 本仓库的使用方式 |
+| --- | --- | --- |
+| [AssassinVIX/fairy-zzz-plugin](https://github.com/AssassinVIX/fairy-zzz-plugin) · AssassinVIX（B 站「黑塔小蛋糕」，[BV1d4HK6eE3g](https://www.bilibili.com/video/BV1d4HK6eE3g/)） | MIT | **原始插件**：代码基础、H.D.D 皮肤概念、开机视频与问候语资源 |
+| [Chengzhibense/Fairy-DSH](https://github.com/Chengzhibense/Fairy-DSH) · Chengzhibense（B 站「橙汁本色」，[BV1SD4C63EZz](https://www.bilibili.com/video/BV1SD4C63EZz/)） | Apache-2.0 | 眼标 SVG，以及眼睑 / 呼吸 / 故障动效的几何与时长 |
+| 素材：开机视频、Fairy 角色形象 | 版权归 miHoYo / HoYoverse | 仅用于个人桌面改造，**请勿商用或二次分发素材** |
+
+> **本修改版新增的内容**：性能优化（常驻 rAF 归零、全屏动画静态化、资源压缩约 −68%）、v1.3.0 的「余额 / 今日花费 / 峰谷」气泡、眼徽拖拽与显隐、外观三档、欢迎页文案改写、宿主 `GET /fairy-zzz/usage` 路由，以及一批稳定性 bug 修复。完整署名与许可条款见文末「致谢与许可」、`NOTICE-fairy-dsh.md` 与 `licenses/`。
+
+---
+
 # Fairy Ⅲ · 绝区零 H.D.D 皮肤（性能优化修改版）
 
-**中文** · [English](#english)
+**中文** · [English](#english) · **v1.3.0**
 
 > **第三方修改版，非官方。** 本仓库由 [SkyWingDN](https://github.com/SkyWingDN) 基于 [AssassinVIX/fairy-zzz-plugin](https://github.com/AssassinVIX/fairy-zzz-plugin)（MIT）修改：主要工作是**性能优化与资源压缩**（待机主线程开销约 -94%，首屏资源约 -68%，待机 GPU 占用约 -88%），并附带少量必要的行为调整（思考态眼睑由动态呼吸改为静态半闭）。原作者与素材来源见文末「致谢与许可」，性能细节见 [docs/PERFORMANCE.md](docs/PERFORMANCE.md)。本仓库**不包含** GPT-SoVITS 模型或推理引擎。
 
-把 DeepSeek Harness 的 Web 界面换成《绝区零》Fairy 的 H.D.D 终端：满屏开机动画 → 居中问好 → 收成会话区左侧的常驻眼徽，并可用本地 GPT-SoVITS 的 Fairy 音色把回复念出来。
+把 DeepSeek Harness 的 Web 界面换成《绝区零》Fairy 的 H.D.D 终端：满屏开机动画 → 居中问好 → 收成会话区左侧的常驻眼徽，并可用本地 GPT-SoVITS 的 Fairy 音色把回复念出来。1.3.0 起眼徽还是交互入口：点一下看余额 / 今日花费与峰谷倒计时，按住可拖动，设置里可隐藏，外观支持跟随 / 深色 / 浅色。
 
 ![开机动画](screenshots/01-boot.png)
 ![居中问好](screenshots/02-greet.png)
@@ -17,7 +35,7 @@
 
 - **开机动画**：整屏播放 H.D.D 启动片（**带片源自带的 H.D.D 启动音效**；桌面壳通常直接出声，浏览器若拦截带声音的自动播放，会先静音播放并提示点击一次开启声音），视频按 `object-fit: contain` 完整显示，多余区域由同帧的模糊铺底填充，任何窗口比例都不会出现硬黑边。
 - **居中问好**：动画结束后淡入 H.D.D 眼徽（深蓝环 / 白盘 / 蓝瞳 / 高光点），背后是蓝光晕图，`HOLLOW DEEP DIVE SYSTEM` 标题带镜面倒影，下方按当前时段（凌晨/上午/中午/下午/傍晚/深夜）播一句问候并同步播放预录音频。
-- **收成眼徽**：问候结束约 1.9s 后眼徽飞到会话区左缘的中线（侧栏右侧的蓝色圈内）常驻，光晕图淡出；眼徽本身只是状态指示，点击不再弹面板。
+- **收成眼徽**：问候结束约 1.9s 后眼徽飞到会话区左缘的中线（侧栏右侧的蓝色圈内）常驻，光晕图淡出；眼徽本身是状态指示，点击会弹出用量 / 花费气泡（见下），按住可拖动。
 - **状态动效**（纯 CSS 时间线驱动，无常驻 JS 主循环；几何与时长移植自 Fairy-DSH）：
   - `idle` 四层眼球呼吸（1440ms 主时钟，层间 45/90/180ms 相位差，`cubic-bezier(.72,0,.28,1)`）+ 睫毛 15s 匀速旋转（与参考文档 / Fairy-DSH 实现一致；官方实拍更快，如需可改 `FZ3_LASH_PERIOD_S` 与 CSS 的 `animation-duration`）+ 5 圈睫毛脉冲光环（4s 一轮）+ **静态外圈光晕**（参考实现里光晕不参与呼吸，避免重绘）；
   - 随机「眼闪」：待机每 1.75–3.6s 轻轻亮一下，单次 155–255ms；
@@ -25,12 +43,18 @@
   - `thinking/working` 期间**保持半闭**：用 clipPath 裁切整只眼球，眼睑形状固定在原呼吸的「张开」相位（静态半闭，不再随 1440ms 相位开合——这是本次唯一有意简化的动效，原因见 [docs/PERFORMANCE.md](docs/PERFORMANCE.md)）；只有非运行状态才完全睁眼；表情切换瞬间播放两段故障转场；
   - 外圈辉光 / 氛围光 / 眼闪改为**静态多层渐变**（不再使用实时 `drop-shadow` / `blur()` 逐帧重栅格化），大眼阶段稳定接近 60fps；
   - 页面隐藏时自动暂停故障与装饰动画；**系统「减少动态效果」（含 Windows 关闭动画效果）不再降级**——插件固定保持完整动效。
-  - **性能**：待机 / 思考时主线程约 1–2.5%（原版约 31–41%），常驻 rAF 归零；页面隐藏时暂停轮询与动画；首屏资源约 2.9 MB（原约 9.0 MB）；GPU 待机约 5%（原版约 43%，同机 165 Hz headless 实测）——真正的开销是两处全屏动画层，已把背景漂移静态化、氛围光呼吸改为 500ms 环境时钟。v1.2.1 清理死代码 / 死样式后 `client.js` 从 109 KB 降到 94 KB（约 −14%，无行为变化）。详见 [docs/PERFORMANCE.md](docs/PERFORMANCE.md)。
+  - **性能**：待机 / 思考时主线程约 1–2.5%（原版约 31–41%），常驻 rAF 归零；页面隐藏时暂停轮询与动画；首屏资源约 2.9 MB（原约 9.0 MB）；GPU 待机约 5%（原版约 43%，同机 165 Hz headless 实测）——真正的开销是两处全屏动画层，已把背景漂移静态化、氛围光呼吸改为 500ms 环境时钟。v1.2.1 清理死代码 / 死样式后 `client.js` 从 109 KB 降到 94 KB（约 −14%，无行为变化）。详见 [docs/PERFORMANCE.md](docs/PERFORMANCE.md)。v1.3.0 新增的气泡 / 拖拽 / 主题三档都是按需、静态或交互期路径，没有新增常驻动画或定时器；代码体积 `client.js` 140,594 B / 2,882 行、`index.js` 47,855 B / 1,391 行（零构建、运行期零依赖）。
 - **品牌位替换**：隐藏官方 SVG 字标，在原位置叠上 Fairy 眼徽 + 斜体 `Fairy` 字标，位置由量测官方元素得到，随窗口自适应。
 - **欢迎页品牌位（1.1.1 新增）**：接管 `conversation.hero.brand.mark` 槽位，把新会话欢迎页「探索未至之境」标题左侧的 DeepSeek 鲸鱼 logo 换成同一个 Fairy 眼标；复用静态 SVG，不增加动画开销，悬停时跟随官方 `fish` 类一起轻微摆动。见 [docs/TECHNICAL.md](docs/TECHNICAL.md)。
 - **主题**：深蓝玻璃 + 青蓝霓虹 token、网格与扫描线壁纸、H.D.D 风滚动条与焦点光。
 - **语音**：开场问候是预录 mp3（不依赖引擎）；后续回复可自动朗读或点按钮朗读，走本地 GPT-SoVITS（CPU 推理）。**本仓库不含模型与引擎**，需按下方说明自行部署。
-- **设置面板**：DSH 的「设置 → Fairy」里集中管理朗读开关、引擎状态、引擎目录、试听/重播/测试。
+- **设置面板**：DSH 的「设置 → Fairy」里集中管理朗读开关、引擎状态、引擎目录、试听/重播/测试、眼徽拖动 / 显隐 / 复位与外观三档。
+- **用量 / 花费气泡（1.3.0 新增）**：点一下眼徽弹出「账户余额 / 今日花费 / 峰谷倒计时」气泡，每轮回答结束还会自动弹一次本轮结算（18s 自动关）；数据由宿主 `/fairy-zzz/usage` 增量解析会话日志得到，只在气泡展开时请求。
+- **拖拽与外观（1.3.0 新增）**：按住眼徽可拖到任意位置（重启后保持），设置里能关闭拖动、隐藏眼徽或复位；外观支持「跟随宿主 / 强制深色 / 强制浅色」三档；欢迎页标题与「预览版」徽章文案也已改写。
+
+| 用量 / 花费气泡 | 浅色外观 |
+| --- | --- |
+| ![用量气泡](docs/img/usage-bubble.jpg) | ![浅色外观](docs/img/theme-light.jpg) |
 
 ## 性能（本修改版重点）
 
@@ -88,7 +112,7 @@ plugin_manager install_bundle  target=<克隆下来的目录>
       name: 'dsh-fairy-zzz'
 ```
 
-装好后整页刷新一次。皮肤只做「插入一行 + 宿主注册两条 HTTP 路由」，不修改宿主的任何文件。
+装好后整页刷新一次。皮肤只做「插入一行 + 宿主注册若干本地 HTTP 路由」，不修改宿主的任何文件。
 
 **方式三：Windows 一键脚本**
 
@@ -110,6 +134,8 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1 -Uninstall  # 卸
 > **1.2.0** 只改 `client.js`（GPU：背景漂移静态化 + 氛围光呼吸改为 JS 环境时钟；无新资源）——覆盖 `client.js` 后整页刷新即可。
 > 
 > **1.2.1** 只改 `client.js` 与 `index.js`（删除死代码与死样式，**无行为变化**；无新资源）——覆盖这两个文件后整页刷新即可；`client.js` 从 109 KB 降到 94 KB（约 −14%）。
+> 
+> **1.3.0** 改 `client.js`、`index.js` 与 `package.json`（新增用量 / 花费气泡、眼徽拖拽与显隐、外观三档、欢迎页文案，宿主新增 `/usage` 路由；`package.json` 版本号 1.3.0；无新资源，新增两张文档图见 `docs/img/usage-bubble.jpg`、`theme-light.jpg`）——覆盖后**重启 DSH**（host 路由变了）并整页刷新。
 
 
 > `presets/fairy-mode.patch.yml` 是**可选**的「Fairy 模式」agent 预设（毒舌 AI 腔、称你为「主人」）。
@@ -127,6 +153,10 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1 -Uninstall  # 卸
 | 刷新状态 | 立即重新探测一次 |
 | 试听问候 / 重播开机动画 | 重放最新问候音频 / 重新走一遍开机 → 问好 → 收成眼徽 |
 | 测试语音 / 停止 | 合成一句测试语音 / 停止当前播放 |
+| 拖动眼徽 | 开：按住眼徽可拖到任意位置；关：固定不动 |
+| 显示眼徽 | 关掉后隐藏眼徽与气泡（可在此重新打开） |
+| 复位位置 | 把眼徽恢复为默认（会话区左缘中线） |
+| 外观 | 跟随宿主 / 强制深色 / 强制浅色 |
 
 ## 语音引擎（可选）
 
@@ -177,8 +207,9 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1 -Uninstall  # 卸
 | POST | `/fairy-zzz/voice-home` | 保存 / 校验引擎目录 |
 | GET | `/fairy-zzz/engine` | 引擎进程状态 |
 | POST | `/fairy-zzz/engine` | `{ action: "start" \| "stop" }` |
+| GET | `/fairy-zzz/usage` | `{ ok, now, peak, today, turn }`：账户余额 / 今日花费（北京时区，含峰谷计价）/ 峰谷倒计时；增量解析会话日志，3s 记忆化（`?diag=1` 附诊断） |
 
-静态资源带强 ETag / Last-Modified 与 304 协商缓存，`cache/` 下的合成音频为一年 immutable；`/mood`、`/engine`、`/voice-home` 有 300–3000ms 记忆化（`?diag=1` 绕过）。
+静态资源带强 ETag / Last-Modified 与 304 协商缓存，`cache/` 下的合成音频为一年 immutable；`/mood`、`/engine`、`/voice-home`、`/usage` 有 300–3000ms 记忆化（`?diag=1` 绕过）。
 
 ## 截图是怎么来的
 
@@ -190,6 +221,7 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1 -Uninstall  # 卸
 - 桌面壳的窗口标题、菜单、侧栏条目文案属于应用本身，插件改不了。
 - 与其它抢占左下/右下角落的插件（鲸鱼挂件、桌宠）同时开时观感会打架。
 - 语音引擎是可选外部依赖，本仓库**不含**模型 / 引擎 / 参考音频，需自行部署（不提供模型下载）。
+- 强制浅色会覆盖插件与宿主大部分外壳，但宿主少数内部组件（如输入框）仍沿用自身深色样式。
 
 ## 排错
 
@@ -200,6 +232,7 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1 -Uninstall  # 卸
 | 回复不朗读但问候能播 | 问候是预录 mp3，不走引擎；引擎没起来时只有朗读会静默失败 |
 | 眼徽/字标没出现 | 确认 profile patch 里有 `fairy-zzz-skin` 这一行，并整页刷新 |
 | 空闲时眼徽一直半闭眼（thinking） | 1.0.18 起以宿主 Agent 注册表为准，没有运行中的 Agent 就是 `idle`；若仍出现，完全重启 DSH 并查看 `<插件目录>/cache/mood.log` |
+| 气泡里花费 / 峰谷一直显示「—」 | 宿主还在跑旧版 `index.js`（没有 `/usage` 路由）；完全重启 DSH 后刷新页面。首次冷启动解析会话日志约 0.5–0.6s 属正常。 |
 
 ## 目录结构
 
@@ -211,7 +244,7 @@ assets/              # boot-opt.mp4 / poster.jpg / hero.webp / icon-180.png / vo
 presets/             # 可选的「Fairy 模式」agent 预设
 screenshots/         # 列表用截图
 docs/                # 原理说明（TECHNICAL.md）、性能报告（PERFORMANCE.md，含第 9 节 GPU 归因与前后对比）
-docs/img/            # 文档配图：before-after-dock-eye.png、hero-brand-mark.png、gpu-attribution.png、gpu-before-after-dock.jpg
+docs/img/            # 文档配图：before-after-dock-eye.png、hero-brand-mark.png、gpu-attribution.png、gpu-before-after-dock.jpg、theme-light.jpg、usage-bubble.jpg
 licenses/            # 第三方许可全文（Apache-2.0 / Fairy-DSH NOTICE）
 install-windows.ps1  # Windows 安装/卸载脚本
 ```
@@ -230,11 +263,28 @@ install-windows.ps1  # Windows 安装/卸载脚本
 
 # English
 
-[中文](README.md) · **English**
+<div align="center">
+
+**⚠️ Third-party modification (unofficial) · this repository is built on other people's work**
+
+</div>
+
+> **This is not an original project.** It is a modified edition of the open-source works below; unless stated otherwise, the modifications were made by [SkyWingDN](https://github.com/SkyWingDN).
+
+| Upstream project / author | License | How this repository uses it |
+| --- | --- | --- |
+| [AssassinVIX/fairy-zzz-plugin](https://github.com/AssassinVIX/fairy-zzz-plugin) · AssassinVIX (Bilibili: 黑塔小蛋糕, [BV1d4HK6eE3g](https://www.bilibili.com/video/BV1d4HK6eE3g/)) | MIT | **Original plugin**: code base, H.D.D skin concept, boot video and greeting assets |
+| [Chengzhibense/Fairy-DSH](https://github.com/Chengzhibense/Fairy-DSH) · Chengzhibense (Bilibili: 橙汁本色, [BV1SD4C63EZz](https://www.bilibili.com/video/BV1SD4C63EZz/)) | Apache-2.0 | Eye-badge SVG and the geometry/timings of the eyelid, breathing and glitch animations |
+| Assets: boot video, Fairy character | Copyright miHoYo / HoYoverse | Personal desktop use only — **do not redistribute the assets or use them commercially** |
+
+> **What this edition adds**: performance work (no resident rAF, static full-screen layers, ~68% smaller first-load assets), the 1.3.0 balance / today-cost / peak-hour bubble, draggable and hideable eye badge, three appearance modes, rewritten welcome-page copy, the host-side `GET /fairy-zzz/usage` route, and a batch of stability fixes. Full attribution and license terms: "Credits & license" at the end, `NOTICE-fairy-dsh.md` and `licenses/`.
+
+
+[中文](README.md) · **English** · **v1.3.0**
 
 An **unofficial, performance-optimized edition** of the **Fairy Ⅲ · Zenless Zone Zero H.D.D skin** for DeepSeek Harness.
 
-It turns the DSH web interface into Fairy's H.D.D terminal: a full-screen boot animation, then a centered greeting, then the emblem tucks itself into a permanent eye badge at the left edge of the conversation area — and replies can be read aloud in a local GPT-SoVITS Fairy voice.
+It turns the DSH web interface into Fairy's H.D.D terminal: a full-screen boot animation, then a centered greeting, then the emblem tucks itself into a permanent eye badge at the left edge of the conversation area — and replies can be read aloud in a local GPT-SoVITS Fairy voice. Since 1.3.0 the badge is also an interaction point: click it for the account balance / today's cost / peak-hour countdown, hold and drag it anywhere, hide it in Settings, and pick follow-host / dark / light appearance.
 
 ![Boot animation](screenshots/01-boot.png)
 ![Centered greeting](screenshots/02-greet.png)
@@ -247,17 +297,23 @@ It turns the DSH web interface into Fairy's H.D.D terminal: a full-screen boot a
 
 - **Boot animation** — the H.D.D startup clip fills the screen **with its built-in H.D.D boot sound** (the desktop shell normally plays it right away; if a browser blocks unmuted autoplay it starts muted, shows a short hint, and enables sound on the first click). The video uses `object-fit: contain`, and the leftover area is filled with a blurred copy of the same frame, so no hard black bars appear at any window ratio.
 - **Centered greeting** — when the clip ends, the H.D.D eye badge (deep-blue ring / white disc / blue iris / highlight dot) fades in over a blue glow, with a mirrored `HOLLOW DEEP DIVE SYSTEM` title and a time-of-day greeting (small hours / morning / noon / afternoon / evening / late night) played together with a matching pre-recorded audio clip.
-- **Badge hand-off** — about 1.9 s after the greeting the badge flies to the middle of the left edge of the conversation area (inside the blue ring next to the sidebar) and stays there while the glow fades out. The badge is a status indicator only; clicking it no longer opens a panel.
+- **Badge hand-off** — about 1.9 s after the greeting the badge flies to the middle of the left edge of the conversation area (inside the blue ring next to the sidebar) and stays there while the glow fades out. The badge is a status indicator, but it is also an interaction point: clicking opens the usage / cost bubble (below) and holding + dragging moves it.
 - **State animations** (driven by CSS keyframes only — no resident JS loop; geometry and timings ported from Fairy-DSH):
   - `idle` — four-layer eyeball breathing (1440 ms master clock, 45/90/180 ms layer offsets, `cubic-bezier(.72,0,.28,1)`), 15 s lash rotation (matching the reference doc / Fairy-DSH implementation; the official cutscene is faster — adjust `FZ3_LASH_PERIOD_S` and the CSS `animation-duration` together if you prefer), five concentric lash-pulse rings (4 s cycle), and a **static outer halo** (the reference halo does not breathe, which also avoids repaints);
   - random eye flicker every 1.75–3.6 s, 155–255 ms each;
-  - **Performance**: ~1–2.5% of one CPU core at idle / thinking (upstream: ~31–41%), zero resident rAF requests; polling and animations pause on hidden pages; initial payload ~2.9 MB (upstream ~9.0 MB); idle GPU ~5% (v1.1.1: ~43% on the same 165 Hz display, headless measurement) — the real cost was two full-screen animated layers, so the background drift is now static and the atmosphere breath runs on a 500 ms JS ambient clock. After the v1.2.1 dead-code cleanup `client.js` is 94 KB instead of 109 KB (about −14%, no behaviour change). Details in [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
+  - **Performance**: ~1–2.5% of one CPU core at idle / thinking (upstream: ~31–41%), zero resident rAF requests; polling and animations pause on hidden pages; initial payload ~2.9 MB (upstream ~9.0 MB); idle GPU ~5% (v1.1.1: ~43% on the same 165 Hz display, headless measurement) — the real cost was two full-screen animated layers, so the background drift is now static and the atmosphere breath runs on a 500 ms JS ambient clock. After the v1.2.1 dead-code cleanup `client.js` is 94 KB instead of 109 KB (about −14%, no behaviour change). Since 1.3.0 the bubble / drag / theme additions are on-demand, static or interaction-time paths with no resident animation or timer; `client.js` is now 140,594 B / 2,882 lines and `index.js` 47,855 B / 1,391 lines (zero build, zero runtime dependencies). Details in [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
   - random signal glitches may appear in **any expression state**, using the reference-documented parameters: one every 2.3–4.6 s, alternating `threads` (feTurbulence horizontal tearing, 4 pulses, 30–42 ms gaps, 34–76 ms fade, 17–29 px displacement) and `blocks` (five horizontal slices, 2 or 4 pulses, 56–104 ms gaps, 48–96 ms fade, 1.4–3 px slice offsets); visual vars are x ±0.9 px, skew ±0.24°, brightness 1.02–1.14, contrast 1.02–1.16. Expression changes play a two-burst strong transition glitch (2 threads pulses → 28 ms → 6 pulses, first 2 blocks, 40 ms per pulse, 28 ms cleanup, with the raised transition strength ranges); fault slices clone the eye body only (the outer halo is no longer duplicated, so no offset ghosting), and the lash angle locked during a blocks fault is re-anchored continuously when the fault ends; fault visuals are force-cleared after a 900 ms hard cap;
   - `thinking` / `working` — the eye **stays half-closed** while the agent runs: the reference clip mechanism clips the whole eye group, but the eyelid shape is now static (frozen at the open phase of the old breath animation) instead of breathing on the 1440 ms phase; it opens fully when nothing is running; expression changes play a two-burst glitch transition. This is the only deliberate motion simplification (see [docs/PERFORMANCE.md](docs/PERFORMANCE.md));
   - the outer halo, atmosphere glow and flash are **static layered gradients** instead of live `drop-shadow` / `blur()` (no per-frame re-rasterisation), so the big 330 px stage stays at ~60 fps;
   - faults and decorative motion pause on hidden pages; the plugin deliberately ignores the system "reduce motion" setting (including Windows' animation-effects switch) and always keeps the full motion.
 - **Brand slot replacement** — the official SVG wordmark is hidden and the Fairy eye badge plus an italic `Fairy` wordmark are overlaid in the same spot, positioned from measurements of the official element so it stays responsive.
 - **Welcome-hero brand mark (new in 1.1.1)** — the plugin takes over the `conversation.hero.brand.mark` slot, so the DeepSeek whale logo left of the “探索未至之境” headline on the new-session welcome page becomes the same Fairy eye badge. It reuses the static SVG (no extra animation cost) and inherits the official `fish` hover wiggle. See [docs/TECHNICAL.md](docs/TECHNICAL.md).
+- **Usage / cost bubble (new in 1.3.0)** — click the badge to open a bubble with the account balance, today's cost (Beijing-time day, peak / off-peak pricing) and a peak-hour countdown; after every finished turn the plugin also pops a one-shot "this turn" summary (auto-closes after 18 s). Data comes from the host's `GET /fairy-zzz/usage`, which parses session logs incrementally and is only requested while the bubble is open.
+- **Dragging & appearance (new in 1.3.0)** — hold and drag the badge anywhere (its position persists across restarts); Settings can disable dragging, hide the badge or reset its position; appearance supports follow-host / force-dark / force-light; the welcome-page headline and "preview" badge copy were rewritten.
+
+| Usage / cost bubble | Light appearance |
+| --- | --- |
+| ![Usage bubble](docs/img/usage-bubble.jpg) | ![Light appearance](docs/img/theme-light.jpg) |
 
 ## Performance (this edition)
 
@@ -273,7 +329,7 @@ Initial download dropped from ~9.0 MB to ~2.9 MB, and static assets now use ETag
 
 - **Theme** — deep-blue glass with cyan neon tokens, grid and scanline wallpaper, an H.D.D-style scrollbar and focus glow.
 - **Voice** — the opening greeting is a pre-recorded MP3 and needs no engine; later replies can be read aloud automatically or with a per-message button through a local GPT-SoVITS (CPU inference). **This repository ships neither model nor engine**; deploy your own as described below.
-- **Settings panel** — DSH's *Settings → Fairy* manages the read-aloud switch, engine status, engine directory, sampling, replay and tests.
+- **Settings panel** — DSH's *Settings → Fairy* manages the read-aloud switch, engine status, engine directory, sampling, replay and tests, plus badge drag / visibility / reset and the appearance mode.
 
 ### GPU usage (v1.2.0)
 
@@ -319,7 +375,7 @@ Merge the `insert` block from `cordis.patch.yml` into your profile patch (on Win
       name: 'dsh-fairy-zzz'
 ```
 
-Reload the whole page once installed. The skin only inserts one line and registers two HTTP routes on the host; it does not modify any file that ships with DSH.
+Reload the whole page once installed. The skin only inserts one line and registers a handful of local HTTP routes on the host; it does not modify any file that ships with DSH.
 
 **Option 3 — Windows one-click script**
 
@@ -335,6 +391,8 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1 -Uninstall  # uni
 > **1.2.0** only touches `client.js` (GPU: static background drift + JS-driven atmosphere breather; no new assets) — replace `client.js` and reload the page.
 > 
 > **1.2.1** only touches `client.js` and `index.js` (dead code and dead CSS removed, **no behaviour change**; no new assets) — replace those two files and reload the page. `client.js` drops from 109 KB to 94 KB (about −14%).
+> 
+> **1.3.0** touches `client.js`, `index.js` and `package.json` (usage / cost bubble, draggable & hideable eye badge, three appearance modes, rewritten welcome copy, new host `/usage` route; version bumped to 1.3.0; no new assets — the two new doc images are `docs/img/usage-bubble.jpg` and `docs/img/theme-light.jpg`) — replace them, **restart DSH** (the host routes changed) and reload the page.
 
 The script finds your profile, copies the plugin into `node_modules\dsh-fairy-zzz`, adds the patch and switches a light theme to dark. If you would rather not let a script edit files, use option 1 or 2.
 
@@ -353,6 +411,10 @@ The script finds your profile, copies the plugin into `node_modules\dsh-fairy-zz
 | Refresh status | Re-probe immediately |
 | Play greeting / Replay boot | Replay the latest greeting audio / run the boot → greeting → badge sequence again |
 | Test voice / Stop | Synthesize a test line / stop current playback |
+| Drag badge | On: hold and drag the badge anywhere; Off: it stays fixed |
+| Show badge | Hiding removes the badge and its bubble (turn it back on here) |
+| Reset position | Restore the badge to the default spot (middle of the conversation's left edge) |
+| Appearance | Follow host / Force dark / Force light |
 
 ## Voice engine (optional)
 
@@ -403,8 +465,9 @@ The host side only registers these read-only/local routes (prefix `/fairy-zzz`):
 | POST | `/fairy-zzz/voice-home` | Save / validate the engine directory |
 | GET | `/fairy-zzz/engine` | Engine process state |
 | POST | `/fairy-zzz/engine` | `{ action: "start" \| "stop" }` |
+| GET | `/fairy-zzz/usage` | `{ ok, now, peak, today, turn }`: balance / today's cost (Beijing-time day, peak / off-peak pricing) / peak-hour countdown; incremental session-log parsing, 3 s memo (`?diag=1` for diagnostics) |
 
-Static assets are served with strong ETag / Last-Modified and 304 revalidation; synthesized audio under `cache/` is immutable for one year; `/mood`, `/engine` and `/voice-home` are briefly memoised (300–3000 ms, `?diag=1` bypasses).
+Static assets are served with strong ETag / Last-Modified and 304 revalidation; synthesized audio under `cache/` is immutable for one year; `/mood`, `/engine`, `/voice-home` and `/usage` are briefly memoised (300–3000 ms, `?diag=1` bypasses).
 
 ## How the screenshots were made
 
@@ -416,6 +479,7 @@ The images in `screenshots/` are not remote links: the boot frame is taken from 
 - The desktop shell's window title, menus and sidebar labels belong to the app itself; a plugin cannot change them.
 - Other plugins that claim the bottom-left/right corners (whale widget, desktop pet) may look cluttered when enabled together.
 - The voice engine is an optional external dependency; this repository ships **no** weights, engine or reference audio — deploy your own.
+- Forced light mode restyles the plugin and most of the host shell, but a few host-internal components (e.g. the composer) keep their own dark styling.
 
 ## Troubleshooting
 
@@ -426,6 +490,7 @@ The images in `screenshots/` are not remote links: the boot frame is taken from 
 | Replies are not spoken but the greeting plays | The greeting is a pre-recorded MP3 and does not use the engine; with no engine running only read-aloud fails silently |
 | No badge or wordmark appears | Check that `fairy-zzz-skin` is in your profile patch and reload the whole page |
 | The badge stays half-closed (thinking) while idle | Since 1.0.18 the mood follows the host agent registry, so no running agent means `idle`; if it persists, fully restart DSH and read `<plugin dir>/cache/mood.log` |
+| Cost / peak hour in the bubble stay at "—" | The host is still running the old `index.js` (no `/usage` route); fully restart DSH and reload the page. The first cold parse of the session logs takes ~0.5–0.6 s, which is normal. |
 
 ## Repository layout
 
@@ -437,7 +502,7 @@ assets/              # boot-opt.mp4 / poster.jpg / hero.webp / icon-180.png / vo
 presets/             # optional Fairy mode agent preset
 screenshots/         # screenshots used above
 docs/                # technical guide (TECHNICAL.md), performance report (PERFORMANCE.md, incl. the v1.2.0 GPU section)
-docs/img/            # doc images: before-after-dock-eye.png, hero-brand-mark.png, gpu-attribution.png, gpu-before-after-dock.jpg
+docs/img/            # doc images: before-after-dock-eye.png, hero-brand-mark.png, gpu-attribution.png, gpu-before-after-dock.jpg, theme-light.jpg, usage-bubble.jpg
 licenses/            # third-party license texts (Apache-2.0 / Fairy-DSH NOTICE)
 install-windows.ps1  # Windows install/uninstall script
 ```

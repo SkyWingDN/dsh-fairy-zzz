@@ -2,7 +2,7 @@
 
 This page records why and how the **performance-optimized edition** of
 dsh-fairy-zzz differs from the upstream plugin, plus the measurements used to
-validate the result. 中文在前，English summary at the end. Section 9 adds the v1.2.0 GPU-usage work; §9.10 covers the v1.2.1 dead-code / dead-style cleanup.
+validate the result. 中文在前，English summary at the end. Section 9 adds the v1.2.0 GPU-usage work; §9.10 covers the v1.2.1 dead-code / dead-style cleanup, §9.11 checks the v1.3.0 interaction additions (usage bubble, drag, themes) and why they add no resident cost.
 
 ## 1. 背景与目标
 
@@ -76,7 +76,7 @@ harness 与测量脚本属于一次性验证工具，**未随仓库发布**；�
    （克隆只在花屏时 `display:block`）。
 3. 眼睑半闭眼形状改为静态（详见第 4 节）。
 4. 启动动画：两路 `boot.mp4` 同时解码改为单路 `boot-opt.mp4`；去掉全屏 `blur(46px)` 铺底；
-   进度条直接写 DOM（不再每帧 `setState` 触发 React 重渲染）。进度条本身已在 v1.2.1 随被隐藏的 boot HUD 一并删除（见本节第 11 条）。
+   boot 进度条改为直接写 DOM（不再每帧 `setState` 触发 React 重渲染）——该进度条随后在 v1.2.1 随被隐藏的 boot HUD 一并删除（见本节第 11 条）。
 5. 去掉多道常驻模糊 / 滤镜：氛围光 `blur(34px)`、闪光 `blur(20px)`、眼周光晕 `blur(20px)`、
    眼睛 `drop-shadow` 全部改成静态多层渐变（不再每帧重栅格化）。
 6. 轮询感知页面可见性：mood 900ms、health 5s 轮询在页面隐藏时暂停、可见时恢复，
@@ -88,6 +88,7 @@ harness 与测量脚本属于一次性验证工具，**未随仓库发布**；�
 9. 清理重复的 `body::after` 死规则等。
 10. （v1.2.0）GPU 占用优化：背景 40s 漂移动画静态化、氛围光 14s 呼吸改为 500ms JS 环境时钟、删除 `fz3-drift` / `fz3-breathe` 两个全屏动画关键帧（详见第 9 节）。
 11. （v1.2.1）死代码 / 死样式清理（**零行为变化**）：删除从未渲染的 `Waveform`、被 CSS `display:none` 隐藏的 boot HUD / 进度条 / 跳过按钮（含 `barRef/pctRef/onTime` 直写 DOM 的代码）、FairySkin 左下角 `fz3-tag`，以及 `index.js` 里从未调用的 `pingEngine()`；CSS 删除 93 条死规则 / 6 个未使用 `@keyframes` / 6 个未使用 CSS 变量，i18n 删除 25 条未使用词条。`client.js` 2,171 → 1,919 行、109,117 → 93,886 B（约 −14%）；不改动任何渲染路径与动画，第 3 / 9 节的 GPU / 主线程数据不受影响（详见 9.10）。
+12. （v1.3.0）新增交互全部是**按需 / 静态 / 交互期**路径，不新增常驻动画或定时器：用量气泡只在展开时挂载并只在此期间跑 1s 倒计时（关闭即卸载、清定时器），刻意不用 `backdrop-filter`（高刷屏上每帧都要重算全屏背景模糊）；外观三档只切 `html[data-fz3-theme]` 走静态 CSS 覆盖，不改渲染循环；眼徽拖拽只在 `pointermove`（指针按住期间）写 `:root` 的 `--fz3-dock-x/y` 两个变量，松开即停（属于人机交互，不是定时器驱动的常驻样式重算，见第 7 节教训与 §9.11）；欢迎页文案改写用 `MutationObserver`（childList + characterData，60ms 去抖）替代参考实现的 900ms 轮询，空闲时零定时器。
 
 ### index.js（host 路由）
 
@@ -96,7 +97,8 @@ harness 与测量脚本属于一次性验证工具，**未随仓库发布**；�
    `cache/` 下 sha1 命名的音频改为一年 immutable。
 2. 高频接口记忆化：`/mood` 300ms、`/engine` 1500ms、`/voice-home` 3000ms，带 in-flight 去重；
    `?diag=1` 绕过缓存；start / stop / TTS 成功后主动清缓存。
-3. 路由集合与行为不变（30/30 端点断言全部通过）。
+3. 既有路由的行为不变（v1.3.0 之前 30/30 端点断言全部通过；v1.3.0 新增的 `/usage` 见下条）。
+4. （v1.3.0）新增 `GET /fairy-zzz/usage`：按需增量解析 `sessions/*/*/session.v4.jsonl.zstd`（按 RFC 8878 逐帧切分，按文件缓存 `{mtimeMs,size,events,parsedTo}`），按北京时区当天与峰谷逐笔计价，返回 `{ ok, now, peak, today, turn }`；3s 记忆化 + in-flight 去重，冷启动 505–608ms / 热 ~20ms，只在气泡展开时被请求，不落在首屏路径上。
 
 ### 媒体资产
 
@@ -251,6 +253,17 @@ v1.2.1 只删代码、不碰渲染与动画路径，因此本节 GPU / 主线程
 - 被删除的选择器 / 变量 / 关键帧在删除前已全文件 `grep` 确认无引用；眼徽动画、boot 视频、静态 poster 模糊铺底、问候与 SKIP2、设置面板、朗读按钮全部保留。
 - headless Chrome 真实加载插件页面验证：boot → greet → dock 正常，无 JS 报错，`.fz3-boot-hud` / `.fz3-tag` / `.fz3-wave*` 元素数为 0，截图与 v1.2.0 一致。
 
+### 9.11 v1.3.0：交互新增功能的增量性能核查
+
+v1.3.0 新增的用量气泡、眼徽拖拽 / 显隐、外观三档与欢迎页文案改写，全部避开常驻动画 / 定时器路径，因此第 3 / 9 节的 GPU / 主线程数据继续有效：
+
+- 用量气泡只在点击 / 轮末展开时挂载，关闭即卸载；只有展开期间才有 1s 倒计时（归零回调父层重拉一次）；不使用 `backdrop-filter`（对比参考实现的全屏实时模糊，高刷屏上每帧都要重算）。
+- 外观三档只改 `html[data-fz3-theme]`，CSS 侧全部是静态覆盖（CSS 894-929 行），不触发动画 / 布局循环；主题探测只在挂载与 theme 变化时跑。
+- 眼徽拖拽用 `pointermove` 事件直接写 `:root` 的两个变量（`--fz3-dock-x/y`），仅指针按住期间发生，松开即结束 —— 这是 §9.6 教训的**明确例外**：驱动源是人手交互而非定时器，没有常驻重算。
+- 欢迎页文案改写用 `MutationObserver`（childList + characterData、60ms 去抖）替代参考实现的 900ms 轮询，空闲时零定时器。
+- host 侧 `GET /fairy-zzz/usage` 走 3s 记忆化 + 增量 zstd 帧解析（冷 505–608ms / 热 ~20ms），前端只在气泡展开时请求。
+- 代码体积：`client.js` 140,594 B / 2,882 行（CSS 文本 489 行）、`index.js` 47,855 B / 1,391 行；仍是零构建、运行期零依赖。
+
 ---
 
 ## English summary
@@ -295,6 +308,7 @@ This edition:
   6 unused `@keyframes`, 6 unused CSS custom properties and 25 unused i18n
   entries — `client.js` goes 2,171 → 1,919 lines / 109,117 → 93,886 B (about
   −14%) while touching no render path, so the GPU / CPU numbers above stand.
+- adds (v1.3.0) the on-demand usage / balance bubble, draggable & hideable eye badge, three-way appearance mode and rewritten welcome copy; every addition is on-demand, static or pointer-driven (no resident animation or timer): the bubble mounts only while open with a 1 s countdown and no `backdrop-filter`, themes flip a single `html[data-fz3-theme]` attribute over static CSS, drag writes two `:root` variables only while the pointer is down, welcome copy uses a debounced `MutationObserver` instead of 900 ms polling, and the host parses session logs incrementally for `GET /fairy-zzz/usage` (cold 505–608 ms, warm ~20 ms, 3 s memo, requested only when the bubble opens). The GPU / CPU numbers above remain valid; `client.js` is now 140,594 B / 2,882 lines.
 
 Pixel-level comparison of frozen animation frames shows the boot screen is
 pixel-identical and idle / greeting screens differ only by 0.23–1.49 / 255 on

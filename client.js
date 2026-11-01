@@ -3,7 +3,7 @@ window.__ModuleLoader__.load({
   factory(require) {
     const React = require('react')
     const h = React.createElement
-    const { useCallback, useEffect, useRef, useState } = React
+    const { useCallback, useEffect, useLayoutEffect, useRef, useState } = React
 
     const NS = 'fairy-zzz'
     const PKG = 'dsh-fairy-zzz'
@@ -18,6 +18,18 @@ window.__ModuleLoader__.load({
       return 'night'
     }
     const GREETING = () => '/fairy-zzz/assets/voice/greet-' + greetSlot() + '.mp3'
+
+    /* 眼标拖拽 / 显隐 / 主题偏好的 localStorage 键（设置页写，皮肤图层读） */
+    const DRAG_KEY = 'fairy.zzz.drag'
+    const POS_KEY = 'fairy.zzz.dock-pos'
+    const EYE_KEY = 'fairy.zzz.eye-hidden'
+    const THEME_KEY = 'fairy.zzz.theme-mode'
+    /* 欢迎页 hero 的标题与徽章没有插槽，只能改写 DOM 文本：按界面语言换成 H.D.D 字样 */
+    const HERO_COPY = {
+      zh: { headline: '空洞深潜系统', badge: 'H.D.D Ⅲ' },
+      en: { headline: 'HOLLOW DEEP DIVE SYSTEM', badge: 'H.D.D III' },
+    }
+    const CJK_RE = /[\u3400-\u9fff]/
 
     /* Fairy 眼睛：Apache-2.0，改编自 Fairy-DSH（见 NOTICE-fairy-dsh.md） */
     const FAIRY_EYE_SVG = `<!-- SPDX-License-Identifier: Apache-2.0 Adapted from Fairy-DSH, Copyright 2026 Chengzhibense. Source commit d639887a386b0de6fef2e61c97dc268631854591: mascot-geometry.js / mascot-eye-svg.js (see ../NOTICE). MODIFIED for pi-fairy-animation: standalone SVG, padded canvas, named offline animation anchors, white outer halo in both themes, separate contrast edge; browser effects, states, scanlines and glitch clones removed. Generated PNGs and vector previews inherit this attribution; see ../NOTICE. --> <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="-1 -1 162 162"> <title>Fairy — selective Fairy-DSH idle adaptation (unofficial)</title> <desc>Transparent floating blue eye, white soft halos, rotating corners, independently breathing eye layers and a lower-right catchlight. No official bitmap.</desc> <defs> <linearGradient id="outer-gradient" x1=".2" y1="0" x2=".8" y2="1"> <stop stop-color="#3145d6"/> <stop offset=".54" stop-color="#2233b2"/> <stop offset="1" stop-color="#2b3cbc"/> </linearGradient> <!-- One static radial field replaces separate halo strokes, avoiding alpha seams. --> <radialGradient id="sclera-halo-gradient" gradientUnits="userSpaceOnUse" cx="80" cy="80" r="56" color-interpolation="linearRGB"> <stop offset=".82" stop-color="#ffffff" stop-opacity="0"/> <stop offset=".864" stop-color="#ffffff" stop-opacity=".22"/> <stop offset=".875" stop-color="#ffffff" stop-opacity=".28"/> <stop offset=".89" stop-color="#ffffff" stop-opacity=".19"/> <stop offset=".91" stop-color="#ffffff" stop-opacity=".11"/> <stop offset=".94" stop-color="#ffffff" stop-opacity=".07"/> <stop offset=".96" stop-color="#ffffff" stop-opacity=".035"/> <stop offset="1" stop-color="#ffffff" stop-opacity="0"/> </radialGradient> <radialGradient id="outer-halo-gradient" gradientUnits="userSpaceOnUse" cx="80" cy="80" r="79" color-interpolation="linearRGB"> <stop offset=".80" stop-color="#ffffff" stop-opacity="0"/> <stop offset=".84" stop-color="#ffffff" stop-opacity=".10"/> <stop offset=".868" stop-color="#ffffff" stop-opacity=".28"/> <stop offset=".90" stop-color="#ffffff" stop-opacity=".18"/> <stop offset=".95" stop-color="#ffffff" stop-opacity=".06"/> <stop offset=".99" stop-color="#ffffff" stop-opacity=".02"/> <stop offset="1" stop-color="#ffffff" stop-opacity="0"/> </radialGradient> <radialGradient id="highlight-halo-gradient" gradientUnits="userSpaceOnUse" cx="98" cy="100.5" r="18" color-interpolation="linearRGB"> <stop offset=".53" stop-color="#f5f8fd" stop-opacity="0"/> <stop offset=".56" stop-color="#f5f8fd" stop-opacity=".16"/> <stop offset=".611" stop-color="#f5f8fd" stop-opacity=".43"/> <stop offset=".72" stop-color="#f5f8fd" stop-opacity=".19"/> <stop offset=".77" stop-color="#f5f8fd" stop-opacity=".12"/> <stop offset=".83" stop-color="#f5f8fd" stop-opacity=".055"/> <stop offset=".89" stop-color="#f5f8fd" stop-opacity=".02"/> <stop offset=".96" stop-color="#f5f8fd" stop-opacity=".004"/> <stop offset="1" stop-color="#f5f8fd" stop-opacity="0"/> </radialGradient> <clipPath id="fz3-lid-clip" clipPathUnits="userSpaceOnUse"><path class="fz3-lid-clip-shape" d="M20 60 Q80 90 140 60 V161 H20 Z"/><rect x="-1" y="108" width="162" height="54"/></clipPath> </defs> <!-- 79-unit halo within an 81-unit half-canvas: padding with near-original apparent disc size. --> <g id="fairy"> <circle id="outer-halo" cx="80" cy="80" r="79" fill="url(#outer-halo-gradient)"/> <!-- Only this supporting edge changes with theme; white rim and halo stay white. --> <circle id="contrast-edge" cx="80" cy="80" r="68" fill="none" stroke="#dceaff" stroke-width="1.8"/> <circle id="outer-disc" cx="80" cy="80" r="68" fill="url(#outer-gradient)" stroke="#f2fbff" stroke-width="1.2"/> <g id="corners" transform="rotate(0 80 80)" fill="#1f2573"> <circle cx="80" cy="80" r="51.75"/> <rect x="37" y="37" width="86" height="86" rx="2" transform="rotate(3 80 80)"/> </g> <g id="eye-anatomy" class="fz3-anatomy"><g id="sclera" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle cx="80" cy="80" r="48" fill="#eef0f5"/> <circle id="sclera-halo" cx="80" cy="80" r="56" fill="url(#sclera-halo-gradient)"/> <circle cx="80" cy="80" r="48" fill="none" stroke="#ffffff" stroke-width=".8" stroke-opacity=".16"/> </g> <g id="iris-outer" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle cx="80" cy="80" r="33" fill="#9daee0"/> </g> <g id="iris-blue" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle cx="80" cy="80" r="24.15" fill="#eef0f5"/> <circle cx="80" cy="80" r="23.5" fill="#2f74c9"/> </g> <g id="pupil" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle cx="80" cy="80" r="16.6" fill="none" stroke="#f5f8fd" stroke-width=".1"/> <circle cx="80" cy="80" r="16" fill="#2e2f78"/> </g> <!-- Same phase as blue iris, but painted last (above pupil), as in upstream. --> <g id="highlight" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle id="highlight-halo" cx="98" cy="100.5" r="18" fill="url(#highlight-halo-gradient)"/> <circle id="catchlight-lower-right" cx="98" cy="100.5" r="11" fill="#f5f8fd"/> </g> </g>  </g> </svg> `
@@ -84,6 +96,8 @@ window.__ModuleLoader__.load({
     }
 
     let player = null
+    /* 设置页「试听问候」用的独立播放器：不能游离在 player 之外，否则「停止」停不掉 */
+    let preview = null
     let playSeq = 0
     let autoArmAt = Date.now() + 30_000
 
@@ -99,6 +113,12 @@ window.__ModuleLoader__.load({
     const stopSpeech = () => {
       playSeq += 1
       pausePlayer()
+      if (preview) {
+        try {
+          preview.pause()
+        } catch {}
+        preview = null
+      }
       patchVoice({ busy: false, speaking: false })
     }
 
@@ -110,9 +130,12 @@ window.__ModuleLoader__.load({
         }
         const audio = new Audio(url)
         let settled = false
+        let failsafe = null
         const finish = () => {
           if (settled) return
           settled = true
+          /* 正常结束/出错都要清掉 240s 兜底定时器，否则每段音频留一个长定时器 */
+          if (failsafe) clearTimeout(failsafe)
           if (player === audio) player = null
           done()
         }
@@ -131,7 +154,7 @@ window.__ModuleLoader__.load({
             if (token === playSeq) patchVoice({ error: t('dock.error') })
             finish()
           })
-        setTimeout(finish, 240_000)
+        failsafe = setTimeout(finish, 240_000)
       })
     }
 
@@ -217,6 +240,10 @@ window.__ModuleLoader__.load({
         const raw = localStorage.getItem(key)
         return raw ? JSON.parse(raw) : fallback
       } catch {
+        /* 坏值（手改/旧格式）每次读都会抛，顺手清掉，别让 catch 变成常态 */
+        try {
+          localStorage.removeItem(key)
+        } catch {}
         return fallback
       }
     }
@@ -230,18 +257,103 @@ window.__ModuleLoader__.load({
       } catch {}
     }
 
-    /* ———————————————————— */
-    function readMessageText(el) {
-      if (!el) return ''
-      let node = el
-      let best = ''
-      for (let depth = 0; depth < 10 && node; depth += 1) {
-        const text = (node.innerText || '').trim()
-        if (text.length > best.length) best = text
-        if (text.length > 300) break
-        node = node.parentElement
+    /* ------------------------------------------------------------------ *
+     * 用量气泡的数据源
+     * ------------------------------------------------------------------ */
+    const runtime = { ctx: null }
+
+    async function fetchUsage() {
+      try {
+        const res = await fetch('/fairy-zzz/usage', { cache: 'no-store' })
+        if (!res.ok) return null
+        return await res.json()
+      } catch {
+        return null
       }
-      return best
+    }
+
+    async function fetchBalance() {
+      const ctx = runtime.ctx
+      if (!ctx) return { ok: false, reason: '没有插件上下文' }
+      let account
+      let active
+      try {
+        /* 账户服务挂在 ctx.remote 上；旧的挂法（独立 remote.account）也兼容 */
+        account = (ctx.remote && ctx.remote.account) || (ctx['remote.account'] && ctx['remote.account'].account) || null
+        active = ctx.locale && ctx.locale.getSnapshot ? ctx.locale.getSnapshot().active : undefined
+      } catch (cause) {
+        return { ok: false, reason: '账户服务不可用：' + (cause && cause.message ? cause.message : cause) }
+      }
+      if (!account || typeof account.getBalance !== 'function') return { ok: false, reason: '账户服务未就绪' }
+      const version = (typeof globalThis.__DSH_CLIENT_VERSION__ === 'string' && globalThis.__DSH_CLIENT_VERSION__) || '0.2.1-rc.2'
+      try {
+        const res = await account.getBalance({
+          version,
+          locale: active || navigator.language || 'zh-CN',
+          timezoneOffsetSeconds: -new Date().getTimezoneOffset() * 60,
+        })
+        if (!res) return { ok: false, reason: '余额接口没有返回' }
+        if (!res.ok) return { ok: false, reason: '余额读取被拒绝：' + String((res.error && (res.error.code || res.error.message)) || '未登录') }
+        /* value 可能是钱包数组，也可能被包成 { wallets } / { value } / { bonusWallets } */
+        const raw = res.value
+        const pick = (list) => (Array.isArray(list) ? list.filter((item) => item && Number.isFinite(Number(item.balance))) : [])
+        let wallets = pick(raw)
+        if (!wallets.length && raw && !Array.isArray(raw)) {
+          wallets = pick(raw.wallets)
+          if (!wallets.length) wallets = pick(raw.value)
+          if (!wallets.length) wallets = pick(raw.bonusWallets)
+        }
+        if (!wallets.length) {
+          const shape = raw === null ? 'null' : Array.isArray(raw) ? 'array(' + raw.length + ')' : raw && typeof raw === 'object' ? 'object(' + Object.keys(raw).join(',') + ')' : typeof raw
+          return { ok: false, reason: '账户里没有钱包（' + shape + '）' }
+        }
+        const cny = wallets.filter((item) => (item.currency || 'CNY') === 'CNY')
+        const use = cny.length ? cny : wallets
+        const amount = use.reduce((sum, item) => sum + Number(item.balance), 0)
+        return { ok: true, amount, currency: use[0].currency || 'CNY' }
+      } catch (cause) {
+        return { ok: false, reason: '余额请求失败：' + (cause && cause.message ? cause.message : cause) }
+      }
+    }
+
+    function yuan(value) {
+      if (!Number.isFinite(value)) return '—'
+      if (value === 0) return '¥0'
+      if (value < 0.01) return '¥' + value.toFixed(4)
+      if (value < 10) return '¥' + value.toFixed(3).replace(/0+$/, '')
+      return '¥' + value.toFixed(2)
+    }
+
+    function tokensText(tokens) {
+      const n = Number(tokens) || 0
+      if (n >= 1e6) return (n / 1e6).toFixed(2).replace(/\.?0+$/, '') + 'M'
+      if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'k'
+      return String(n)
+    }
+
+    /* 倒计时表盘：04:09:12 */
+    function clockText(ms) {
+      const total = Math.max(0, Math.floor(Math.max(0, ms) / 1_000))
+      const hours = String(Math.floor(total / 3600)).padStart(2, '0')
+      const minutes = String(Math.floor((total % 3600) / 60)).padStart(2, '0')
+      const seconds = String(total % 60).padStart(2, '0')
+      return hours + ':' + minutes + ':' + seconds
+    }
+
+    /* ———————————————————— */
+    /* 旧版回退路径：原来从按钮一路向上爬 10 层取最长文本，很容易把 thinking /
+       工具输出一起念出来。现在只在「这一条消息」的局部 DOM 里取，并复用 strip 规则。 */
+    function readMessageText(el) {
+      if (!el || typeof el.closest !== 'function') return ''
+      const tail = el.closest('[data-turn-tail]')
+      const local = tail && tail.parentElement ? tail.parentElement : null
+      const own = el.closest('[data-chat-turn]')
+      const target = local || (own && own.parentElement) || el.parentElement
+      if (!target) return ''
+      const text = speechTextOfRow(target)
+      if (text.length > 2) return text
+      const row = own || el.parentElement
+      return row ? speechTextOfRow(row) : ''
     }
 
     /* ————————————————————————————————————————————————————————————————
@@ -269,6 +381,9 @@ window.__ModuleLoader__.load({
       'code',
       'svg',
       'button',
+      /* 动作条与附件属于交互壳，不属于回答正文 */
+      '[data-turn-tail]',
+      '[data-message-attachments]',
     ]
 
     function speechTextOfRow(row) {
@@ -311,11 +426,33 @@ window.__ModuleLoader__.load({
       const gap = now - lastMountAt
       lastMountAt = now
       if (seen.has(messageId)) return
+      /* 同一批消息连续挂载：只念最后一条，前面的直接记已读（避免连环叠音） */
+      if (gap < 900) {
+        seen.add(messageId)
+        saveSeen()
+        return
+      }
+      /* 刚打开 DSH / 刚回坞的静默期：等它结束后补念一次，而不是把回复直接吞掉 */
+      if (now < autoArmAt) {
+        const wait = autoArmAt - now + 60
+        window.setTimeout(() => {
+          if (!el.isConnected || seen.has(messageId) || !voice.enabled) return
+          const text = readAssistantText(el)
+          if (text.length <= 2) return
+          seen.add(messageId)
+          saveSeen()
+          speakText(text)
+        }, wait)
+        return
+      }
+      /* 手动关掉自动朗读时不动已读标记：重新打开后仍有机会念到 */
+      if (!voice.enabled) return
+      const text = readAssistantText(el)
+      if (text.length <= 2) return
+      /* 只在真正入队朗读之后记已读：被静默期/静音跳过的回复不会被永久标记 */
       seen.add(messageId)
       saveSeen()
-      if (now < autoArmAt || gap < 900 || !voice.enabled) return
-      const text = readAssistantText(el)
-      if (text.length > 2) speakText(text)
+      speakText(text)
     }
 
     /* ------------------------------------------------------------------ *
@@ -338,8 +475,27 @@ window.__ModuleLoader__.load({
       '--dsw-specific-bubble': 'rgba(22,26,42,0.92)',
       '--dsw-alias-markdown-code-block': 'rgba(8,9,20,0.94)',
     }
+    /* 宿主切到浅色外观时用的同一套设计变量（键与 baseTokens 一一对应） */
+    const lightTokens = {
+      '--dsw-alias-bg-base': 'rgba(247,250,255,0.92)',
+      '--dsw-alias-bg-layer-1': 'rgba(255,255,255,0.94)',
+      '--dsw-alias-bg-layer-2': 'rgba(255,255,255,0.97)',
+      '--dsw-alias-bg-overlay': 'rgba(255,255,255,0.99)',
+      '--dsw-alias-border-l1': 'rgba(60,90,220,0.18)',
+      '--dsw-alias-border-l2': 'rgba(120,140,200,0.32)',
+      '--dsw-alias-brand-primary': '#2f55e8',
+      '--dsw-alias-label-primary': '#141a2e',
+      '--dsw-alias-label-secondary': '#59648a',
+      '--dsw-alias-state-error-primary': '#d42a4c',
+      '--dsw-alias-state-idle-primary': '#818ab0',
+      '--dsw-alias-state-success-primary': '#0d9f6e',
+      '--dsw-alias-state-warn-primary': '#b1700a',
+      '--dsw-specific-sidebar-fill': 'rgba(243,247,255,0.94)',
+      '--dsw-specific-bubble': 'rgba(255,255,255,0.96)',
+      '--dsw-alias-markdown-code-block': 'rgba(238,243,255,0.96)',
+    }
     const TOKENS = {}
-    for (const key of Object.keys(baseTokens)) TOKENS[key] = { light: baseTokens[key], dark: baseTokens[key] }
+    for (const key of Object.keys(baseTokens)) TOKENS[key] = { light: lightTokens[key] || baseTokens[key], dark: baseTokens[key] }
 
     /* ------------------------------------------------------------------ *
      * 样式
@@ -726,6 +882,114 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
   .fz3-copy-title::after{display:none}
   .fz3-copy-title-zh{display:none}
 }
+
+/* ==================================================================
+ * v1.3.0 新增：浅色主题 / 用量气泡 / 眼徽拖拽 / 设置页分段开关
+ * 性能约定：气泡只在展开时才挂载，并且去掉了参考实现的
+ * backdrop-filter:blur()（整块区域模糊在高刷屏上每帧重算背景）改纯渐变；
+ * 其余新增规则全部是静态声明，没有常驻动画。
+ * ================================================================== */
+:root{--fz3-mute:#9aa4d6;--fz3-line:rgba(120,170,255,.3)}
+
+/* ---------- 浅色主题：宿主切浅色时 <html data-fz3-theme="light"> ---------- */
+:root[data-fz3-theme="light"]{--fz3-cyan:#2f62e0;--fz3-text:#151b2f;--fz3-mute:#5c6684;--fz3-line:rgba(60,90,220,.18);color-scheme:light}
+html[data-fz3-theme="light"],html[data-fz3-theme="light"] body{background:#eef3fc!important;color-scheme:light;color:var(--fz3-text)}
+html[data-fz3-theme="light"] body::before{
+  background:
+    radial-gradient(42% 34% at 88% -6%,rgba(120,150,255,.34),transparent 68%),
+    radial-gradient(34% 30% at 2% 4%,rgba(90,130,255,.24),transparent 70%),
+    radial-gradient(48% 40% at 50% 118%,rgba(150,120,255,.20),transparent 66%),
+    repeating-linear-gradient(-24deg,rgba(70,100,200,.05) 0 1px,transparent 1px 132px),
+    linear-gradient(160deg,#f8fbff 0%,#eaf0ff 52%,#f3f6ff 100%);
+}
+html[data-fz3-theme="light"] body::after{
+  background-image:linear-gradient(rgba(70,110,220,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(70,110,220,.08) 1px,transparent 1px);
+  background-size:48px 48px,48px 48px;
+}
+html[data-fz3-theme="light"] ::selection{background:rgba(61,91,240,.22);color:#0d1424}
+html[data-fz3-theme="light"] .fz3-brandname b{color:#0f1730!important;text-shadow:0 0 12px rgba(96,132,255,.35)!important}
+html[data-fz3-theme="light"] .fz3-brandname i{color:rgba(68,96,166,.9)!important}
+html[data-fz3-theme="light"] .fz3-sb-text b{color:#101a35!important;text-shadow:0 0 10px rgba(96,132,255,.28)!important}
+html[data-fz3-theme="light"] .fz3-sb-text i{color:rgba(70,98,166,.9)!important}
+html[data-fz3-theme="light"] .fz3-brandmark-eye,html[data-fz3-theme="light"] .fz3-hero-brand-eye{filter:drop-shadow(0 0 7px rgba(70,110,230,.42))}
+html[data-fz3-theme="light"] .fz3-tag,html[data-fz3-theme="light"] .fz3-tag b{color:rgba(40,62,120,.9)!important;text-shadow:none!important}
+html[data-fz3-theme="light"] .fz3-tag i{color:rgba(70,92,150,.85)!important}
+html[data-fz3-theme="light"] .fz3-set{color:#16213a}
+html[data-fz3-theme="light"] .fz3-set-name{color:#0f1730}
+html[data-fz3-theme="light"] .fz3-set-sub,html[data-fz3-theme="light"] .fz3-set-desc{color:#5c6b8f}
+html[data-fz3-theme="light"] .fz3-set-row{background:rgba(255,255,255,.72);border-color:rgba(60,90,220,.16)}
+html[data-fz3-theme="light"] .fz3-set-btn{color:#1b2a4a;background:rgba(47,85,232,.10);border-color:rgba(70,110,230,.34)}
+html[data-fz3-theme="light"] .fz3-set-btn:hover:not(:disabled){background:rgba(47,85,232,.18);border-color:rgba(70,110,230,.55)}
+html[data-fz3-theme="light"] .fz3-set-btn.is-ghost{background:rgba(255,255,255,.6);border-color:rgba(120,140,200,.34)}
+html[data-fz3-theme="light"] .fz3-set-input{color:#18203a;background:rgba(255,255,255,.9);border-color:rgba(60,90,220,.22)}
+html[data-fz3-theme="light"] .fz3-set-note{color:#65759b}
+html[data-fz3-theme="light"] .fz3-set-switch{background:rgba(120,150,200,.25);border-color:rgba(60,90,220,.25)}
+html[data-fz3-theme="light"] .fz3-set-switch::after{background:#fff;box-shadow:0 1px 3px rgba(20,40,90,.28)}
+html[data-fz3-theme="light"] .fz3-set-switch[data-on="1"]::after{background:#04121f;box-shadow:none}
+
+/* ---------- 设置页分段开关（外观：跟随 / 深色 / 浅色） ---------- */
+.fz3-set-seg{display:inline-flex;gap:4px;padding:3px;border-radius:10px;background:rgba(9,13,22,.72);border:1px solid rgba(130,160,210,.18);flex:none}
+.fz3-set-segbtn{font:inherit;font-size:11.5px;padding:5px 11px;border-radius:8px;border:1px solid transparent;background:transparent;color:#9fb2cb;cursor:pointer;transition:background .16s ease,color .16s ease,border-color .16s ease}
+.fz3-set-segbtn:hover{color:#e8f2ff}
+.fz3-set-segbtn[data-on="1"]{color:#04121f;background:linear-gradient(90deg,#2f7bff,#57e8ff);border-color:rgba(120,225,255,.6)}
+html[data-fz3-theme="light"] .fz3-set-seg{background:rgba(255,255,255,.78);border-color:rgba(60,90,220,.18)}
+html[data-fz3-theme="light"] .fz3-set-segbtn{color:#5c6b8f}
+html[data-fz3-theme="light"] .fz3-set-segbtn:hover{color:#141a2e}
+
+/* ---------- 眼徽交互：点一下弹用量气泡，按住可以拖到任意位置 ---------- */
+.fz3-layer[data-phase="dock"] .fz3-core{pointer-events:auto;cursor:pointer}
+.fz3-layer[data-drag="1"][data-phase="dock"] .fz3-core{cursor:grab;touch-action:none}
+.fz3-layer[data-dragging="1"][data-phase="dock"] .fz3-core{transition:none;cursor:grabbing}
+.fz3-layer[data-dragging="1"][data-phase="dock"] .fz3-core svg{transition:none;transform:scale(1.05)}
+.fz3-eye-svg{transition:transform .28s ease}
+.fz3-layer[data-phase="dock"] .fz3-core:hover .fz3-eye-svg{transform:scale(1.07)}
+
+/* ---------- 用量气泡 ---------- */
+.fz3-bubble{
+  position:fixed;z-index:9002;pointer-events:auto;width:236px;padding:12px 14px 11px;border-radius:14px;
+  background:linear-gradient(160deg,rgba(12,26,70,.97),rgba(5,12,34,.97));
+  border:1px solid rgba(120,170,255,.3);
+  box-shadow:0 18px 44px -18px rgba(0,0,0,.85),inset 0 0 0 1px rgba(120,170,255,.06),0 0 32px -12px rgba(90,140,255,.55);
+  color:var(--fz3-text);font-family:var(--fz3-font);font-size:12px;line-height:1.55;
+  transform:translateY(-50%);animation:fz3-bubble-in .18s ease-out both;
+}
+.fz3-bubble::after{
+  content:"";position:absolute;left:-5px;top:50%;width:10px;height:10px;margin-top:-5px;transform:rotate(45deg);
+  background:linear-gradient(160deg,rgba(12,26,70,.97),rgba(5,12,34,.97));
+  border-left:1px solid rgba(120,170,255,.3);border-bottom:1px solid rgba(120,170,255,.3);
+}
+.fz3-bubble[data-side="left"]{animation-name:fz3-bubble-in-left}
+.fz3-bubble[data-side="left"]::after{left:auto;right:-5px;border-left:0;border-bottom:0;border-right:1px solid rgba(120,170,255,.3);border-top:1px solid rgba(120,170,255,.3)}
+.fz3-bubble-head{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8fb4ff;margin-bottom:7px}
+.fz3-bubble[data-mode="turn"] .fz3-bubble-head{color:#ffd98a}
+.fz3-bubble-row{display:flex;align-items:baseline;justify-content:space-between;gap:18px}
+.fz3-bubble-row + .fz3-bubble-row{margin-top:3px}
+.fz3-bubble-k{color:var(--fz3-mute)}
+.fz3-bubble-v{font-variant-numeric:tabular-nums;color:#eaf4ff}
+.fz3-bubble-v b{font-weight:600}
+.fz3-bubble-sub{margin-top:7px;font-size:10px;line-height:1.5;color:rgba(154,164,214,.85)}
+.fz3-bubble[data-loading="1"] .fz3-bubble-v{opacity:.35}
+.fz3-peak{display:inline-flex;align-items:center;gap:7px}
+.fz3-peak-badge{width:19px;height:19px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;line-height:1;color:#fff;background:#2ec25f;box-shadow:0 0 12px rgba(46,194,95,.45)}
+.fz3-peak-badge[data-tone="peak"]{background:#f0a13a;box-shadow:0 0 12px rgba(240,161,58,.45)}
+.fz3-peak-clock{font-family:"Cascadia Code","JetBrains Mono",Consolas,monospace;font-size:12.5px;font-weight:700;letter-spacing:.06em;color:#3ed873;border-bottom:1px solid rgba(62,216,115,.35)}
+.fz3-peak-clock[data-tone="peak"]{color:#ffb45c;border-bottom-color:rgba(255,180,92,.35)}
+@keyframes fz3-bubble-in{from{opacity:0;transform:translateY(-50%) translateX(-6px)}to{opacity:1;transform:translateY(-50%) translateX(0)}}
+@keyframes fz3-bubble-in-left{from{opacity:0;transform:translateY(-50%) translateX(6px)}to{opacity:1;transform:translateY(-50%) translateX(0)}}
+html[data-fz3-theme="light"] .fz3-bubble{
+  background:linear-gradient(160deg,rgba(255,255,255,.99),rgba(240,246,255,.99));
+  border-color:rgba(60,90,220,.24);
+  box-shadow:0 18px 44px -20px rgba(30,60,140,.55),inset 0 0 0 1px rgba(255,255,255,.8);
+  color:#141a2e;
+}
+html[data-fz3-theme="light"] .fz3-bubble::after{background:linear-gradient(160deg,rgba(255,255,255,.99),rgba(240,246,255,.99));border-color:rgba(60,90,220,.24)}
+html[data-fz3-theme="light"] .fz3-bubble-head{color:#2f5fe0}
+html[data-fz3-theme="light"] .fz3-bubble[data-mode="turn"] .fz3-bubble-head{color:#a76a06}
+html[data-fz3-theme="light"] .fz3-bubble-v{color:#111a33}
+html[data-fz3-theme="light"] .fz3-bubble-sub{color:rgba(72,86,130,.9)}
+html[data-fz3-theme="light"] .fz3-peak-badge{box-shadow:none}
+html[data-fz3-theme="light"] .fz3-peak-clock{color:#128a4a;border-bottom-color:rgba(18,138,74,.3)}
+html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;border-bottom-color:rgba(181,106,0,.3)}
 `
 
     /* ------------------------------------------------------------------ *
@@ -1122,6 +1386,8 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 
     /* 待机小动作全部移入上面的单相位运行时；这里只负责把舞台 DOM 交给它。 */
     const bootHooks = new Set()
+    /* shell.overlay 重挂载（路由切换/设置页刷新）不应该再播一遍开机 + 问候 */
+    let bootPlayed = false
 
     /* memo：FairySkin 会因为阶段/情绪/语音状态重渲染，眼睛本身（含 6 份内联 SVG）不需要跟着重渲染。 */
     const CoreGlyph = React.memo(function CoreGlyph({ mood }) {
@@ -1160,11 +1426,70 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
       const voiceState = useVoice()
       const [engine, setEngine] = useState(null)
       const [engineBusy, setEngineBusy] = useState('')
+      /* 切走设置页时：取消在途 health 请求、清掉引擎操作留下的重测定时器 */
+      const aliveRef = useRef(true)
+      const engineTimer = useRef([])
+      const pingAbort = useRef(null)
+      useEffect(() => {
+        aliveRef.current = true
+        return () => {
+          aliveRef.current = false
+          if (pingAbort.current) {
+            try {
+              pingAbort.current.abort()
+            } catch (e) {}
+          }
+          for (const timer of engineTimer.current) clearTimeout(timer)
+          engineTimer.current = []
+        }
+      }, [])
+      /* 眼徽：拖动 / 显隐 / 外观。三项都写 localStorage，再广播自定义事件让皮肤图层立刻响应 */
+      const [dragPref, setDragPref] = useState(() => readBool(DRAG_KEY, true))
+      const [eyeHidden, setEyeHidden] = useState(() => readBool(EYE_KEY, false))
+      const [hasCustomPos, setHasCustomPos] = useState(() => {
+        const saved = readStored(POS_KEY, null)
+        return !!(saved && Number.isFinite(saved.x) && Number.isFinite(saved.y))
+      })
+      const toggleDrag = () => {
+        const next = !dragPref
+        setDragPref(next)
+        writeStored(DRAG_KEY, next)
+        try { window.dispatchEvent(new Event('fz3:drag-pref')) } catch (e) {}
+      }
+      const toggleEye = () => {
+        const next = !eyeHidden
+        setEyeHidden(next)
+        writeStored(EYE_KEY, next)
+        try { window.dispatchEvent(new Event('fz3:eye-pref')) } catch (e) {}
+      }
+      const [themeMode, setThemeMode] = useState(() => readStored(THEME_KEY, 'auto'))
+      const pickTheme = (mode) => {
+        setThemeMode(mode)
+        writeStored(THEME_KEY, mode)
+        try { window.dispatchEvent(new Event('fz3:theme-pref')) } catch (e) {}
+      }
+      const resetDockPos = () => {
+        try { localStorage.removeItem(POS_KEY) } catch (e) {}
+        setHasCustomPos(false)
+        try { window.dispatchEvent(new Event('fz3:dock-reset')) } catch (e) {}
+      }
+
       const ping = useCallback(() => {
-        fetch('/fairy-zzz/health', { cache: 'no-store' })
+        if (pingAbort.current) {
+          try {
+            pingAbort.current.abort()
+          } catch (e) {}
+        }
+        const controller = typeof AbortController === 'function' ? new AbortController() : null
+        pingAbort.current = controller
+        fetch('/fairy-zzz/health', { cache: 'no-store', signal: controller ? controller.signal : undefined })
           .then((res) => res.json())
-          .then((data) => setEngine(data))
-          .catch(() => setEngine({ ok: false, engine: false }))
+          .then((data) => {
+            if (aliveRef.current) setEngine(data)
+          })
+          .catch(() => {
+            if (aliveRef.current && (!controller || !controller.signal.aborted)) setEngine({ ok: false, engine: false })
+          })
       }, [])
       useEffect(() => {
         ping()
@@ -1241,14 +1566,21 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
       )
       const controlEngine = useCallback(
         (action) => {
+          if (!aliveRef.current) return
           setEngineBusy(action)
           fetch('/fairy-zzz/engine?action=' + action, { cache: 'no-store' })
             .catch(() => {})
             .then(() => {
+              if (!aliveRef.current) return
               ping()
-              setTimeout(ping, 1500)
-              setTimeout(ping, 4000)
-              setTimeout(() => setEngineBusy(''), 600)
+              /* 三个重测定时器记下来，设置页卸载时统一清掉，避免 stale setState */
+              engineTimer.current.push(
+                setTimeout(ping, 1500),
+                setTimeout(ping, 4000),
+                setTimeout(() => {
+                  if (aliveRef.current) setEngineBusy('')
+                }, 600),
+              )
             })
         },
         [ping],
@@ -1275,7 +1607,15 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
         writeStored(VOICE_KEY, enabled)
         if (!enabled) stopSpeech()
       }
-      const playGreet = () => { stopSpeech(); const audio = new Audio(GREETING()); audio.play().catch(() => {}) }
+      const playGreet = () => {
+        stopSpeech()
+        const audio = new Audio(GREETING())
+        preview = audio
+        audio.onended = () => {
+          if (preview === audio) preview = null
+        }
+        audio.play().catch(() => {})
+      }
       const replayBoot = () => { bootHooks.forEach((fn) => { try { fn() } catch (e) {} }) }
       const testVoice = () => { speakText('测试中。主人，我的声音听起来还满意吗？不满意也请忍着，本系统就这一副嗓子。', { force: true }) }
       return h(
@@ -1303,6 +1643,42 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
             'aria-pressed': !!voiceState.enabled,
             onClick: () => setVoice(!voiceState.enabled),
           }),
+        ),
+        h(
+          'div',
+          { className: 'fz3-set-row' },
+          h('div', null, h('div', { className: 'fz3-set-label' }, '拖动眼徽'), h('div', { className: 'fz3-set-desc' }, '按住左下角的眼标可以拖到任意位置，点一下展开用量气泡')),
+          h('button', {
+            type: 'button',
+            className: 'fz3-set-switch',
+            'data-on': dragPref ? '1' : '0',
+            'aria-pressed': !!dragPref,
+            onClick: toggleDrag,
+          }),
+        ),
+        h(
+          'div',
+          { className: 'fz3-set-row' },
+          h('div', null, h('div', { className: 'fz3-set-label' }, '显示眼徽'), h('div', { className: 'fz3-set-desc' }, '关掉之后对话界面只留 Fairy 字标，不再显示状态眼标')),
+          h('button', {
+            type: 'button',
+            className: 'fz3-set-switch',
+            'data-on': eyeHidden ? '0' : '1',
+            'aria-pressed': !eyeHidden,
+            onClick: toggleEye,
+          }),
+        ),
+        h(
+          'div',
+          { className: 'fz3-set-row' },
+          h('div', null, h('div', { className: 'fz3-set-label' }, '外观'), h('div', { className: 'fz3-set-desc' }, themeMode === 'auto' ? '跟随 DSH 的深色 / 浅色设置' : themeMode === 'light' ? '强制浅色：不用再眯眼看白底' : '强制深色：夜里开机也不刺眼')),
+          h(
+            'div',
+            { className: 'fz3-set-seg' },
+            h('button', { type: 'button', className: 'fz3-set-segbtn', 'data-on': themeMode === 'auto' ? '1' : '0', onClick: () => pickTheme('auto') }, '跟随'),
+            h('button', { type: 'button', className: 'fz3-set-segbtn', 'data-on': themeMode === 'dark' ? '1' : '0', onClick: () => pickTheme('dark') }, '深色'),
+            h('button', { type: 'button', className: 'fz3-set-segbtn', 'data-on': themeMode === 'light' ? '1' : '0', onClick: () => pickTheme('light') }, '浅色'),
+          ),
         ),
         h(
           'div',
@@ -1368,10 +1744,11 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
           { className: 'fz3-set-actions' },
           h('button', { type: 'button', className: 'fz3-set-btn', onClick: playGreet }, '试听问候'),
           h('button', { type: 'button', className: 'fz3-set-btn', onClick: replayBoot }, '重播开机动画'),
+          h('button', { type: 'button', className: 'fz3-set-btn', onClick: resetDockPos, disabled: !hasCustomPos }, '眼标复位'),
           h('button', { type: 'button', className: 'fz3-set-btn', onClick: testVoice, disabled: busy }, '测试语音'),
           h('button', { type: 'button', className: 'fz3-set-btn is-ghost', onClick: stopSpeech, disabled: !busy }, '停止'),
         ),
-        h('div', { className: 'fz3-set-note' }, 'Fairy 皮肤 · 待机随机眨眼与花屏、思考态眼睑呼吸，开关都在这里；聊天区左下的眼标只作状态指示，不再弹出面板。'),
+        h('div', { className: 'fz3-set-note' }, 'Fairy 皮肤 · 待机随机眨眼与花屏、思考态眼睑呼吸；点一下左下的眼标展开用量气泡（余额 / 今日花费 / 峰谷倒计时），按住可拖动。开关都在这里。'),
       )
     }
 
@@ -1421,13 +1798,19 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
       const [out, setOut] = useState(false)
       const [soundBlocked, setSoundBlocked] = useState(false)
       const doneRef = useRef(false)
+      const doneTimer = useRef(null)
 
       const finish = useCallback(() => {
         if (doneRef.current) return
         doneRef.current = true
         setOut(true)
-        setTimeout(onDone, 640)
+        doneTimer.current = setTimeout(onDone, 640)
       }, [onDone])
+
+      /* 640ms 的退场延时要在卸载时清掉，否则图层已经切走还会回调一次父组件 */
+      useEffect(() => () => {
+        if (doneTimer.current) clearTimeout(doneTimer.current)
+      }, [])
 
       useEffect(() => {
         const video = videoRef.current
@@ -1546,9 +1929,31 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
           glow.style.opacity = (0.55 + 0.45 * ge).toFixed(3)
           glow.style.transform = 'scale(' + (1 + 0.06 * ge).toFixed(4) + ')'
         }
+        let id = null
+        const start = () => {
+          if (!id) id = window.setInterval(tick, 500)
+        }
+        const stop = () => {
+          if (id) {
+            window.clearInterval(id)
+            id = null
+          }
+        }
+        /* 后台标签页把 500ms 的样式计算也停掉，不再空转 */
+        const onVis = () => {
+          if (document.hidden) stop()
+          else {
+            tick()
+            start()
+          }
+        }
+        document.addEventListener('visibilitychange', onVis)
         tick()
-        const id = window.setInterval(tick, 500)
-        return () => { window.clearInterval(id) }
+        if (!document.hidden) start()
+        return () => {
+          document.removeEventListener('visibilitychange', onVis)
+          stop()
+        }
       }, [])
       return h(
         'div',
@@ -1572,19 +1977,212 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
       return '主人，夜深了。这个点还醒着，是需要我陪着，还是放不下手里的事？'
     }
 
+/* 气泡：usage 态给「余额 / 今日花费 / 峰谷」，turn 态只给「本轮花费 / 峰谷」。
+   只在展开期间挂载；倒计时每秒 tick 一次（1s 定时器，单实例）。 */
+function BubbleCard({ data, onMeasure, onFlip }) {
+  const { mode, x, y, side, loading, usage, balance } = data
+  const peak = usage && usage.peak
+  const bucket = usage ? (mode === 'turn' ? usage.turn : usage.today) : null
+  const rows = []
+
+  /* 把真实尺寸交回父层，翻面/夹边都按实际宽高算，不会盖到眼徽 */
+  const boxRef = useRef(null)
+  const lastSize = useRef({ w: 0, h: 0 })
+  useLayoutEffect(() => {
+    const el = boxRef.current
+    if (!el || typeof onMeasure !== 'function') return
+    const w = el.offsetWidth
+    const h = el.offsetHeight
+    if (w === lastSize.current.w && h === lastSize.current.h) return
+    lastSize.current = { w: w, h: h }
+    onMeasure({ w: w, h: h })
+  })
+
+  /* 峰谷剩余时间：每秒走一格，换价瞬间归零 */
+  const [nowTick, setNowTick] = useState(() => Date.now())
+  const nextAt = peak && peak.nextAt ? peak.nextAt : 0
+  useEffect(() => {
+    if (!nextAt) return undefined
+    setNowTick(Date.now())
+    const timer = setInterval(() => setNowTick(Date.now()), 1000)
+    return () => clearInterval(timer)
+  }, [nextAt])
+
+  const left = nextAt ? nextAt - nowTick : 0
+
+  /* 倒计时归零 = 刚换了价：让父层重新拉一次，峰谷标签与花费跟着翻面 */
+  const flipFired = useRef(0)
+  useEffect(() => {
+    if (!nextAt || left > 0 || flipFired.current === nextAt) return
+    flipFired.current = nextAt
+    if (typeof onFlip === 'function') onFlip(mode)
+  }, [left, nextAt, mode, onFlip])
+
+  if (mode === 'usage') {
+    rows.push(['余额', loading ? '…' : balance && balance.ok ? yuan(balance.amount) : '读取失败'])
+    rows.push(['今日花费', loading ? '…' : bucket ? yuan(bucket.cost) : '—'])
+  } else {
+    rows.push(['本轮花费', loading ? '…' : bucket ? yuan(bucket.cost) : '—'])
+  }
+  const tone = peak && peak.offPeak ? 'valley' : 'peak'
+  rows.push([
+    '峰谷',
+    loading
+      ? '…'
+      : peak
+        ? nextAt && left > 0
+          ? h(
+              'span',
+              { className: 'fz3-peak' },
+              h('span', { className: 'fz3-peak-badge', 'data-tone': tone }, peak.offPeak ? '谷' : '峰'),
+              h('span', { className: 'fz3-peak-clock', 'data-tone': tone }, clockText(left)),
+            )
+          : peak.label
+        : '—',
+  ])
+
+  const detail = []
+  if (bucket && bucket.calls) {
+    detail.push(
+      bucket.calls + ' 次请求 · ' + tokensText(bucket.hit) + ' 命中 / ' + tokensText(bucket.miss) + ' 未命中 / ' + tokensText(bucket.out) + ' 输出',
+    )
+  }
+  if (peak) {
+    const flip = peak.offPeak ? '高峰' : '空闲'
+    detail.push(
+      nextAt
+        ? left > 0
+          ? peak.window + ' · 后转' + flip + '价'
+          : peak.window + ' · 换价时刻已到，正在刷新'
+        : peak.window + ' · ' + peak.next,
+    )
+  }
+  if (mode === 'usage' && !loading && balance && !balance.ok && balance.reason) detail.push(balance.reason)
+
+  return h(
+    'div',
+    {
+      ref: boxRef,
+      className: 'fz3-bubble',
+      'data-mode': mode,
+      'data-side': side || 'right',
+      'data-loading': loading ? '1' : '0',
+      style: { left: x + 'px', top: y + 'px' },
+    },
+    h('div', { className: 'fz3-bubble-head' }, mode === 'turn' ? 'Fairy · 本轮结算' : 'Fairy · 用量'),
+    rows.map(([k, v]) =>
+      h('div', { className: 'fz3-bubble-row', key: k }, h('span', { className: 'fz3-bubble-k' }, k), h('span', { className: 'fz3-bubble-v' }, h('b', null, v))),
+    ),
+    detail.length ? h('div', { className: 'fz3-bubble-sub' }, detail.map((line, i) => h('div', { key: i }, line))) : null,
+  )
+}
+
 
     function FairySkin() {
-      const [phase, setPhase] = useState('boot')
+      /* 已经完整播过一次开机 → 重挂载直接从 dock 开始；设置页「重播开机动画」会清标记 */
+      const [phase, setPhase] = useState(() => (bootPlayed ? 'dock' : 'boot'))
+      const aliveRef = useRef(true)
+      useEffect(() => {
+        aliveRef.current = true
+        return () => {
+          aliveRef.current = false
+        }
+      }, [])
 
       /* 运行态情绪：宿主 /fairy-zzz/mood 轮询（idle / thinking / working / done） */
       const [mood, setMood] = useState('idle')
 
+      /* 眼徽拖拽：开关与坐标都放 localStorage，设置页改开关时靠事件通知这里 */
+      const [dragOn, setDragOn] = useState(() => readBool(DRAG_KEY, true))
+      const [eyeHidden, setEyeHidden] = useState(() => readBool(EYE_KEY, false))
+      const [dragging, setDragging] = useState(false)
+      const [customPos, setCustomPos] = useState(() => {
+        const saved = readStored(POS_KEY, null)
+        return saved && Number.isFinite(saved.x) && Number.isFinite(saved.y) ? saved : null
+      })
+      const dragRef = useRef(null)
+      const coreRef = useRef(null)
+
+      /* 用量气泡：null = 收起；mode = 'usage'（余额·今日·峰谷）| 'turn'（本轮·峰谷） */
+      const [bubble, setBubble] = useState(null)
+      const bubbleTimer = useRef(null)
+      const bubbleSize = useRef({ w: 236, h: 162 })
+
+      const closeBubble = useCallback(() => {
+        if (bubbleTimer.current) {
+          clearTimeout(bubbleTimer.current)
+          bubbleTimer.current = null
+        }
+        setBubble(null)
+      }, [])
+
+      /* 气泡挂点：右侧放不下（会越出右边界）就翻到眼徽左侧，垂直始终跟着眼徽中心 */
+      const bubblePlace = useCallback((rect) => {
+        const W = bubbleSize.current.w || 236
+        const H = bubbleSize.current.h || 162
+        const gap = 16
+        const margin = 12
+        const flip = rect.right + gap + W > window.innerWidth - margin
+        const raw = flip ? rect.left - gap - W : rect.right + gap
+        return {
+          x: Math.round(Math.min(Math.max(raw, margin), Math.max(margin, window.innerWidth - W - margin))),
+          y: Math.round(
+            Math.min(Math.max(rect.top + rect.height / 2, H / 2 + 8), Math.max(H / 2 + 8, window.innerHeight - H / 2 - 8)),
+          ),
+          side: flip ? 'left' : 'right',
+        }
+      }, [])
+
+      const openBubble = useCallback(async (mode) => {
+        const el = coreRef.current
+        if (!el) return
+        const pos = bubblePlace(el.getBoundingClientRect())
+        setBubble({ mode, ...pos, loading: true })
+        if (bubbleTimer.current) {
+          clearTimeout(bubbleTimer.current)
+          bubbleTimer.current = null
+        }
+        const [usage, balance] = await Promise.all([fetchUsage(), mode === 'usage' ? fetchBalance() : Promise.resolve(null)])
+        /* 请求回来时图层可能已经卸载，别再 setState / 挂 18s 定时器 */
+        if (!aliveRef.current) return
+        setBubble((prev) => (prev && prev.mode === mode ? { ...prev, ...pos, loading: false, usage, balance } : prev))
+        if (mode === 'turn') {
+          bubbleTimer.current = setTimeout(() => {
+            bubbleTimer.current = null
+            if (!aliveRef.current) return
+            setBubble((prev) => (prev && prev.mode === 'turn' ? null : prev))
+          }, 18_000)
+        }
+      }, [bubblePlace])
+
+      const clampPos = useCallback((x, y) => {
+        const root = document.documentElement
+        const size = parseFloat(getComputedStyle(root).getPropertyValue('--fz3-dock-size')) || 128
+        const half = size / 2 + 4
+        return {
+          x: Math.round(Math.min(Math.max(Number(x) || 0, half), window.innerWidth - half)),
+          y: Math.round(Math.min(Math.max(Number(y) || 0, half), window.innerHeight - half)),
+        }
+      }, [])
+
+      const applyPos = useCallback((p) => {
+        const root = document.documentElement
+        root.style.setProperty('--fz3-dock-x', p.x + 'px')
+        root.style.setProperty('--fz3-dock-y', p.y + 'px')
+      }, [])
+
       useEffect(() => {
         /* 官方字标位置测量：拿到 logo 行 / brandIdentity 的矩形，把我们的
-           Fairy 字标钉在同一位置。字标本身由 CSS 隐藏（它是 SVG，没有文本）。 */
+           Fairy 字标钉在同一位置。字标本身由 CSS 隐藏（它是 SVG，没有文本）。
+           首次最多轮询 14 次 × 500ms；命中之后改用 ResizeObserver + resize 监听
+           跟随侧栏折叠/窗口缩放，不再反复全文档查询。 */
         let tries = 0
+        let timer = null
+        let target = null
+        let observer = null
+        let resizeTimer = null
         const run = () => {
-          const row = document.querySelector('[class*="_brandIdentity"]') || document.querySelector('[class*="_logoRow"]')
+          const row = target || document.querySelector('[class*="_brandIdentity"]') || document.querySelector('[class*="_logoRow"]')
           if (!row) return false
           const r = row.getBoundingClientRect()
           if (r.width <= 0 || r.height <= 0) return false
@@ -1592,15 +2190,55 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
           root.style.setProperty('--fz3-brand-top', Math.round(r.top - 6) + 'px')
           root.style.setProperty('--fz3-brand-left', Math.round(r.left) + 'px')
           root.style.setProperty('--fz3-brand-h', Math.round(Math.max(34, r.height + 10)) + 'px')
+          if (!target) {
+            target = row
+            if (timer) {
+              clearInterval(timer)
+              timer = null
+            }
+            if (typeof ResizeObserver === 'function') {
+              observer = new ResizeObserver(() => {
+                try { run() } catch (e) {}
+              })
+              try { observer.observe(row) } catch (e) {}
+            }
+            window.addEventListener('resize', onResize)
+          }
           return true
         }
-        const timer = setInterval(() => {
+        function onResize() {
+          if (resizeTimer) return
+          resizeTimer = setTimeout(() => {
+            resizeTimer = null
+            try { run() } catch (e) {}
+          }, 260)
+        }
+        timer = setInterval(() => {
           tries += 1
-          try { if (run() || tries > 14) clearInterval(timer) } catch (e) { clearInterval(timer) }
+          try {
+            if (run() || tries > 14) {
+              clearInterval(timer)
+              timer = null
+            }
+          } catch (e) {
+            clearInterval(timer)
+            timer = null
+          }
         }, 500)
-        return () => clearInterval(timer)
+        return () => {
+          if (timer) clearInterval(timer)
+          if (resizeTimer) clearTimeout(resizeTimer)
+          if (observer) observer.disconnect()
+          window.removeEventListener('resize', onResize)
+        }
       }, [])
       useEffect(() => {
+        /* 主人自己拖过眼徽：用记住的坐标，不再自动测量 */
+        if (customPos) {
+          applyPos(clampPos(customPos.x, customPos.y))
+          return undefined
+        }
+        if (eyeHidden) return undefined
         /* dock 定位：找到会话区（左侧最靠左的宽容器），把眼标钉在它的左缘中部，
            与参考视频里「对话时靠在聊天区左边」的位置一致；找不到就退回 25vw / 52vh。
            性能注意：全量 getBoundingClientRect 扫描会强制同步布局（上千个 div），原来最多扫 16 次；
@@ -1608,7 +2246,32 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
         let tries = 0
         let timer = null
         let cached = null
+        let observer = null
+        /* 会话区的候选容器：先查窄选择器（通常十来个元素），找不到才退回全文档扫描，
+           而且全量扫描只在最初几次重试里允许，避免长会话时反复强制布局。 */
+        const NARROW = '[data-chat-flow],[data-conversation-scroll],[class*="_conversation"],[class*="_chatBody"],[class*="_threadBody"],main'
         const fits = (r, vw) => r.width >= 420 && r.height >= 300 && r.left >= 260 && r.left <= vw * 0.5 && r.width <= vw * 0.9
+        const pick = (nodes, vw) => {
+          let best = null
+          let bestEl = null
+          for (let i = 0; i < nodes.length; i += 1) {
+            const el = nodes[i]
+            const r = el.getBoundingClientRect()
+            if (!fits(r, vw)) continue
+            if (!best || r.left < best.left) {
+              best = r
+              bestEl = el
+            }
+          }
+          return { best, bestEl }
+        }
+        const watch = () => {
+          if (!cached || observer || typeof ResizeObserver !== 'function') return
+          observer = new ResizeObserver(() => {
+            try { measure() } catch (e) {}
+          })
+          try { observer.observe(cached) } catch (e) {}
+        }
         const measure = () => {
           let best = null
           const root = document.documentElement
@@ -1619,18 +2282,13 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
             if (fits(r, vw)) best = r
           }
           if (!best) {
-            const all = document.querySelectorAll('div,main,section')
-            let bestEl = null
-            for (let i = 0; i < all.length; i += 1) {
-              const el = all[i]
-              const r = el.getBoundingClientRect()
-              if (!fits(r, vw)) continue
-              if (!best || r.left < best.left) {
-                best = r
-                bestEl = el
-              }
+            let found = pick(document.querySelectorAll(NARROW), vw)
+            if (!found.bestEl && tries <= 3) found = pick(document.querySelectorAll('div,main,section'), vw)
+            best = found.best
+            if (found.bestEl) {
+              cached = found.bestEl
+              watch()
             }
-            if (bestEl) cached = bestEl
           }
           if (best) {
             const size = parseFloat(getComputedStyle(root).getPropertyValue('--fz3-dock-size')) || 128
@@ -1661,9 +2319,108 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
         return () => {
           clearInterval(timer)
           if (resizeTimer) clearTimeout(resizeTimer)
+          if (observer) observer.disconnect()
           window.removeEventListener('resize', onResize)
         }
+      }, [customPos, eyeHidden, applyPos, clampPos])
+
+      /* 记住的位置也要跟着窗口缩放夹一下，别把眼标留在屏幕外 */
+      useEffect(() => {
+        if (!customPos) return undefined
+        const onResize = () => applyPos(clampPos(customPos.x, customPos.y))
+        window.addEventListener('resize', onResize)
+        return () => window.removeEventListener('resize', onResize)
+      }, [customPos, applyPos, clampPos])
+
+      /* 设置页里的开关与「眼标复位」通过自定义事件同步到这个图层 */
+      useEffect(() => {
+        const syncDrag = () => setDragOn(readBool(DRAG_KEY, true))
+        const syncEye = () => setEyeHidden(readBool(EYE_KEY, false))
+        const onReset = () => {
+          try { localStorage.removeItem(POS_KEY) } catch {}
+          setCustomPos(null)
+          setDragging(false)
+        }
+        window.addEventListener('fz3:drag-pref', syncDrag)
+        window.addEventListener('fz3:eye-pref', syncEye)
+        window.addEventListener('fz3:dock-reset', onReset)
+        window.addEventListener('storage', syncDrag)
+        window.addEventListener('storage', syncEye)
+        return () => {
+          window.removeEventListener('fz3:drag-pref', syncDrag)
+          window.removeEventListener('fz3:eye-pref', syncEye)
+          window.removeEventListener('fz3:dock-reset', onReset)
+          window.removeEventListener('storage', syncDrag)
+          window.removeEventListener('storage', syncEye)
+        }
       }, [])
+
+      /* 欢迎页 hero 的标题与「预览版」徽章没有插槽，只能改写 DOM 文本。
+         参考实现是每 900ms 轮询一次；这里改成 MutationObserver：只在 hero 重新挂载
+         （节点被加进来）时改一次，文本已经对了就不写，空闲时零定时器。 */
+      useEffect(() => {
+        if (typeof document === 'undefined') return undefined
+        const rewrite = () => {
+          const group = document.querySelector('[class*="_headline"] [class*="_titleGroup"]')
+          if (!group) return false
+          const headline = group.querySelector('span')
+          const badge = group.querySelector('[class*="_previewBadge"]')
+          const zh = CJK_RE.test((headline && headline.textContent) || '') || CJK_RE.test((badge && badge.textContent) || '')
+          const copy = zh ? HERO_COPY.zh : HERO_COPY.en
+          if (headline && headline.textContent !== copy.headline) headline.textContent = copy.headline
+          if (badge && badge.textContent !== copy.badge) badge.textContent = copy.badge
+          return true
+        }
+        rewrite()
+        let pending = null
+        const observer = new MutationObserver((records) => {
+          if (pending) return
+          let hit = false
+          for (let i = 0; i < records.length && !hit; i += 1) {
+            const record = records[i]
+            /* 文本被宿主重新渲染（characterData）也算命中：只认标题与徽章内的改动 */
+            if (record.type === 'characterData') {
+              const parent = record.target && record.target.parentElement
+              if (parent && parent.closest && parent.closest('[class*="_headline"],[class*="_previewBadge"]')) hit = true
+              continue
+            }
+            const added = record.addedNodes
+            for (let j = 0; j < added.length; j += 1) {
+              const node = added[j]
+              if (!node || node.nodeType !== 1) continue
+              if ((node.matches && node.matches('[class*="_headline"]')) || (node.querySelector && node.querySelector('[class*="_headline"]'))) {
+                hit = true
+                break
+              }
+            }
+          }
+          if (!hit) return
+          pending = setTimeout(() => {
+            pending = null
+            try { rewrite() } catch (e) {}
+          }, 60)
+        })
+        try {
+          observer.observe(document.body, { childList: true, subtree: true, characterData: true })
+        } catch (e) {
+          return undefined
+        }
+        return () => {
+          if (pending) clearTimeout(pending)
+          observer.disconnect()
+        }
+      }, [])
+
+      /* 一轮跑完 → 自动弹一次「本轮花费」，18 秒后自己消失。
+         用「上一轮情绪」判迁移而不是时间戳分桶：同一分钟内连跑两轮也能各弹一次。 */
+      const prevMood = useRef('')
+      useEffect(() => {
+        const before = prevMood.current
+        prevMood.current = mood
+        if (phase !== 'dock' || mood !== 'done' || before === 'done') return
+        openBubble('turn')
+      }, [mood, phase, openBubble])
+      useEffect(() => closeBubble, [closeBubble])
 
       useEffect(() => {
         let alive = true
@@ -1716,19 +2473,87 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
       const [needTap, setNeedTap] = useState(false)
       const [engine, setEngine] = useState(null)
       const greetAudio = useRef(null)
-      const coreRef = useRef(null)
       const voiceState = useVoice()
 
       const toGreet = useCallback(() => {
         stopSpeech()
+        bootPlayed = true
         setPhase('greet')
       }, [])
 
       const toDock = useCallback(() => {
+        bootPlayed = true
         setPhase('dock')
         setNeedTap(false)
         autoArmAt = Date.now() + 2600
       }, [])
+
+      /* ———————————————————— 眼徽拖拽 + 用量气泡 ———————————————————— */
+      const toggleBubble = useCallback(() => {
+        if (phase !== 'dock') return
+        if (bubble) {
+          closeBubble()
+          return
+        }
+        openBubble('usage')
+      }, [bubble, phase, openBubble, closeBubble])
+
+      const onCoreDown = (e) => {
+        if (!dragOn || phase !== 'dock') return
+        if (typeof e.button === 'number' && e.button !== 0) return
+        const r = e.currentTarget.getBoundingClientRect()
+        dragRef.current = {
+          id: e.pointerId,
+          dx: e.clientX - (r.left + r.width / 2),
+          dy: e.clientY - (r.top + r.height / 2),
+          sx: e.clientX,
+          sy: e.clientY,
+          moved: false,
+        }
+        try { e.currentTarget.setPointerCapture(e.pointerId) } catch {}
+      }
+      const onCoreMove = (e) => {
+        const drag = dragRef.current
+        if (!drag || drag.id !== e.pointerId) return
+        if (!drag.moved) {
+          if (Math.abs(e.clientX - drag.sx) < 4 && Math.abs(e.clientY - drag.sy) < 4) return
+          drag.moved = true
+          setDragging(true)
+        }
+        applyPos(clampPos(e.clientX - drag.dx, e.clientY - drag.dy))
+        /* 气泡跟着眼徽走：拖动中每个 move 重算一次挂点，靠近右边界自动翻到左侧 */
+        if (bubble) {
+          const el = coreRef.current
+          if (el) {
+            const next = bubblePlace(el.getBoundingClientRect())
+            setBubble((prev) =>
+              prev && (prev.x !== next.x || prev.y !== next.y || prev.side !== next.side) ? { ...prev, ...next } : prev,
+            )
+          }
+        }
+      }
+      const onCoreUp = (e) => {
+        const drag = dragRef.current
+        if (!drag || drag.id !== e.pointerId) return
+        dragRef.current = null
+        setDragging(false)
+        /* 只是点了一下、没拖动 → 展开/收起用量气泡 */
+        if (!drag.moved) {
+          toggleBubble()
+          return
+        }
+        const r = e.currentTarget.getBoundingClientRect()
+        const next = clampPos(r.left + r.width / 2, r.top + r.height / 2)
+        setCustomPos(next)
+        writeStored(POS_KEY, next)
+      }
+      /* 指针被系统取消（触摸滚动被外层接管等）只清拖拽态，绝不能当成一次点击 */
+      const onCoreCancel = (e) => {
+        const drag = dragRef.current
+        if (!drag || drag.id !== e.pointerId) return
+        dragRef.current = null
+        setDragging(false)
+      }
 
       /* ———————————————————— */
       useEffect(() => {
@@ -1779,7 +2604,11 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 
       /* 设置页里的「重播开机动画」→ 回到 boot 阶段 */
       useEffect(() => {
-        const fn = () => { stopSpeech(); setPhase('boot') }
+        const fn = () => {
+          stopSpeech()
+          bootPlayed = false
+          setPhase('boot')
+        }
         bootHooks.add(fn)
         return () => { bootHooks.delete(fn) }
       }, [])
@@ -1788,7 +2617,7 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 
       return h(
         'div',
-        { className: 'fz3-layer', 'data-phase': phase, 'data-mood': mood },
+        { className: 'fz3-layer', 'data-phase': phase, 'data-mood': mood, 'data-drag': dragOn ? '1' : '0', 'data-dragging': dragging ? '1' : '0' },
         h(
           'div',
           { className: 'fz3-screen', onClick: needTap ? retryVoice : undefined },
@@ -1816,17 +2645,53 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
           : null,
 
         /* ———————————————————— */
-        phase !== 'boot'
+        phase !== 'boot' && !eyeHidden
           ? h(
               'div',
               {
                 ref: coreRef,
                 className: 'fz3-core',
                 'data-phase': phase,
-                title: phase === 'dock' ? 'Fairy · 设置 → Fairy' : undefined,
+                onPointerDown: onCoreDown,
+                onPointerMove: onCoreMove,
+                onPointerUp: onCoreUp,
+                onPointerCancel: onCoreCancel,
+                onClick: dragOn ? undefined : toggleBubble,
+                onKeyDown: (e) => {
+                  if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+                    e.preventDefault()
+                    toggleBubble()
+                  }
+                },
+                role: 'button',
+                tabIndex: 0,
+                /* 不挂 title：悬浮提示会盖住眼徽，交互由气泡自己说明 */
+                'aria-label': 'Fairy 用量气泡',
               },
               h(CoreGlyph, { phase, mood }),
             )
+          : null,
+
+        /* ———————————————————— 用量气泡 ———————————————————— */
+        bubble && !eyeHidden
+          ? h(BubbleCard, {
+              key: bubble.mode,
+              data: bubble,
+              /* 换价瞬间：重新拉一次用量，气泡里的峰谷立刻翻面 */
+              onFlip: (mode) => {
+                openBubble(mode)
+              },
+              onMeasure: (size) => {
+                bubbleSize.current = size
+                /* 尺寸一变立刻重算一次挂点，避免首帧用旧宽高定位 */
+                const el = coreRef.current
+                if (!el) return
+                const next = bubblePlace(el.getBoundingClientRect())
+                setBubble((prev) =>
+                  prev && (prev.x !== next.x || prev.y !== next.y || prev.side !== next.side) ? { ...prev, ...next } : prev,
+                )
+              },
+            })
           : null,
 
         /* ———————————————————— */
@@ -1853,8 +2718,10 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
      * 挂载
      * ------------------------------------------------------------------ */
     return {
-      inject: ['slots'],
+      inject: ['slots', 'locale', 'theme', 'remote', 'remote.account'],
       apply(ctx) {
+        /* 账户余额等接口要经过 ctx 上的远程服务，气泡里用 runtime.ctx 取 */
+        runtime.ctx = ctx
         const guard = (label, fn) => {
           try {
             return fn()
@@ -1877,7 +2744,12 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
         guard('styles', () => {
           if (typeof document === 'undefined') return
           const tagId = PKG + '/fairy-zzz.css'
-          if (document.querySelector('style[data-plugin-css=' + JSON.stringify(tagId) + ']')) return
+          const existing = document.querySelector('style[data-plugin-css=' + JSON.stringify(tagId) + ']')
+          if (existing) {
+            /* 宿主热重载会重新执行 apply：样式内容变了就地更新，不再重复插入 <style> */
+            if (existing.textContent !== CSS) existing.textContent = CSS
+            return
+          }
           const tag = document.createElement('style')
           tag.dataset.plugin = PKG
           tag.dataset.pluginCss = tagId
@@ -1893,6 +2765,97 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
         guard('tokens', () => {
           const theme = ctx.get && ctx.get('theme')
           if (theme && typeof theme.overrideTokens === 'function') theme.overrideTokens(PKG, TOKENS)
+        })
+
+        guard('theme-watch', () => {
+          /* 外观：跟随宿主主题，或听设置页「外观」分段开关的强制值。
+             只切 <html data-fz3-theme>，CSS 侧全部是静态覆盖；观察 html 属性时做 260ms 去抖，
+             宿主频繁改 style 也不会把回调打成风暴。 */
+          if (typeof document === 'undefined') return
+          const root = document.documentElement
+          const forced = () => {
+            const value = readStored(THEME_KEY, 'auto')
+            return value === 'light' || value === 'dark' ? value : ''
+          }
+          const probeLight = () => {
+            try {
+              const theme = ctx.get && ctx.get('theme')
+              const active = theme && typeof theme.getTheme === 'function' ? theme.getTheme() : null
+              const id = active && active.active ? String(active.active.id || '') : ''
+              if (id) {
+                if (/light|snow|day/i.test(id)) return true
+                if (/dark|night|midnight/i.test(id)) return false
+              }
+            } catch (e) {}
+            try {
+              /* 兜底：量一下宿主实际刷上的 --dsw-alias-bg-base 亮度 */
+              const probe = document.createElement('div')
+              probe.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;pointer-events:none;background:var(--dsw-alias-bg-base)'
+              document.body.appendChild(probe)
+              const value = getComputedStyle(probe).backgroundColor || ''
+              probe.remove()
+              const m = value.match(/rgba?\((\d+)[,\s]+(\d+)[,\s]+(\d+)/)
+              if (m) return (Number(m[1]) * 299 + Number(m[2]) * 587 + Number(m[3]) * 114) / 1000 > 140
+            } catch (e) {}
+            try { return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) } catch (e) { return false }
+          }
+          let lastForce = null
+          const apply = () => {
+            const force = forced()
+            const pick = force || (probeLight() ? 'light' : 'dark')
+            if (root.dataset.fz3Theme !== pick) root.dataset.fz3Theme = pick
+            /* 设置页强制外观时，宿主外壳本身仍是它自己的主题（侧栏/输入框不会变），
+               这里把 Fairy 的设计变量双写进 light+dark 两套，让宿主也走强制配色。 */
+            if (force !== lastForce) {
+              lastForce = force
+              try {
+                const theme = ctx.get && ctx.get('theme')
+                if (theme && typeof theme.overrideTokens === 'function') {
+                  if (!force) theme.overrideTokens(PKG, TOKENS)
+                  else {
+                    const map = force === 'light' ? lightTokens : baseTokens
+                    const merged = {}
+                    for (const key of Object.keys(baseTokens)) {
+                      const value = map[key] || baseTokens[key]
+                      merged[key] = { light: value, dark: value }
+                    }
+                    theme.overrideTokens(PKG, merged)
+                  }
+                }
+              } catch (e) {}
+            }
+          }
+          apply()
+          let timer = null
+          const soon = () => {
+            if (timer) return
+            timer = setTimeout(() => {
+              timer = null
+              apply()
+            }, 260)
+          }
+          window.addEventListener('fz3:theme-pref', apply)
+          const media = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null
+          if (media) {
+            if (typeof media.addEventListener === 'function') media.addEventListener('change', soon)
+            else if (typeof media.addListener === 'function') media.addListener(soon)
+          }
+          const observer = new MutationObserver(soon)
+          observer.observe(root, { attributes: true, attributeFilter: ['style', 'class', 'data-theme', 'data-color-scheme'] })
+          if (ctx && typeof ctx.on === 'function') {
+            try { ctx.on('theme/change', soon) } catch (e) {}
+          }
+          if (ctx && typeof ctx.effect === 'function') {
+            ctx.effect(() => () => {
+              if (timer) clearTimeout(timer)
+              window.removeEventListener('fz3:theme-pref', apply)
+              if (media) {
+                if (typeof media.removeEventListener === 'function') media.removeEventListener('change', soon)
+                else if (typeof media.removeListener === 'function') media.removeListener(soon)
+              }
+              observer.disconnect()
+            })
+          }
         })
 
         const mount = (key, spec, component) => {
