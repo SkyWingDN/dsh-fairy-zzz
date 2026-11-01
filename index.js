@@ -630,12 +630,12 @@ function peakState(now = new Date()) {
   const mm = String(next.getUTCMinutes()).padStart(2, '0')
   return {
     offPeak,
-    label: offPeak ? '空闲时段' : '高峰时段',
-    window: '工作日 09–12、14–18 高峰',
+    label: offPeak ? '五倍电费' : '十倍电费',
+    window: '工作日 09–12、14–18 十倍电费',
     remainMs,
     nextAt: flipAt,
     nextClock: hh + ':' + mm,
-    next: formatLeft(remainMs) + '后转' + (offPeak ? '高峰' : '空闲') + '价',
+    next: formatLeft(remainMs) + '后转' + (offPeak ? '十倍电费' : '五倍电费'),
   }
 }
 

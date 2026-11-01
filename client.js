@@ -292,8 +292,8 @@ window.__ModuleLoader__.load({
           locale: active || navigator.language || 'zh-CN',
           timezoneOffsetSeconds: -new Date().getTimezoneOffset() * 60,
         })
-        if (!res) return { ok: false, reason: '余额接口没有返回' }
-        if (!res.ok) return { ok: false, reason: '余额读取被拒绝：' + String((res.error && (res.error.code || res.error.message)) || '未登录') }
+        if (!res) return { ok: false, reason: '电费余额接口没有返回' }
+        if (!res.ok) return { ok: false, reason: '电费余额读取被拒绝：' + String((res.error && (res.error.code || res.error.message)) || '未登录') }
         /* value 可能是钱包数组，也可能被包成 { wallets } / { value } / { bonusWallets } */
         const raw = res.value
         const pick = (list) => (Array.isArray(list) ? list.filter((item) => item && Number.isFinite(Number(item.balance))) : [])
@@ -312,7 +312,7 @@ window.__ModuleLoader__.load({
         const amount = use.reduce((sum, item) => sum + Number(item.balance), 0)
         return { ok: true, amount, currency: use[0].currency || 'CNY' }
       } catch (cause) {
-        return { ok: false, reason: '余额请求失败：' + (cause && cause.message ? cause.message : cause) }
+        return { ok: false, reason: '电费余额请求失败：' + (cause && cause.message ? cause.message : cause) }
       }
     }
 
@@ -380,6 +380,16 @@ window.__ModuleLoader__.load({
       const minutes = String(Math.floor((total % 3600) / 60)).padStart(2, '0')
       const seconds = String(total % 60).padStart(2, '0')
       return hours + ':' + minutes + ':' + seconds
+    }
+    /* v1.3.3 文案：用量 / 花费 / 峰谷一律按「电费」口径展示。
+       宿主旧版 index.js 仍返回「高峰 / 空闲」字样，这里做一次兜底改写，旧宿主也能正确显示。 */
+    function feeText(value) {
+      return String(value == null ? '' : value)
+        .replace(/高峰时段/g, '十倍电费')
+        .replace(/空闲时段/g, '五倍电费')
+        .replace(/高峰/g, '十倍电费')
+        .replace(/空闲/g, '五倍电费')
+        .replace(/(十倍电费|五倍电费)价/g, '$1')
     }
 
     /* ———————————————————— */
@@ -1692,7 +1702,7 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
         h(
           'div',
           { className: 'fz3-set-row' },
-          h('div', null, h('div', { className: 'fz3-set-label' }, '拖动眼徽'), h('div', { className: 'fz3-set-desc' }, '按住左下角的眼标可以拖到任意位置，点一下展开用量气泡')),
+          h('div', null, h('div', { className: 'fz3-set-label' }, '拖动眼徽'), h('div', { className: 'fz3-set-desc' }, '按住左下角的眼标可以拖到任意位置，点一下展开电费气泡')),
           h('button', {
             type: 'button',
             className: 'fz3-set-switch',
@@ -1793,7 +1803,7 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
           h('button', { type: 'button', className: 'fz3-set-btn', onClick: testVoice, disabled: busy }, '测试语音'),
           h('button', { type: 'button', className: 'fz3-set-btn is-ghost', onClick: stopSpeech, disabled: !busy }, '停止'),
         ),
-        h('div', { className: 'fz3-set-note' }, 'Fairy 皮肤 · 待机随机眨眼与花屏、思考态眼睑呼吸；点一下左下的眼标展开用量气泡（余额 / 今日花费 / 峰谷倒计时），按住可拖动。开关都在这里。'),
+        h('div', { className: 'fz3-set-note' }, 'Fairy 皮肤 · 待机随机眨眼与花屏、思考态眼睑呼吸；点一下左下的眼标展开电费气泡（电费余额 / 今日电费 / 电费倍率倒计时），按住可拖动。开关都在这里。'),
       )
     }
 
@@ -2022,7 +2032,7 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
       return '主人，夜深了。这个点还醒着，是需要我陪着，还是放不下手里的事？'
     }
 
-/* 气泡：usage 态给「余额 / 今日花费 / 峰谷」，turn 态只给「本轮花费 / 峰谷」。
+/* 气泡（v1.3.3 文案按电费口径）：usage 态给「电费余额 / 今日电费 / 电费倍率」，turn 态只给「本轮电费 / 电费倍率」。
    只在展开期间挂载；倒计时每秒 tick 一次（1s 定时器，单实例）。 */
 function BubbleCard({ data, onMeasure, onFlip }) {
   const { mode, x, y, side, loading, usage, balance } = data
@@ -2064,14 +2074,16 @@ function BubbleCard({ data, onMeasure, onFlip }) {
   }, [left, nextAt, mode, onFlip])
 
   if (mode === 'usage') {
-    rows.push(['余额', loading ? '…' : balance && balance.ok ? yuan(balance.amount) : '读取失败'])
-    rows.push(['今日花费', loading ? '…' : bucket ? yuan(bucket.cost) : '—'])
+    rows.push(['电费余额', loading ? '…' : balance && balance.ok ? yuan(balance.amount) : '读取失败'])
+    rows.push(['今日电费', loading ? '…' : bucket ? yuan(bucket.cost) : '—'])
   } else {
-    rows.push(['本轮花费', loading ? '…' : bucket ? yuan(bucket.cost) : '—'])
+    rows.push(['本轮电费', loading ? '…' : bucket ? yuan(bucket.cost) : '—'])
   }
   const tone = peak && peak.offPeak ? 'valley' : 'peak'
+  /* 峰谷时段改叫电费倍率：谷时 5 倍、峰时 10 倍 */
+  const peakTerm = peak ? (peak.offPeak ? '五倍电费' : '十倍电费') : '电费时段'
   rows.push([
-    '峰谷',
+    peakTerm,
     loading
       ? '…'
       : peak
@@ -2082,7 +2094,7 @@ function BubbleCard({ data, onMeasure, onFlip }) {
               h('span', { className: 'fz3-peak-badge', 'data-tone': tone }, peak.offPeak ? '谷' : '峰'),
               h('span', { className: 'fz3-peak-clock', 'data-tone': tone }, clockText(left)),
             )
-          : peak.label
+          : feeText(peak.label)
         : '—',
   ])
 
@@ -2093,13 +2105,13 @@ function BubbleCard({ data, onMeasure, onFlip }) {
     )
   }
   if (peak) {
-    const flip = peak.offPeak ? '高峰' : '空闲'
+    const flip = peak.offPeak ? '十倍电费' : '五倍电费'
     detail.push(
       nextAt
         ? left > 0
-          ? peak.window + ' · 后转' + flip + '价'
-          : peak.window + ' · 换价时刻已到，正在刷新'
-        : peak.window + ' · ' + peak.next,
+          ? feeText(peak.window) + ' · 后转' + flip
+          : feeText(peak.window) + ' · 换价时刻已到，正在刷新'
+        : feeText(peak.window) + ' · ' + feeText(peak.next),
     )
   }
   if (mode === 'usage' && !loading && balance && !balance.ok && balance.reason) detail.push(balance.reason)
@@ -2114,7 +2126,7 @@ function BubbleCard({ data, onMeasure, onFlip }) {
       'data-loading': loading ? '1' : '0',
       style: { left: x + 'px', top: y + 'px' },
     },
-    h('div', { className: 'fz3-bubble-head' }, mode === 'turn' ? 'Fairy · 本轮结算' : 'Fairy · 用量'),
+    h('div', { className: 'fz3-bubble-head' }, mode === 'turn' ? 'Fairy · 本轮结算' : 'Fairy · 电费'),
     rows.map(([k, v]) =>
       h('div', { className: 'fz3-bubble-row', key: k }, h('span', { className: 'fz3-bubble-k' }, k), h('span', { className: 'fz3-bubble-v' }, h('b', null, v))),
     ),
@@ -2189,7 +2201,7 @@ function BubbleCard({ data, onMeasure, onFlip }) {
         return { left: 0, top: 0, right: vw, bottom: vh }
       }
 
-      /* 用量气泡：null = 收起；mode = 'usage'（余额·今日·峰谷）| 'turn'（本轮·峰谷） */
+      /* 电费气泡：null = 收起；mode = 'usage'（电费余额·今日电费·电费倍率）| 'turn'（本轮电费·电费倍率） */
       const [bubble, setBubble] = useState(null)
       const bubbleTimer = useRef(null)
       const bubbleSize = useRef({ w: 236, h: 162 })
@@ -2522,7 +2534,7 @@ function BubbleCard({ data, onMeasure, onFlip }) {
         }
       }, [])
 
-      /* 一轮跑完 → 自动弹一次「本轮花费」，18 秒后自己消失。
+      /* 一轮跑完 → 自动弹一次「本轮电费」，18 秒后自己消失。
          用「上一轮情绪」判迁移而不是时间戳分桶：同一分钟内连跑两轮也能各弹一次。 */
       const prevMood = useRef('')
       useEffect(() => {
@@ -2963,7 +2975,7 @@ function BubbleCard({ data, onMeasure, onFlip }) {
                 role: 'button',
                 tabIndex: 0,
                 /* 不挂 title：悬浮提示会盖住眼徽，交互由气泡自己说明 */
-                'aria-label': 'Fairy 用量气泡',
+                'aria-label': 'Fairy 电费气泡',
               },
               h(CoreGlyph, { phase, mood }),
             )

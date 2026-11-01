@@ -2,7 +2,7 @@
 
 This page records why and how the **performance-optimized edition** of
 dsh-fairy-zzz differs from the upstream plugin, plus the measurements used to
-validate the result. 中文在前，English summary at the end. Section 9 adds the v1.2.0 GPU-usage work; §9.10 covers the v1.2.1 dead-code / dead-style cleanup, §9.11 checks the v1.3.0 interaction additions (usage bubble, drag, themes) and why they add no resident cost, §9.12 covers the v1.3.1 interaction-path rewrite, and §9.13 covers the v1.3.2 conversation-region drag bounds.
+validate the result. 中文在前，English summary at the end. Section 9 adds the v1.2.0 GPU-usage work; §9.10 covers the v1.2.1 dead-code / dead-style cleanup, §9.11 checks the v1.3.0 interaction additions (usage bubble, drag, themes) and why they add no resident cost, §9.12 covers the v1.3.1 interaction-path rewrite, §9.13 covers the v1.3.2 conversation-region drag bounds, and §9.14 records the v1.3.3 fee-label copy change (no performance impact).
 
 ## 1. 背景与目标
 
@@ -316,6 +316,16 @@ v1.3.1 的吸附以**整个视口**为边界，眼徽可以被拖到左侧栏、
 headless 实测（1602×944 @ dpr1.5）：默认停靠 `--fz3-dock-x=358px`、`--fz3-dock-y=492px`（核 rect x=295..423，完全在 x≥280 的会区内；旧版左缘 278 压到侧栏 2px）；拖到最左落位 x=354=280+74（rect.x=290）；拖到最上 y=114=40+74（rect.y=50）；右下角吸附 + 鲸鱼遮挡让位仍为 x=1528 / y=798；localStorage 写入 `{"x":354,"y":320}`；24 次 pointermove 146–201 ms、零长任务，无 console error。
 
 代码体积：`client.js` 3,180 行 / 154,438 B（只加区域测量约 61 行，无 CSS 变化、无新资源）。
+
+### 9.14 v1.3.3：电费文案（零性能影响）
+
+v1.3.3 只把用量气泡的文案从「用量 / 余额 / 今日花费 / 峰谷」改为「电费 / 电费余额 / 今日电费 / 五倍电费·十倍电费」，并按时段动态切换第三行标签（谷时「五倍电费」、峰时「十倍电费」、无数据兜底「电费时段」）。
+
+- 客户端只新增一个模块级纯函数 `feeText()`（把旧宿主可能返回的「高峰 / 空闲 时段」映射成「十倍 / 五倍电费」，`client.js` 里是字符串替换），没有新增动画、`setInterval`、`requestAnimationFrame` 或请求；气泡仍然只在打开时挂载，关闭即卸载。
+- 宿主 `index.js` 只改 `peakState()` 返回的 `label` / `window` / `next` 三个字符串，`/usage` 的解析、3 s memo 与缓存路径完全没动，开销与 v1.3.2 相同（冷 505–608 ms、热 ~20 ms，仍只在气泡打开时请求）。
+- 新增 1 行动态标签文本不会改变布局成本：气泡宽度仍固定 236 px（`--fz3-bubble-w`），最长标签「五倍电费」4 个字单行显示，headless 截图核对无溢出 / 无换行。
+
+因此第 3 / 7 节的 GPU 与主线程数据继续有效；`client.js` 3,192 行 / 155,313 B、`index.js` 1,392 行 / 47,865 B（相对 v1.3.2 分别 +12 行 / +875 B、+1 行 / +10 B）。
 ---
 
 ## English summary

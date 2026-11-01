@@ -1,7 +1,7 @@
-# dsh-fairy-zzz 插件技术说明（v1.3.2）
+# dsh-fairy-zzz 插件技术说明（v1.3.3）
 
 > 目标读者：**没有参与过本项目、但要继续维护或修改这个插件的人 / AI 智能体**。读完这篇文档，应该能独立定位代码、改功能、打版本、发布到 GitHub，并复现验证。
-> 最后更新：2026-11-01，对应版本 v1.3.1（v1.3.0 新增：眼徽用量 / 花费气泡、眼徽拖拽与隐藏、外观三档（跟随 / 深色 / 浅色）、欢迎页文案改写，以及 host 侧 `GET /fairy-zzz/usage` 路由与 5 个稳定性修复；v1.3.1 把拖拽重写为 transform-only + 四边吸附 + 遮挡让位、用量改为预取缓存（点开即显）、气泡支持点外 / Esc 关闭、设置页删掉「（本地 CPU 推理）」后缀；v1.3.2 把拖拽与吸附范围从整个视口收进**会话内容区**（左 = 侧栏右缘、上 = 标题栏底缘，右 / 下 = 窗口边缘），边界在每次 pointerdown 时实时重量；v1.2.1 的死代码清理成果保留）。
+> 最后更新：2026-11-01，对应版本 v1.3.1（v1.3.0 新增：眼徽用量 / 花费气泡、眼徽拖拽与隐藏、外观三档（跟随 / 深色 / 浅色）、欢迎页文案改写，以及 host 侧 `GET /fairy-zzz/usage` 路由与 5 个稳定性修复；v1.3.1 把拖拽重写为 transform-only + 四边吸附 + 遮挡让位、用量改为预取缓存（点开即显）、气泡支持点外 / Esc 关闭、设置页删掉「（本地 CPU 推理）」后缀；v1.3.2 把拖拽与吸附范围从整个视口收进**会话内容区**（左 = 侧栏右缘、上 = 标题栏底缘，右 / 下 = 窗口边缘），边界在每次 pointerdown 时实时重量；v1.2.1 的死代码清理成果保留；v1.3.3 只改文案：气泡里的「用量 / 花费 / 峰谷」统一成「电费」口径（用量→电费、余额→电费余额、今日花费→今日电费、峰谷→五倍电费 / 十倍电费，峰段窗口提示为「十倍电费」），客户端对旧宿主的「高峰 / 空闲」字样做兜底改写）。
 > 姊妹文档：[docs/PERFORMANCE.md](PERFORMANCE.md)（性能优化报告：为什么这么改、数据怎么量出来的）。
 
 ---
@@ -10,14 +10,14 @@
 
 - 插件名 / 包名：`dsh-fairy-zzz`（目录名同样是这个）。
 - 它做什么：把 DeepSeek Harness 的 Web UI 换成《绝区零》Fairy 的 H.D.D 终端 —— 整屏开机视频 → 居中问好（按时段播预录语音）→ 收缩成聊天区左缘的常驻眼标；同时提供可选的本地 GPT-SoVITS 朗读（仓库不含模型 / 引擎）。
-- v1.3.0 起，眼标还是**交互入口**：点一下弹出「余额 / 今日花费 / 峰谷倒计时」气泡，每轮回答结束自动弹一次「本轮结算」；按住可以拖到任意位置，设置里可隐藏眼标；外观支持跟随宿主 / 强制深色 / 强制浅色。v1.3.1 起拖拽只写眼标自身的 `transform`（rAF 合并，165 Hz 下无长任务），松手会吸附到视口四边（距边 64px 内，角落两轴同时吸），落点被更高 `z-index` 的悬浮组件盖住时沿边让位；气泡点外任意位置或 Esc 即可关闭，dock 后 700ms 预取用量，点开 65–166ms 出数。v1.3.2 再把拖拽 / 吸附限制在会话内容区（不越过左侧栏和标题栏），边界在按下时实时测量，打开会话导致标题栏变高也会自动适配。
+- v1.3.0 起，眼标还是**交互入口**：点一下弹出「电费余额 / 今日电费 / 电费倍率倒计时」气泡，每轮回答结束自动弹一次「本轮结算」；按住可以拖到任意位置，设置里可隐藏眼标；外观支持跟随宿主 / 强制深色 / 强制浅色。v1.3.1 起拖拽只写眼标自身的 `transform`（rAF 合并，165 Hz 下无长任务），松手会吸附到视口四边（距边 64px 内，角落两轴同时吸），落点被更高 `z-index` 的悬浮组件盖住时沿边让位；气泡点外任意位置或 Esc 即可关闭，dock 后 700ms 预取用量，点开 65–166ms 出数。v1.3.2 再把拖拽 / 吸附限制在会话内容区（不越过左侧栏和标题栏），边界在按下时实时测量，打开会话导致标题栏变高也会自动适配。v1.3.3 把气泡文案统一成「电费」口径（谷时「五倍电费」、峰时「十倍电费」），客户端兼容旧宿主的「高峰 / 空闲」字样。
 - 代码在哪（三处，同步关系见第 2 节）：
   - 实际运行目录：`C:\Users\SkyWingDN\.dsh\plugins\dsh-fairy-zzz`（DSH 加载的是这里）
   - 本地 git 仓库：`C:\Users\SkyWingDN\Desktop\dsh-fairy-zzz`（发布用，内容应与运行目录一致）
   - 远端仓库：`https://github.com/SkyWingDN/dsh-fairy-zzz`（public，MIT；release：https://github.com/SkyWingDN/dsh-fairy-zzz/releases ）
 - 代码只有三个入口文件：`index.js`（host 侧，Node 路由 / TTS / 情绪 / 用量统计）、`client.js`（浏览器侧，React 组件 + 全部 CSS + 动效运行时）、`cordis.patch.yml`（一行 insert 完成插件装配）。
-- 体积（v1.3.2 实测）：`client.js` 154,438 B / 3,180 行；`index.js` 47,855 B / 1,391 行；`package.json` 1.3.2；发布版资源约 5.5 MB（开机视频 2.4 MB）。
-- 性能（GPU 数据来自 v1.2.0，v1.2.1 / v1.3.0 / v1.3.1 / v1.3.2 均未触碰渲染路径）：dock 待机 GPU 从 v1.1.1 的约 43% 降到约 5%（同机 165 Hz headless 实测，约 −88%）；主线程约 1–2.5%，首屏运行时下载约 2.9 MB。v1.3.0 新增的用量气泡、主题、拖拽全部是**按需 / 静态**路径，没有新增常驻动画；v1.3.1 的拖拽重写、用量预取、点外关闭同样是交互期 / 低频路径，没有新增常驻开销；v1.3.2 只在 `onCoreDown` 时多量一次侧栏 / 标题栏矩形（一次 `getBoundingClientRect`，拖动期不再读布局），同样无常驻成本（见 14.4）。
+- 体积（v1.3.3 实测）：`client.js` 155,313 B / 3,192 行；`index.js` 47,865 B / 1,392 行；`package.json` 1.3.3；发布版资源约 5.5 MB（开机视频 2.4 MB）。
+- 性能（GPU 数据来自 v1.2.0，v1.2.1 / v1.3.0 / v1.3.1 / v1.3.2 均未触碰渲染路径）：dock 待机 GPU 从 v1.1.1 的约 43% 降到约 5%（同机 165 Hz headless 实测，约 −88%）；主线程约 1–2.5%，首屏运行时下载约 2.9 MB。v1.3.0 新增的用量气泡、主题、拖拽全部是**按需 / 静态**路径，没有新增常驻动画；v1.3.1 的拖拽重写、用量预取、点外关闭同样是交互期 / 低频路径，没有新增常驻开销；v1.3.2 只在 `onCoreDown` 时多量一次侧栏 / 标题栏矩形（一次 `getBoundingClientRect`，拖动期不再读布局），同样无常驻成本（见 14.4）；v1.3.3 只改气泡文案与格式化函数，未触碰渲染路径与定时器。
 - 当前安装的 DSH：桌面 Electron 版（`C:\softs\DeepSeek Harness\resources\app.asar`，0.2.1-rc 系列）。DSH 升级后前端 bundle 的 hash 会变，但插件只依赖**槽位名**和少量 data 属性，通常不需要改。
 
 ---
@@ -30,7 +30,7 @@
 | --- | --- | --- | --- |
 | 原始插件 | [AssassinVIX/fairy-zzz-plugin](https://github.com/AssassinVIX/fairy-zzz-plugin)（B 站 BV1d4HK6eE3g 作者 黑塔小蛋糕） | MIT | 本仓库的代码基础 |
 | 眼标 SVG、动画几何与时长、眼闪 / 故障参数 | [Chengzhibense/Fairy-DSH](https://github.com/Chengzhibense/Fairy-DSH)（B 站 BV1SD4C63EZz 作者 橙汁本色） | Apache-2.0，Copyright 2026 Chengzhibense，commit `d639887a386b0de6fef2e61c97dc268631854591` | 眼标 SVG 与动效语义的参考；`FAIRY_EYE_SVG` 里保留了 SPDX 注释 |
-| 修改者 / 本仓库维护者 | SkyWingDN | MIT（修改部分） | 性能优化 + 1.1.1 欢迎页品牌位 + 1.3.0 用量 / 拖拽 / 主题 |
+| 修改者 / 本仓库维护者 | SkyWingDN | MIT（修改部分） | 性能优化 + 1.1.1 欢迎页品牌位 + 1.3.0 用量 / 拖拽 / 主题 + 1.3.3 电费文案 |
 | 素材版权 | miHoYo / HoYoverse | — | 开机视频与角色形象；仅个人桌面改造，勿商用 |
 
 对应文件：`LICENSE`（MIT 全文）、`NOTICE-fairy-dsh.md`（上游署名 / Fairy-DSH 声明）、`licenses/Apache-2.0.txt`、`licenses/Fairy-DSH-NOTICE.txt`、`licenses/Fairy-DSH-TRADEMARKS.md`。**改这个插件时不要把这几处署名删掉**，这是许可要求，也是社区约定。
@@ -111,7 +111,7 @@ window.__ModuleLoader__.load({
 | --- | --- | --- |
 | `ctx.get('locale')` | 注册 i18n 词条 | `client.js` `apply` 开头（`locale.register(NS,'zh-CN',ZH)`） |
 | `ctx.get('theme')` | 覆盖 `--dsw-alias-*` 主题 token、读当前主题 id | `theme.overrideTokens(PKG, TOKENS)`、`theme.getTheme()`（深浅色探测） |
-| `ctx.remote.account` | 账户余额接口 | `fetchBalance()`（气泡里的「余额」行） |
+| `ctx.remote.account` | 账户余额接口 | `fetchBalance()`（气泡里的「电费余额」行） |
 | `ctx.slots.inject / register` | 占坑 / 注册组件 | 见第 4 节槽位表 |
 | `ctx.effect(fn)` | 注册可清理副作用 | host 路由、`<style>` 清理 |
 | `ctx.webServer.register` | 注册 HTTP 路由（host） | 第 11 节 |
@@ -170,7 +170,7 @@ DSH 新会话欢迎页的标题行结构：
 
 ---
 
-## 5. client.js 文件地图（3,180 行，约 154 KB）
+## 5. client.js 文件地图（3,192 行，约 155 KB）
 
 > 行号基于 v1.3.2 实测（v1.3.1 为 151,180 B / 3,119 行；v1.3.2 在 `FairySkin` 内新增约 61 行「会话内容区」测量与吸附边界代码，2126 行之后整体后移）。改代码前先 `grep` 函数名 / 注释定位，不要只信行号。
 
@@ -198,7 +198,7 @@ DSH 新会话欢迎页的标题行结构：
 | 1919-1959 | `VoiceAction` | 回复旁「朗读」按钮；挂载时 `autoRead` 触发自动朗读 |
 | 1961-2014 | `Atmos` | `React.memo`；v1.2.0 起用 500ms 环境时钟写呼吸内联样式（隐藏页暂停，见 8.5），静态基线只作兜底 |
 | 2016-2025 | `greetLine()` | 按时段的居中问好中文台词 |
-| 2027-2124 | `BubbleCard` | v1.3.0 用量气泡：只在展开时挂载；usage 态「余额 / 今日花费 / 峰谷」，turn 态「本轮花费 / 峰谷」；每秒 tick 倒计时、换价瞬间回调父层重拉；用 `useLayoutEffect` 把真实宽高交回父层 |
+| 2027-2124 | `BubbleCard` | v1.3.0 用量气泡：只在展开时挂载；usage 态「电费余额 / 今日电费 / 五倍或十倍电费」，turn 态「本轮电费 / 五倍或十倍电费」（1.3.3 文案；行标签按峰谷切换）；每秒 tick 倒计时、换价瞬间回调父层重拉；用 `useLayoutEffect` 把真实宽高交回父层 |
 | 2126-3017 | `FairySkin` | 主组件：`phase`（boot/greet/dock）+ `mood`（idle/thinking/working/done）；**会话内容区测量 2153-2194**（`regionRef` 2153、`measureRegion` 2156、`regionBounds` 2177，v1.3.2）、`closeBubble` 2197 / `bubblePlace` 2206 / `openBubble` 2222；品牌测量 `ResizeObserver`（~2298）、dock 测量 `ResizeObserver`（~2368）、hero `MutationObserver`（2487-2543）、done 气泡（2529-2535）、点外 / Esc 关闭（2538-2554）、用量预取（2556-2571）、mood 轮询（2579+）；**拖拽子系统 2650-2869**（`SNAP_EDGE` 2653、`snapPos` 2654、`ourStackZ` 2669、`foreignZAt` 2682、`occludedAt` 2706、`avoidOcclusion` 2707、`onCoreDown` 2724、`detachDrag` 2768、`paintDrag` 2774、`onCoreMove` 2782、`finishDrag` 2797、`onCoreUp` 2840、`onCoreCancel` 2849）；render 核心区 ~2946-2972、气泡 ~2974-3000 |
 | 3019-3175 | apply / 挂载 | `guard` 容错（3022）、locale（3033）、样式注入（3041-3060，HMR 就地更新）、主题 token + theme-watch（3062-3156）、`mount()` helper（3158）、7 条槽位注册（3168-3174） |
 
@@ -250,7 +250,7 @@ DSH 新会话欢迎页的标题行结构：
 | `HeroBrandMark` | 纯展示 props({size,className}) | `conversation.hero.brand.mark` | 1.1.1；静态眼标替换鲸鱼 |
 | `VoiceAction` | 交互 | assistant-actions | 朗读按钮 + 自动朗读 |
 | `FairySettings` | 交互 | settings.section | 设置页（朗读 / 眼标 / 外观 / 引擎 / 重播） |
-| `BubbleCard` | 交互（局部状态） | FairySkin 内 | v1.3.0 用量气泡；只在展开时挂载，尺寸量完回报父层做翻面 / 夹边；数据来自父层预取缓存（v1.3.1），点外 / Esc 由父层关闭 |
+| `BubbleCard` | 交互（局部状态） | FairySkin 内 | v1.3.0 用量气泡（1.3.3 起文案为电费口径）；只在展开时挂载，尺寸量完回报父层做翻面 / 夹边；数据来自父层预取缓存（v1.3.1），点外 / Esc 由父层关闭 |
 
 ---
 
@@ -357,7 +357,7 @@ const fz3EyeRuntime = (() => { ... return { mount, unmount, setState, suspend, r
 
 ---
 
-## 10. index.js 文件地图（1,391 行，约 47 KB）
+## 10. index.js 文件地图（1,392 行，约 47 KB）
 
 | 行号 | 区块 | 内容 |
 | --- | --- | --- |
@@ -400,12 +400,12 @@ const fz3EyeRuntime = (() => { ... return { mount, unmount, setState, suspend, r
   "now": 1762000000000,
   "peak": {
     "offPeak": false,
-    "label": "高峰",
-    "window": "工作日 09–12、14–18 高峰",
+    "label": "十倍电费",
+    "window": "工作日 09–12、14–18 十倍电费",
     "remainMs": 3600000,
     "nextAt": 1762003600000,
     "nextClock": "18:00",
-    "next": "1 小时 0 分后转高峰价"
+    "next": "1 小时 0 分后转五倍电费"
   },
   "today": { "hit": 0, "miss": 0, "out": 0, "cost": 0, "calls": 0 },
   "turn": null
@@ -414,7 +414,7 @@ const fz3EyeRuntime = (() => { ... return { mount, unmount, setState, suspend, r
 
 - `today`：北京时区当天 0 点起算；`hit` / `miss` / `out` 是 token 数，`miss = input + cache-write`，`cost` 单位为人民币元。
 - `turn`：最近修改的会话文件里最后一轮（`turn` 序号）的统计；可能是 `null`（若该 session 最后一轮完全落在昨天，会被按天裁剪掉——上游接口同样允许 null）。
-- `peak`：工作日 09:00-12:00 / 14:00-18:00 为高峰；周末与 2026 年节假日窗口全天低价；`remainMs` 精确到毫秒，`nextClock` 是 `HH:MM`。
+- `peak`：工作日 09:00-12:00 / 14:00-18:00 为高峰；周末与 2026 年节假日窗口全天低价；`remainMs` 精确到毫秒，`nextClock` 是 `HH:MM`。v1.3.3 起 `label` 直接返回「五倍电费 / 十倍电费」，`window` / `next` 也用同一口径（谷时 5 倍、峰时 10 倍）。
 - `?diag=1` 追加 `diag: { root, zstd, cached, files, recent, ms, at }`。
 
 ---
@@ -663,6 +663,14 @@ v1.3.0 的回归 harness（`tmp/merge/`，一次性）：`t7-routes.mjs`（8 个
 ---
 
 ## 19. 变更记录
+
+### 1.3.3（2026-11-01）
+
+- **文案**：气泡统一成「电费」口径——标题「Fairy · 电费」；usage 态「电费余额 / 今日电费 / 五倍电费（谷时）或十倍电费（峰时）」；turn 态「本轮电费」+ 同样倍率行；底部提示「工作日 09–12、14–18 十倍电费 · 后转…」；设置页两条说明同步；`fetchBalance()` 的错误串改「电费余额…」。
+- **host**：`peakState` 的 `label` / `window` / `next` 改新口径。
+- **兼容**：客户端新增 `feeText()`（`clockText` 之后）把旧宿主的「高峰 / 空闲 / 高峰价」兜底改写，所以只换 `client.js` 也能显示新文案；`index.js` 的新文案要重启 DSH 才生效。
+- **体积**：`client.js` 154,438 → 155,313 B、3,180 → 3,192 行；`index.js` 47,855 → 47,865 B、1,391 → 1,392 行；`package.json` 1.3.3；无新资源。
+- **验证**：headless Chrome 自签 cookie 登录真实 GUI，boot → greet → dock 后点眼徽，气泡文本包含「电费余额 / 今日电费 / 五倍电费」、不再出现「用量 / 峰谷 / 今日花费」；无 console error / page error；截图核对长标签不换行。
 
 ### 1.3.2（2026-11-01）
 
