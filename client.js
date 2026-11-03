@@ -58,9 +58,10 @@ window.__ModuleLoader__.load({
       ],
     }
     let greetPick = null
-    const currentGreeting = () => {
+    /* forceFresh：设置页「试听问候」每点一次都重新抽一条，而不是复用本次会话开机时抽中的那条 */
+    const pickGreeting = (forceFresh) => {
       const slot = greetSlot()
-      if (greetPick && greetPick.slot === slot) return greetPick
+      if (!forceFresh && greetPick && greetPick.slot === slot) return greetPick
       const list = GREET_LINES[slot]
       let last = ''
       try { last = localStorage.getItem(GREET_LAST_KEY) || '' } catch (e) {}
@@ -70,13 +71,15 @@ window.__ModuleLoader__.load({
       try { localStorage.setItem(GREET_LAST_KEY, greetPick.file) } catch (e) {}
       return greetPick
     }
-    const GREETING = () => '/fairy-zzz/assets/voice/' + currentGreeting().file
+    const currentGreeting = () => pickGreeting(false)
+    const nextGreeting = () => pickGreeting(true)
+    const greetingUrl = (pick) => '/fairy-zzz/assets/voice/' + pick.file
+    const GREETING = () => greetingUrl(currentGreeting())
 
-    /* 眼标拖拽 / 显隐 / 主题偏好的 localStorage 键（设置页写，皮肤图层读） */
+    /* 眼标拖拽 / 显隐的 localStorage 键（设置页写，皮肤图层读） */
     const DRAG_KEY = 'fairy.zzz.drag'
     const POS_KEY = 'fairy.zzz.dock-pos'
     const EYE_KEY = 'fairy.zzz.eye-hidden'
-    const THEME_KEY = 'fairy.zzz.theme-mode'
     /* 欢迎页 hero 的标题与徽章没有插槽，只能改写 DOM 文本：按界面语言换成 H.D.D 字样 */
     const HERO_COPY = {
       zh: { headline: '空洞深潜系统', badge: 'H.D.D Ⅲ' },
@@ -996,7 +999,7 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 }
 
 /* ==================================================================
- * v1.3.0 新增：浅色主题 / 用量气泡 / 眼徽拖拽 / 设置页分段开关
+ * v1.3.0 新增：浅色主题 / 用量气泡 / 眼徽拖拽；v1.6.2 起外观固定跟随宿主，不再有分段开关
  * 性能约定：气泡只在展开时才挂载，并且去掉了参考实现的
  * backdrop-filter:blur()（整块区域模糊在高刷屏上每帧重算背景）改纯渐变；
  * 其余新增规则全部是静态声明，没有常驻动画。
@@ -1036,15 +1039,6 @@ html[data-fz3-theme="light"] .fz3-set-note{color:#65759b}
 html[data-fz3-theme="light"] .fz3-set-switch{background:rgba(120,150,200,.25);border-color:rgba(60,90,220,.25)}
 html[data-fz3-theme="light"] .fz3-set-switch::after{background:#fff;box-shadow:0 1px 3px rgba(20,40,90,.28)}
 html[data-fz3-theme="light"] .fz3-set-switch[data-on="1"]::after{background:#04121f;box-shadow:none}
-
-/* ---------- 设置页分段开关（外观：跟随 / 深色 / 浅色） ---------- */
-.fz3-set-seg{display:inline-flex;gap:4px;padding:3px;border-radius:10px;background:rgba(9,13,22,.72);border:1px solid rgba(130,160,210,.18);flex:none}
-.fz3-set-segbtn{font:inherit;font-size:11.5px;padding:5px 11px;border-radius:8px;border:1px solid transparent;background:transparent;color:#9fb2cb;cursor:pointer;transition:background .16s ease,color .16s ease,border-color .16s ease}
-.fz3-set-segbtn:hover{color:#e8f2ff}
-.fz3-set-segbtn[data-on="1"]{color:#04121f;background:linear-gradient(90deg,#2f7bff,#57e8ff);border-color:rgba(120,225,255,.6)}
-html[data-fz3-theme="light"] .fz3-set-seg{background:rgba(255,255,255,.78);border-color:rgba(60,90,220,.18)}
-html[data-fz3-theme="light"] .fz3-set-segbtn{color:#5c6b8f}
-html[data-fz3-theme="light"] .fz3-set-segbtn:hover{color:#141a2e}
 
 /* ---------- 眼徽交互：点一下弹用量气泡，按住可以拖到任意位置 ---------- */
 .fz3-layer[data-phase="dock"] .fz3-core{pointer-events:auto;cursor:pointer}
@@ -1721,7 +1715,7 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
           engineTimer.current = []
         }
       }, [])
-      /* 眼徽：拖动 / 显隐 / 外观。三项都写 localStorage，再广播自定义事件让皮肤图层立刻响应 */
+      /* 眼徽：拖动 / 显隐。两项都写 localStorage，再广播自定义事件让皮肤图层立刻响应 */
       const [dragPref, setDragPref] = useState(() => readBool(DRAG_KEY, true))
       const [eyeHidden, setEyeHidden] = useState(() => readBool(EYE_KEY, false))
       const [hasCustomPos, setHasCustomPos] = useState(() => {
@@ -1740,17 +1734,13 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
         writeStored(EYE_KEY, next)
         try { window.dispatchEvent(new Event('fz3:eye-pref')) } catch (e) {}
       }
-      const [themeMode, setThemeMode] = useState(() => readStored(THEME_KEY, 'auto'))
-      const pickTheme = (mode) => {
-        setThemeMode(mode)
-        writeStored(THEME_KEY, mode)
-        try { window.dispatchEvent(new Event('fz3:theme-pref')) } catch (e) {}
-      }
       const resetDockPos = () => {
         try { localStorage.removeItem(POS_KEY) } catch (e) {}
         setHasCustomPos(false)
         try { window.dispatchEvent(new Event('fz3:dock-reset')) } catch (e) {}
       }
+      /* 试听问候：本时段 5 条随机语音里抽一条，把台词显示出来，方便确认新语音都在 */
+      const [previewLine, setPreviewLine] = useState('')
 
       const ping = useCallback(() => {
         if (pingAbort.current) {
@@ -1885,9 +1875,12 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
         writeStored(VOICE_KEY, enabled)
         if (!enabled) stopSpeech()
       }
+      /* 每次点击都重新抽一条（避开上一条），不再复用本次会话开机时抽中的那条 */
       const playGreet = () => {
         stopSpeech()
-        const audio = new Audio(GREETING())
+        const pick = nextGreeting()
+        setPreviewLine(pick.text)
+        const audio = new Audio(greetingUrl(pick))
         preview = audio
         audio.onended = () => {
           if (preview === audio) preview = null
@@ -1945,18 +1938,6 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
             'aria-pressed': !eyeHidden,
             onClick: toggleEye,
           }),
-        ),
-        h(
-          'div',
-          { className: 'fz3-set-row' },
-          h('div', null, h('div', { className: 'fz3-set-label' }, '外观'), h('div', { className: 'fz3-set-desc' }, themeMode === 'auto' ? '跟随 DSH 的深色 / 浅色设置' : themeMode === 'light' ? '强制浅色：不用再眯眼看白底' : '强制深色：夜里开机也不刺眼')),
-          h(
-            'div',
-            { className: 'fz3-set-seg' },
-            h('button', { type: 'button', className: 'fz3-set-segbtn', 'data-on': themeMode === 'auto' ? '1' : '0', onClick: () => pickTheme('auto') }, '跟随'),
-            h('button', { type: 'button', className: 'fz3-set-segbtn', 'data-on': themeMode === 'dark' ? '1' : '0', onClick: () => pickTheme('dark') }, '深色'),
-            h('button', { type: 'button', className: 'fz3-set-segbtn', 'data-on': themeMode === 'light' ? '1' : '0', onClick: () => pickTheme('light') }, '浅色'),
-          ),
         ),
         h(
           'div',
@@ -2020,12 +2001,13 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
         h(
           'div',
           { className: 'fz3-set-actions' },
-          h('button', { type: 'button', className: 'fz3-set-btn', onClick: playGreet }, '试听问候'),
+          h('button', { type: 'button', className: 'fz3-set-btn', onClick: playGreet, title: '随机试听本时段的 5 条问候之一' }, '试听问候'),
           h('button', { type: 'button', className: 'fz3-set-btn', onClick: replayBoot }, '重播开机动画'),
           h('button', { type: 'button', className: 'fz3-set-btn', onClick: resetDockPos, disabled: !hasCustomPos }, '眼标复位'),
           h('button', { type: 'button', className: 'fz3-set-btn', onClick: testVoice, disabled: busy }, '测试语音'),
           h('button', { type: 'button', className: 'fz3-set-btn is-ghost', onClick: stopSpeech, disabled: !busy }, '停止'),
         ),
+        previewLine ? h('div', { className: 'fz3-set-note' }, '刚刚试听：' + previewLine) : null,
         h('div', { className: 'fz3-set-note' }, 'Fairy 皮肤 · 待机随机眨眼与花屏、思考态眼睑呼吸；点一下左下的眼标展开电费气泡（电费余额 / 今日电费 / 电费倍率倒计时），按住可拖动。开关都在这里。'),
       )
     }
@@ -3261,15 +3243,12 @@ function BubbleCard({ data, onMeasure, onFlip }) {
         })
 
         guard('theme-watch', () => {
-          /* 外观：跟随宿主主题，或听设置页「外观」分段开关的强制值。
+          /* 外观不再提供设置项：始终跟随 DSH 的深色 / 浅色设置。
+             probeLight 先问 theme.getTheme()，取不到就量 --dsw-alias-bg-base 亮度，再退回系统偏好；
              只切 <html data-fz3-theme>，CSS 侧全部是静态覆盖；观察 html 属性时做 260ms 去抖，
              宿主频繁改 style 也不会把回调打成风暴。 */
           if (typeof document === 'undefined') return
           const root = document.documentElement
-          const forced = () => {
-            const value = readStored(THEME_KEY, 'auto')
-            return value === 'light' || value === 'dark' ? value : ''
-          }
           const probeLight = () => {
             try {
               const theme = ctx.get && ctx.get('theme')
@@ -3292,31 +3271,9 @@ function BubbleCard({ data, onMeasure, onFlip }) {
             } catch (e) {}
             try { return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) } catch (e) { return false }
           }
-          let lastForce = null
           const apply = () => {
-            const force = forced()
-            const pick = force || (probeLight() ? 'light' : 'dark')
+            const pick = probeLight() ? 'light' : 'dark'
             if (root.dataset.fz3Theme !== pick) root.dataset.fz3Theme = pick
-            /* 设置页强制外观时，宿主外壳本身仍是它自己的主题（侧栏/输入框不会变），
-               这里把 Fairy 的设计变量双写进 light+dark 两套，让宿主也走强制配色。 */
-            if (force !== lastForce) {
-              lastForce = force
-              try {
-                const theme = ctx.get && ctx.get('theme')
-                if (theme && typeof theme.overrideTokens === 'function') {
-                  if (!force) theme.overrideTokens(PKG, TOKENS)
-                  else {
-                    const map = force === 'light' ? lightTokens : baseTokens
-                    const merged = {}
-                    for (const key of Object.keys(baseTokens)) {
-                      const value = map[key] || baseTokens[key]
-                      merged[key] = { light: value, dark: value }
-                    }
-                    theme.overrideTokens(PKG, merged)
-                  }
-                }
-              } catch (e) {}
-            }
           }
           apply()
           let timer = null
@@ -3327,12 +3284,12 @@ function BubbleCard({ data, onMeasure, onFlip }) {
               apply()
             }, 260)
           }
-          window.addEventListener('fz3:theme-pref', apply)
           const media = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null
           if (media) {
             if (typeof media.addEventListener === 'function') media.addEventListener('change', soon)
             else if (typeof media.addListener === 'function') media.addListener(soon)
           }
+          /* 宿主切主题会改 html 属性并触发 theme/change，两条路都重新探一次 */
           const observer = new MutationObserver(soon)
           observer.observe(root, { attributes: true, attributeFilter: ['style', 'class', 'data-theme', 'data-color-scheme'] })
           if (ctx && typeof ctx.on === 'function') {
@@ -3341,7 +3298,6 @@ function BubbleCard({ data, onMeasure, onFlip }) {
           if (ctx && typeof ctx.effect === 'function') {
             ctx.effect(() => () => {
               if (timer) clearTimeout(timer)
-              window.removeEventListener('fz3:theme-pref', apply)
               if (media) {
                 if (typeof media.removeEventListener === 'function') media.removeEventListener('change', soon)
                 else if (typeof media.removeListener === 'function') media.removeListener(soon)
