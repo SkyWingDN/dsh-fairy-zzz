@@ -618,6 +618,10 @@ window.__ModuleLoader__.load({
   --fz3-eye:clamp(132px,min(32vmin,34vh),330px);
   --fz3-eye-cy:42vh;
   --fz3-eye-gap:clamp(14px,3.4vh,54px);
+  /* greet 态眼睛整体上移量：眼睛光晕（.fz3-eye::before inset:-13%）比眼睛包围盒每边多探出 0.13×eye，
+     眼睛不动时这段柔光会压到文案第一行 kicker（H.D.D CORE // ONLINE）上。
+     只上移 .fz3-core，不改 .fz3-copy 的锚点，等于把眼睛与文案的间距再拉开一个 lift。 */
+  --fz3-eye-lift:clamp(12px,2.8vh,28px);
   color-scheme:dark;
 }
 html,body{background:#080a12!important;color-scheme:dark;}
@@ -715,7 +719,7 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 
 /* ---------- 全息核心 ---------- */
 .fz3-core{
-  position:fixed;left:50%;top:var(--fz3-eye-cy);width:var(--fz3-eye);aspect-ratio:1/1;
+  position:fixed;left:50%;top:calc(var(--fz3-eye-cy) - var(--fz3-eye-lift));width:var(--fz3-eye);aspect-ratio:1/1;
   transform:translate(-50%,-50%);opacity:0;pointer-events:none;z-index:2;
   transition:left 1.35s cubic-bezier(.62,0,.22,1),top 1.35s cubic-bezier(.62,0,.22,1),width 1.35s cubic-bezier(.62,0,.22,1),opacity .55s ease;
 }
@@ -889,7 +893,10 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 .fz3-layer[data-phase="greet"] .fz3-copy{opacity:1}
 .fz3-layer[data-phase="dock"] .fz3-copy{opacity:0;transform:translate(-50%,-16px);visibility:hidden;
   transition:opacity .6s ease,transform 1s ease,visibility 0s linear .6s}
-.fz3-copy-kicker{font-size:clamp(8px,.78vw,9.5px);letter-spacing:.44em;color:rgba(150,172,255,.82);margin-bottom:clamp(6px,1.4vh,14px);text-indent:.44em}
+/* kicker 是 8–9.5px 的细字，光晕最亮处对比度只有 1.2 左右；加一层贴合字形的暗描边把它从辉光里托出来，
+   亮色文字本身略微提亮，观感仍是「背景里的小字」，但能读清。 */
+.fz3-copy-kicker{font-size:clamp(8px,.78vw,9.5px);letter-spacing:.44em;color:rgba(202,220,255,.96);margin-bottom:clamp(6px,1.4vh,14px);text-indent:.44em;
+  text-shadow:0 1px 2px rgba(0,8,28,.62),0 0 10px rgba(40,90,220,.4)}
 .fz3-copy-title{display:inline-block;position:relative;margin-bottom:clamp(24px,4.4vh,56px);font-size:clamp(18px,min(3.1vw,4.6vh),38px);font-weight:700;letter-spacing:.045em;line-height:1.06;color:#fff;text-align:center;
   text-shadow:0 0 24px rgba(96,124,255,.85),0 0 60px rgba(70,90,255,.5);}
 /* 参考视频里的镜面倒影：同一串文字翻转过来，向下渐隐 */

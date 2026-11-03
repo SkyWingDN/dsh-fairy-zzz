@@ -16,7 +16,7 @@
   - 本地 git 仓库：`C:\Users\SkyWingDN\Desktop\dsh-fairy-zzz`（发布用，内容应与运行目录一致）
   - 远端仓库：`https://github.com/SkyWingDN/dsh-fairy-zzz`（public，MIT；release：https://github.com/SkyWingDN/dsh-fairy-zzz/releases ）
 - 代码只有三个入口文件：`index.js`（host 侧，Node 路由 / TTS / 情绪 / 用量统计）、`client.js`（浏览器侧，React 组件 + 全部 CSS + 动效运行时）、`cordis.patch.yml`（一行 insert 完成插件装配）。
-- 体积（v1.6.0 + 眼睑 rim 补丁）：`client.js` 164,855 B / 3,369 行；`index.js` 47,892 B / 1,392 行；`package.json` 1.6.0；发布版资源约 7.8 MB（开机视频 2.4 MB + 25 条问候语音 2.71 MB）。
+- 体积（v1.6.1）：`client.js` 165,574 B / 3,376 行；`index.js` 47,892 B / 1,392 行；`package.json` 1.6.1；发布版资源约 7.8 MB（开机视频 2.4 MB + 25 条问候语音 2.71 MB）。
 - 性能（GPU 数据来自 v1.2.0，v1.2.1 / v1.3.0 / v1.3.1 / v1.3.2 均未触碰渲染路径）：dock 待机 GPU 从 v1.1.1 的约 43% 降到约 5%（同机 165 Hz headless 实测，约 −88%）；主线程约 1–2.5%，首屏运行时下载约 2.9 MB。v1.3.0 新增的用量气泡、主题、拖拽全部是**按需 / 静态**路径，没有新增常驻动画；v1.3.1 的拖拽重写、用量预取、点外关闭同样是交互期 / 低频路径，没有新增常驻开销；v1.3.2 只在 `onCoreDown` 时多量一次侧栏 / 标题栏矩形（一次 `getBoundingClientRect`，拖动期不再读布局），同样无常驻成本（见 14.4）；v1.3.3 只改气泡文案与格式化函数，未触碰渲染路径与定时器；v1.3.4 只改文案并删掉一个 SVG `<title>`；v1.4.0 只新增预录音频、常量表与随机选择函数，不进渲染路径、不加定时器；v1.5.0 用 4 份 HTML 合成层 + CSS steps() 把眼徽持续动画压到 15fps；v1.6.0 为修边缘重采样把眼徽改回单 SVG、用 15fps JS ticker 写 SVG 属性（隔离测量 +0.5 GPU 点 / +0.8% 主线程，真实页面噪声内），见 8.6 与 14.6。
 - 当前安装的 DSH：桌面 Electron 版（`C:\softs\DeepSeek Harness\resources\app.asar`，0.2.1-rc 系列）。DSH 升级后前端 bundle 的 hash 会变，但插件只依赖**槽位名**和少量 data 属性，通常不需要改。
 
@@ -170,10 +170,10 @@ DSH 新会话欢迎页的标题行结构：
 
 ---
 
-## 5. client.js 文件地图（3,369 行，164,855 B，v1.6.0）
+## 5. client.js 文件地图（3,376 行，165,574 B，v1.6.1）
 
 > **行号会随改动漂移，本表刻意不写行号，改用「搜索锚点」定位**：在 client.js 里 `grep` 锚点列的符号即可。
-> 当前校准值：CSS 段 608–1098、FZ3 运行时 1103–1652、组件区 1660–3369（`FZ3_RUNTIME_END` 在 1652）。
+> 当前校准值：CSS 段 608–1105、FZ3 运行时 1110–1659、组件区 1667–3376（`FZ3_RUNTIME_END` 在 1659）。
 > 1100 行之前的旧文档行号仍然适用；之后的行号整体比 v1.5.1 后移，不要再照抄旧编号。
 
 | 搜索锚点 | 区块 | 内容 |
@@ -300,7 +300,7 @@ const fz3EyeRuntime = (() => { ... return { mount, unmount, setState, suspend, r
 | 眼闪频率 | `scheduleFlicker` 里的随机区间与持续时间（CSS `.fz3-eye-flicker`） |
 | 花屏频率 / 参数 | `FZ3_FAULT`（拍数、间隔、位移、亮度）与 `scheduleGlitch` 的随机区间 |
 | 思考态半闭眼形状 | `FAIRY_EYE_SVG` 里 `#fz3-lid-clip` 的 path（`.fz3-lid-clip-shape`） |
-| 大眼尺寸 / 位置 | CSS 变量 `--fz3-eye` / `--fz3-eye-cy` / `--fz3-eye-gap` |
+| 大眼尺寸 / 位置 | CSS 变量 `--fz3-eye` / `--fz3-eye-cy` / `--fz3-eye-gap`，以及问候页的额外上移量 `--fz3-eye-lift`（见 17.19） |
 | 加一层新的常驻动画 | 先读 8.5 / 8.6 的规则再动手：大面积的走 CSS `steps`，小图标走 ticker 写 SVG 属性 |
 
 ### 8.5 全屏动画层与 GPU（v1.2.0 静态化 → v1.5.0 回归 CSS steps）
@@ -708,6 +708,10 @@ v1.3.0 的回归 harness（`tmp/merge/`，一次性）：`t7-routes.mjs`（8 个
 17. **不要让合成层去旋转 / 缩放 SVG 位图**（v1.5.0 的教训，v1.6.0 已修）：把同一份 SVG 复制成多个 HTML 层、用 CSS `transform` 做旋转 / 缩放时，合成器搬的是已经栅格化的位图，眼徽这种高对比小图标（尤其 `clipPath` 裁出的眼睑硬边）会出现台阶 / 发虚，用户看到的就是「像素没覆盖到」。小面积图标要「会转」就必须让矢量重绘：单 SVG + 15fps ticker 写 `transform` 属性（见 8.6）；大面积 / 全屏层仍然只能静态或 `steps()`。
 18. **同一份内联 SVG 被复制多份时，`url(#id)` 只解析文档里第一个同 id 元素**（v1.6.0 半闭眼白边的根因）：页面同时有 8 份 `#fz3-lid-clip`（主眼 1 + 花屏克隆 5 + 品牌位 / 字标 2）；主眼 `clip-path:url(#fz3-lid-clip)` 吃到的是**最靠前**的侧栏字标副本，而字标不在 `.fz3-eye` 作用域内、拿不到 `.fz3-eye .fz3-lid-clip-shape{transform:translateY(15.5px)}`，所以主眼实际裁切边界一直是 path 原始曲线 `y=75`（不是注释里写的 90.5）。教训：**眼睑 / clip 几何必须写死在 path `d` 里**，不要靠 CSS transform 调；重复 id 数量可用 `document.querySelectorAll('#fz3-lid-clip').length` 检查。裁切边界上的 AA 白边用同色 rim 描边（`#fz3-lid-rim`，thinking 态才显示）把「白压深」反转成「深压白」，静态绘制、零运行时开销。
 
+19. **问候页第一行小字被眼徽光晕压住**（v1.6.1）：`.fz3-copy` 的 `top` 是 `calc(--fz3-eye-cy + --fz3-eye/2 + --fz3-eye-gap)`，而 `.fz3-eye::before` 的静态柔光用 `inset:-13%`，比眼睛包围盒每边多探出 `0.13 × eye`（1610×949 下 39.5px）。于是 kicker（`H.D.D CORE // ONLINE`，高 12px）上半截正好落在柔光里，8–9.5px 细字在亮蓝底上的对比度只剩 ~1.2，看起来就像被图案盖住。
+    **修法**：新增 `--fz3-eye-lift:clamp(12px,2.8vh,28px)`，只从 `.fz3-core` 的 `top` 里减掉（`calc(var(--fz3-eye-cy) - var(--fz3-eye-lift))`），`.fz3-copy` 锚点保持 `--fz3-eye-cy`——眼徽上移、文案原地，等于把两者的间距拉开一个 lift，而不是把整组内容一起上移。实测（headless Chrome，真实 GUI 1610×949 dpr1）光晕底边到 kicker 的净空：1610×949 = 19px、1440×900 = 19px、1280×800 = 16px、1100×700 = 15px（矮视口 `max-height:620` 本来就 `display:none` 掉 kicker）。
+    **同时**把 kicker 颜色由 `rgba(150,172,255,.82)` 提到 `rgba(202,220,255,.96)`，并加一层 `text-shadow:0 1px 2px rgba(0,8,28,.62),0 0 10px rgba(40,90,220,.4)` 贴字形暗描边——纯静态声明，没有动画 / 滤镜 / 新图层，观感仍是「背景里的小字」但能读清。dock 态有显式 `top` 覆盖，不受 lift 影响；`boot → greet → dock` 的 top 过渡仍由同一条 1.35s transition 完成。
+
 ---
 
 ## 18. 常见改法（recipes）
@@ -717,7 +721,7 @@ v1.3.0 的回归 harness（`tmp/merge/`，一次性）：`t7-routes.mjs`（8 个
 | 改问候台词 / 时段的语音与随机规则 | `GREET_LINES`（每时段 5 条 `{file,text}`）、`currentGreeting()`、`GREETING()`、`greetSlot()`；新增音频放 `assets/voice/`；改 `text`（屏幕字幕）不需要重录，改音频台词才要重录（见 17.16） |
 | 改欢迎页标题 / 徽章文案 | `HERO_COPY`（中英各一套）；DOM 改写 effect 在 `FairySkin` 内（hero `MutationObserver` 段） |
 | 改欢迎页眼标尺寸 / 光晕 | `HeroBrandMark` + CSS `.fz3-hero-brand` |
-| 改眼徽大小 / 位置 | CSS 变量 `--fz3-eye` / `--fz3-eye-cy` / `--fz3-eye-gap`（617 附近）+ dock 测量（`FairySkin` 内的 `measureRegion` / `regionBounds`） |
+| 改眼徽大小 / 位置 | CSS 变量 `--fz3-eye` / `--fz3-eye-cy` / `--fz3-eye-gap` / `--fz3-eye-lift`（617 附近）+ dock 测量（`FairySkin` 内的 `measureRegion` / `regionBounds`） |
 | 改叶片转速 / 眼球呼吸 / 目光微动 | `FZ3_RUNTIME`：`FZ3_ORBIT_MS/STEPS`、`FZ3_LENS_MS/STEPS/SCALE`、`scheduleGaze`；观感对照表见 8.4 |
 | 改眼闪 / 花屏 / 光晕 / 脉冲 | `FZ3_RUNTIME`（`scheduleFlicker` / `scheduleGlitch` / `FZ3_FAULT`）+ CSS `@keyframes fz3-halo-breathe` / `fz3-lash-pulse` |
 | 改气泡内容 / 计价展示 | `BubbleCard`；金额格式化 `yuan`、`tokensText`、`clockText`、`feeText` |
@@ -731,6 +735,10 @@ v1.3.0 的回归 harness（`tmp/merge/`，一次性）：`t7-routes.mjs`（8 个
 
 ## 19. 变更记录
 
+### 1.6.1（2026-11-04）
+
+- **修复问候页第一行小字被眼徽光晕压住**（用户截图反馈）：kicker `H.D.D CORE // ONLINE`（8–9.5px）的上半截落在 `.fz3-eye::before` 的 13% 外扩柔光里，深色小字被亮背景冲淡，看起来像被图案盖住。新增 `--fz3-eye-lift:clamp(12px,2.8vh,28px)` 并只从 `.fz3-core` 的 `top` 里扣除（`.fz3-copy` 锚点不动），眼徽上移、文案原位，光晕底边与 kicker 的净空从 −7px 变成 +15～19px；同时把 kicker 提亮到 `rgba(202,220,255,.96)` 并加一层贴字暗描边（静态 CSS，无新增动画层 / 定时器，GPU 与主线程占用不变）。dock 与矮视口布局不受影响；`client.js` 164,855 → 165,574 B / 3,376 行。
+- 验证：headless Chrome（真实 GUI :9042、自签 cookie）跑 `boot → greet → dock`；1610×949 下净空 19px，1440×900 / 1280×800 / 1100×700 分别 19 / 16 / 15px；dock 眼徽坐标不变（x294 y431 128px）；点眼徽弹电费气泡正常；0 console exception。对照图 `docs/img/greet-lift-before-after.png`。
 ### 1.6.0（2026-11-03）
 
 - **修复眼徽边缘「像素没覆盖到 / 发虚 / 台阶」**（用户截图反馈，v1.5.0 遗留）：v1.5.0 把眼徽拆成 4 份静态 SVG 的 HTML 合成层，用 CSS `steps()` 旋转 / 缩放。合成器动的是**已栅格化的位图**，眼睑 clip 硬边与深蓝眼眶在重采样时出现台阶 / 发虚（165 Hz 屏每步旋转角度更大，更明显）。

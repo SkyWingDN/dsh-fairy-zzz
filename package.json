@@ -1,6 +1,6 @@
 {
   "name": "dsh-fairy-zzz",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Third-party modification (unofficial), based on AssassinVIX/fairy-zzz-plugin (MIT) and Chengzhibense/Fairy-DSH (Apache-2.0): Unofficial, performance-optimized edition of the Zenless Zone Zero Fairy H.D.D skin for the DSH Web UI: boot animation, animated eye core, time-of-day greeting, idle breathing, eye flicker and signal glitches, clip-based thinking eyelid, clickable eye badge with usage-balance bubble (today cost, peak/off-peak countdown), draggable / hideable eye badge, follow / force-dark / force-light appearance, rewritten welcome-page copy, plus optional local GPT-SoVITS voice. Modified by SkyWingDN from AssassinVIX/fairy-zzz-plugin (v1.0.3 upstream); eye art and motion adapted from Chengzhibense/Fairy-DSH.",
   "type": "module",
   "license": "MIT",
