@@ -631,7 +631,7 @@ function peakState(now = new Date()) {
   return {
     offPeak,
     label: offPeak ? '五倍电费' : '十倍电费',
-    window: '工作日 09–12、14–18 十倍电费',
+    window: '工作日 09–12、14–18 十倍电费，其余时段五倍电费',
     remainMs,
     nextAt: flipAt,
     nextClock: hh + ':' + mm,

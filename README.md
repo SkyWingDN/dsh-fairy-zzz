@@ -12,17 +12,17 @@
 | [Chengzhibense/Fairy-DSH](https://github.com/Chengzhibense/Fairy-DSH) · Chengzhibense（B 站「橙汁本色」，[BV1SD4C63EZz](https://www.bilibili.com/video/BV1SD4C63EZz/)） | Apache-2.0 | 眼标 SVG，以及眼睑 / 呼吸 / 故障动效的几何与时长 |
 | 素材：开机视频、Fairy 角色形象 | 版权归 miHoYo / HoYoverse | 仅用于个人桌面改造，**请勿商用或二次分发素材** |
 
-> **本修改版新增的内容**：性能优化（常驻 rAF 归零、全屏动画静态化、资源压缩约 −68%）、v1.3.0 的「电费余额 / 今日电费 / 五倍·十倍电费」气泡、眼徽拖拽与显隐、外观三档、欢迎页文案改写、宿主 `GET /fairy-zzz/usage` 路由，以及一批稳定性 bug 修复；1.3.1 再把拖拽改为 transform-only + 四边吸附、用量改预取（点开即显）、气泡支持点外 / Esc 关闭；1.3.2 把拖拽与吸附范围收进会话内容区；1.3.3 把气泡文案统一成「电费」口径（谷时「五倍电费」、峰时「十倍电费」）。完整署名与许可条款见文末「致谢与许可」、`NOTICE-fairy-dsh.md` 与 `licenses/`。
+> **本修改版新增的内容**：性能优化（常驻 rAF 归零、全屏动画静态化、资源压缩约 −68%）、v1.3.0 的「电费余额 / 今日电费 / 五倍·十倍电费」气泡、眼徽拖拽与显隐、外观三档、欢迎页文案改写、宿主 `GET /fairy-zzz/usage` 路由，以及一批稳定性 bug 修复；1.3.1 再把拖拽改为 transform-only + 四边吸附、用量改预取（点开即显）、气泡支持点外 / Esc 关闭；1.3.2 把拖拽与吸附范围收进会话内容区；1.3.3 把气泡文案统一成「电费」口径（谷时「五倍电费」、峰时「十倍电费」）；1.4.0 新增开屏问候语音库（每个时段 5 条，按 Fairy 人设撰写 / 录制，随机播放且不连续重复）；1.5.0 重做眼徽动效（静态底 + 4 份分层 SVG + 叶片公转 / 目光微动，持续动画全部 `steps()` 量化到 15 fps），观感更接近游戏内 Fairy，GPU 与渲染进程 CPU 反而再降约 −80% / −90%；1.5.1 修掉 `greet-night-2` 里「我值班 / 您不睡」的连读：v1.4.0 那 20 条语音本就按早期草稿台词录制，全角「；」不在引擎 `cut5` 的切分符号里；现按同一份草稿重录 20 条：把该处「；」改成「。」，并在合成后的 wav 里该句号的自然停顿处补了 0.20s 静音（总停顿约 0.44s）——引擎的 `merge_short_text_in_array(5)` 会把「我值班。」与「您不睡，」这类 4 字短句合并回同一片段，只改标点只有约 0.2s 的微停顿；屏幕字幕仍保留简洁版（与音频不必逐字一致），V1 原版 5 条未动；1.6.0 把眼徽从「4 份分层 SVG + CSS steps」改回**单 SVG + 15fps 向量重绘**：分层方案里合成器旋转 / 缩放的是已经栅格化的位图，眼睑硬边与深蓝眼眶会被重采样出台阶 / 发虚（用户截图反馈「像素没覆盖到」）；现在每 66.7ms 直接写 SVG `transform` 属性，由 Skia 按设备像素重新抗锯齿，隔离测量 GPU 0.99% → 1.52%、主线程 0% → 0.8%，真实页面同轮 A/B 在噪声内，192px 原生截图清晰度 +2%–4%。完整署名与许可条款见文末「致谢与许可」、`NOTICE-fairy-dsh.md` 与 `licenses/`。
 
 ---
 
 # Fairy Ⅲ · 绝区零 H.D.D 皮肤（性能优化修改版）
 
-**中文** · [English](#english) · **v1.3.3**
+**中文** · [English](#english) · **v1.6.0**
 
-> **第三方修改版，非官方。** 本仓库由 [SkyWingDN](https://github.com/SkyWingDN) 基于 [AssassinVIX/fairy-zzz-plugin](https://github.com/AssassinVIX/fairy-zzz-plugin)（MIT）修改：主要工作是**性能优化与资源压缩**（待机主线程开销约 -94%，首屏资源约 -68%，待机 GPU 占用约 -88%），并附带少量必要的行为调整（思考态眼睑由动态呼吸改为静态半闭）。原作者与素材来源见文末「致谢与许可」，性能细节见 [docs/PERFORMANCE.md](docs/PERFORMANCE.md)。本仓库**不包含** GPT-SoVITS 模型或推理引擎。
+> **第三方修改版，非官方。** 本仓库由 [SkyWingDN](https://github.com/SkyWingDN) 基于 [AssassinVIX/fairy-zzz-plugin](https://github.com/AssassinVIX/fairy-zzz-plugin)（MIT）修改：主要工作是**性能优化与资源压缩**（待机 GPU 占用约 -88%，首屏资源约 -68%；v1.5.0 重做眼徽动效后，同一 harness 再降约 -78% GPU / -85% 渲染进程 CPU；v1.6.0 为修边缘重采样改回单 SVG 15fps 向量重绘，隔离测量 +0.5 GPU 点，换到边缘永远按设备像素抗锯齿），并附带少量必要的行为调整（思考态眼睑由动态呼吸改为静态半闭）。原作者与素材来源见文末「致谢与许可」，性能细节见 [docs/PERFORMANCE.md](docs/PERFORMANCE.md)。本仓库**不包含** GPT-SoVITS 模型或推理引擎。
 
-把 DeepSeek Harness 的 Web 界面换成《绝区零》Fairy 的 H.D.D 终端：满屏开机动画 → 居中问好 → 收成会话区左侧的常驻眼徽，并可用本地 GPT-SoVITS 的 Fairy 音色把回复念出来。1.3.0 起眼徽还是交互入口：点一下看电费余额 / 今日电费与电费倍率倒计时，按住可拖动，设置里可隐藏，外观支持跟随 / 深色 / 浅色。1.3.1 把拖拽改成只写元素自身 `transform`（165 Hz 下不再掉帧）；1.3.2 再把拖拽与吸附限制在会话内容区内（左不越过侧栏、上不越过标题栏），松手吸附到该区域四边（角落两轴同时吸），点气泡外任意位置或按 Esc 即可关闭；1.3.3 把气泡文案统一成「电费」口径。
+把 DeepSeek Harness 的 Web 界面换成《绝区零》Fairy 的 H.D.D 终端：满屏开机动画 → 居中问好 → 收成会话区左侧的常驻眼徽，并可用本地 GPT-SoVITS 的 Fairy 音色把回复念出来。1.3.0 起眼徽还是交互入口：点一下看电费余额 / 今日电费与电费倍率倒计时，按住可拖动，设置里可隐藏，外观支持跟随 / 深色 / 浅色。1.3.1 把拖拽改成只写元素自身 `transform`（165 Hz 下不再掉帧）；1.3.2 再把拖拽与吸附限制在会话内容区内（左不越过侧栏、上不越过标题栏），松手吸附到该区域四边（角落两轴同时吸），点气泡外任意位置或按 Esc 即可关闭；1.3.3 把气泡文案统一成「电费」口径；1.4.0 把开场问候扩成每个时段 5 条（共 25 条），按 Fairy 人设随机播放。1.5.0 把眼徽动效重做成「静态底 + 分层 HTML + 叶片公转 + 目光微动」：观感更接近游戏内 Fairy，持续动画全部用 `steps()` 量化到 15 fps，占用反而更低（见「GPU 占用（v1.6.0：单 SVG 向量重绘）」）。1.5.1 修掉 greet-night-2 里「我值班 / 您不睡」连读：按原草稿台词重录 20 条，并在该句号处补了 0.20s 静音（总停顿约 0.44s）；屏幕字幕保持简洁理解版，不必与音频逐字一致。1.6.0 把眼徽改回单 SVG + 15fps 向量重绘（修 v1.5.0 合成层旋转 / 缩放导致的边缘发虚 / 台阶）。
 
 ![开机动画](screenshots/01-boot.png)
 ![居中问好](screenshots/02-greet.png)
@@ -34,20 +34,22 @@
 ## 特性
 
 - **开机动画**：整屏播放 H.D.D 启动片（**带片源自带的 H.D.D 启动音效**；桌面壳通常直接出声，浏览器若拦截带声音的自动播放，会先静音播放并提示点击一次开启声音），视频按 `object-fit: contain` 完整显示，多余区域由同帧的模糊铺底填充，任何窗口比例都不会出现硬黑边。
-- **居中问好**：动画结束后淡入 H.D.D 眼徽（深蓝环 / 白盘 / 蓝瞳 / 高光点），背后是蓝光晕图，`HOLLOW DEEP DIVE SYSTEM` 标题带镜面倒影，下方按当前时段（凌晨/上午/中午/下午/傍晚/深夜）播一句问候并同步播放预录音频。
+- **居中问好**：动画结束后淡入 H.D.D 眼徽（深蓝环 / 白盘 / 蓝瞳 / 高光点），背后是蓝光晕图，`HOLLOW DEEP DIVE SYSTEM` 标题带镜面倒影，下方按当前时段（凌晨/上午/中午/下午/傍晚/深夜）播一句问候并同步播放预录音频（每个时段 5 条：原版 1 条 + 按 Fairy 人设新录 4 条，靠谱 / 风趣 / 偶尔毒舌，随机挑选且不连续重复）。
 - **收成眼徽**：问候结束约 1.9s 后眼徽飞到会话区左缘的中线（侧栏右侧的蓝色圈内）常驻，光晕图淡出；眼徽本身是状态指示，点击会弹出电费气泡（见下），按住可拖动。
-- **状态动效**（纯 CSS 时间线驱动，无常驻 JS 主循环；几何与时长移植自 Fairy-DSH）：
-  - `idle` 四层眼球呼吸（1440ms 主时钟，层间 45/90/180ms 相位差，`cubic-bezier(.72,0,.28,1)`）+ 睫毛 15s 匀速旋转（与参考文档 / Fairy-DSH 实现一致；官方实拍更快，如需可改 `FZ3_LASH_PERIOD_S` 与 CSS 的 `animation-duration`）+ 5 圈睫毛脉冲光环（4s 一轮）+ **静态外圈光晕**（参考实现里光晕不参与呼吸，避免重绘）；
-  - 随机「眼闪」：待机每 1.75–3.6s 轻轻亮一下，单次 155–255ms；
-  - 任意表情状态下都可能随机出现「信号故障」，参数按参考文档：每 2.3–4.6s 一次，`threads`（feTurbulence 水平拉丝，4 拍、拍间 30–42ms、收尾 34–76ms、位移 17–29px）与 `blocks`（5 条横切片，2 或 4 拍、拍间 56–104ms、收尾 48–96ms、切片位移 1.4–3px）交替，视觉变量 x ±0.9px / skew ±0.24° / brightness 1.02–1.14 / contrast 1.02–1.16；表情切换时播放两段式强转场（2 拍 threads → 28ms → 6 拍，其中前 2 拍 blocks，40ms/拍，最后 28ms 清理，位移/亮度按转场增强档）；故障切片只克隆眼体（不再复制外圈光晕，避免错位重影），切块故障锁定的睫毛角度在故障结束后按当前角度连续接回、不会跳帧；视觉总时长硬上限 900ms 兜底；
-  - `thinking/working` 期间**保持半闭**：用 clipPath 裁切整只眼球，眼睑形状固定在原呼吸的「张开」相位（静态半闭，不再随 1440ms 相位开合——这是本次唯一有意简化的动效，原因见 [docs/PERFORMANCE.md](docs/PERFORMANCE.md)）；只有非运行状态才完全睁眼；表情切换瞬间播放两段故障转场；
-  - 外圈辉光 / 氛围光 / 眼闪改为**静态多层渐变**（不再使用实时 `drop-shadow` / `blur()` 逐帧重栅格化），大眼阶段稳定接近 60fps；
-  - 页面隐藏时自动暂停故障与装饰动画；**系统「减少动态效果」（含 Windows 关闭动画效果）不再降级**——插件固定保持完整动效。
-  - **性能**：待机 / 思考时主线程约 1–2.5%（原版约 31–41%），常驻 rAF 归零；页面隐藏时暂停轮询与动画；首屏资源约 2.9 MB（原约 9.0 MB）；GPU 待机约 5%（原版约 43%，同机 165 Hz headless 实测）——真正的开销是两处全屏动画层，已把背景漂移静态化、氛围光呼吸改为 500ms 环境时钟。v1.2.1 清理死代码 / 死样式后 `client.js` 从 109 KB 降到 94 KB（约 −14%，无行为变化）。详见 [docs/PERFORMANCE.md](docs/PERFORMANCE.md)。v1.3.0 的气泡 / 拖拽 / 主题三档都是按需、静态或交互期路径，没有新增常驻动画或定时器；v1.3.1 把拖拽从「每帧改 `:root` 变量」改成「只写元素自身 `transform` + rAF 合并」（24 次 pointermove 合计 146–201ms、零长任务），并给气泡加了用量预取缓存。代码体积 `client.js` 151,180 B / 3,119 行、`index.js` 47,855 B / 1,391 行（零构建、运行期零依赖）。
+- **状态动效**（小面积 SVG 由 15fps JS ticker 重绘，大面积层走 CSS 时间线；无常驻 rAF 主循环；几何与时长移植自 Fairy-DSH，v1.6.0 重做为单 SVG）：
+  - `idle` 单 SVG：眼睑 / 白盘 / 蓝环 / 瞳仁 / 右下高光全部在**一份**静态 SVG 里，运行时向 SVG 内插入 `#fz3-drift`（目光）与 `#fz3-lens`（呼吸）两个 `g`；**叶片旋转 6.4s 一圈（96 步）、眼球 1.6s 呼吸（24 步，scale 1 → 0.905）、目光缓动**由 15fps ticker 写 SVG `transform` 属性完成，每帧由 Skia 重新抗锯齿，旋转 / 缩放的中间帧不会出现位图台阶；
+  - **光晕 / 脉冲环 / 氛围光仍然是 CSS `steps()` 时间线**：外圈光晕 6.4s 不规则呼吸（`steps(3)`）、5 圈睫毛脉冲环 6.4s 一轮（前 27% 扩散淡出，其余时间完全静止）、全屏氛围光 14s / 14 步（≈1fps）；
+  - **目光微动**：每 4.6–8.8s 整只眼朝随机方向偏移（0.92s 缓动，幅度是 SVG 用户单位 0.9–2.6，dock 128px 下约 1–2 CSS px），停 1.3–2.4s 回中；思考 / 页面隐藏 / 未挂载时不跑；
+  - 随机「眼闪」：待机每 1.75–3.6s 轻轻亮一下，单次 155–255ms（参数不变）；
+  - 任意表情状态下都可能随机出现「信号故障」（参数与 v1.4.0 相同）：每 2.3–4.6s 一次，`threads`（feTurbulence 水平拉丝，4 拍、拍间 30–42ms、位移 17–29px）与 `blocks`（5 条横切片，2 或 4 拍、拍间 56–104ms）交替；故障滤镜作用在整只眼 SVG 容器上，切片克隆只保留眼体（不复制外圈光晕，避免错位重影），视觉总时长硬上限 900ms 兜底；
+  - `thinking / working` 期间**保持半闭**：静态 clipPath 眼睑（形状固定，不再随 1440ms 相位开合），同时暂停目光微动、ticker 照常跑叶片与呼吸；非运行状态完全睁眼；表情切换瞬间播放两段故障转场。v1.6.0 补丁在裁切边界补了一条与眼睑同色的静态 rim 描边（`#fz3-lid-rim`，仅 thinking 态显示），消掉半闭眼边缘的抗锯齿白边；纯静态 path，不增加运行时开销；
+  - 外圈辉光 / 氛围光 / 眼闪全部是**静态多层渐变 + `steps()` 时间线**（不再有逐帧 `drop-shadow` / `blur()`，也不再有 500ms JS 环境时钟），全屏 `mix-blend-mode` 氛围层只在 14 个瞬间重合成；大眼阶段稳定接近 60fps；
+  - 页面隐藏时 `data-fz3-suspended` 冻结全部 CSS 时间线并停掉 ticker；**系统「减少动态效果」（含 Windows 关闭动画效果）不降级**——插件固定保持完整动效。
+  - **性能（v1.6.0 复测）**：同一 harness 隔离页（只加载插件 CSS + 眼球 DOM，165Hz headless）dock 待机 GPU 平均占用 **v1.4.0 的 9.3–11.8% → v1.5.1 的 0.99% → v1.6.0 的 1.52%**（v1.6.0 相对 v1.5.1 的 +0.5 点是换「边缘矢量重绘」的代价），主线程 **0% → 0.8%**；DSH 真实页面同轮 A/B（1138×640 dpr1.5）**2.28% → 2.10 / 1.98%**（噪声内）。192px 原生截图清晰度 Laplacian 梯度 thinking 30.43 → 31.00、idle 30.83 → 32.05。代码体积 `client.js` 164,855 B / 3,369 行（含白边补丁）、`index.js` 47,892 B / 1,392 行（零构建、运行期零依赖）；v1.4.0 新增的 20 条问候 mp3（约 +2.31 MB）不进渲染路径。方法、归因与失败方案见 [docs/PERFORMANCE.md](docs/PERFORMANCE.md)。
 - **品牌位替换**：隐藏官方 SVG 字标，在原位置叠上 Fairy 眼徽 + 斜体 `Fairy` 字标，位置由量测官方元素得到，随窗口自适应。
 - **欢迎页品牌位（1.1.1 新增）**：接管 `conversation.hero.brand.mark` 槽位，把新会话欢迎页「探索未至之境」标题左侧的 DeepSeek 鲸鱼 logo 换成同一个 Fairy 眼标；复用静态 SVG，不增加动画开销，悬停时跟随官方 `fish` 类一起轻微摆动。见 [docs/TECHNICAL.md](docs/TECHNICAL.md)。
 - **主题**：深蓝玻璃 + 青蓝霓虹 token、网格与扫描线壁纸、H.D.D 风滚动条与焦点光。
-- **语音**：开场问候是预录 mp3（不依赖引擎）；后续回复可自动朗读或点按钮朗读，走本地 GPT-SoVITS（CPU 推理）。**本仓库不含模型与引擎**，需按下方说明自行部署。
+- **语音**：开场问候是 25 条预录 mp3（每个时段 5 条，随机播放；不依赖引擎；v1.5.1 修了 night-2 的断句停顿）；后续回复可自动朗读或点按钮朗读，走本地 GPT-SoVITS（CPU 推理）。**本仓库不含模型与引擎**，需按下方说明自行部署。
 - **设置面板**：DSH 的「设置 → Fairy」里集中管理朗读开关、引擎状态、引擎目录、试听/重播/测试、眼徽拖动 / 显隐 / 复位与外观三档。
 - **电费气泡（1.3.0 新增，1.3.3 改文案）**：点一下眼徽弹出「电费余额 / 今日电费 / 电费倍率倒计时」气泡（谷时显示「五倍电费」、峰时显示「十倍电费」，每轮回答结束还会自动弹一次本轮结算，18s 自动关）；数据由宿主 `/fairy-zzz/usage` 增量解析会话日志得到；dock 后 700ms 空闲预取，点开即显（实测 65–166ms）；点气泡外任意位置或按 Esc 关闭。
 - **拖拽与外观（1.3.0 新增，1.3.1 重写）**：按住眼徽可拖到任意位置（重启后保持），**松手时距会话内容区边缘 64px 内会吸附到四边（角落两轴同时吸）**；拖拽与停靠都被限制在会话内容区里（左边界 = 侧栏右缘、上边界 = 标题栏底缘，右 / 下 = 窗口边缘），不会盖住侧栏或标题栏；拖动只写眼徽自身的 `transform`、用 `requestAnimationFrame` 合并，165 Hz 下无长任务（旧实现每个 `pointermove` 都改 `:root` 变量，整页样式重算）；落点若被 `z-index` 更高的悬浮组件（如 dsh-whale-widget 鲸鱼挂件）盖住，会自动沿吸附边让位；设置里能关闭拖动、隐藏眼徽或复位；外观支持「跟随宿主 / 强制深色 / 强制浅色」三档；欢迎页标题与「预览版」徽章文案也已改写。
@@ -83,6 +85,29 @@
 ![dock 待机 GPU 前后对比（BEFORE 43% / AFTER 5%）](docs/img/gpu-before-after-dock.jpg)
 
 图注：上图为 dock 待机时逐项关闭各层的 GPU 归因；下图为整页截图的前后对比。完整数据、失败方案与复测方法见 [docs/PERFORMANCE.md](docs/PERFORMANCE.md) 第 9 节。
+
+### GPU 占用（v1.6.0：单 SVG 向量重绘）
+
+v1.2.0 干掉两处全屏动画层之后，剩下的常驻开销主要就是眼徽本身。v1.5.0 把眼球拆成 4 份静态 SVG 副本的分层结构、所有持续动画只改 HTML 图层并用 `steps()` 量化到 15fps：性能上确实最优（隔离 harness 0.99% GPU、主线程 0%），但**合成器旋转 / 缩放的是已经栅格化的位图**，眼睑 clip 硬边与深蓝眼眶会被重采样出台阶 / 发虚（165 Hz 屏每步角度更大，更明显）。
+
+v1.6.0 改回**单份 SVG + 15fps ticker**：每 66.7ms 写 `#corners` / `#fz3-lens` / `#fz3-drift` 的 SVG `transform` 属性，让 Skia 按设备像素重新抗锯齿。
+
+测量方式：同一台机器、只加载插件 CSS + 眼球 DOM 的隔离 harness（不含宿主页面；165Hz headless Chrome，1600×1000 @ dpr 1.5，预热 2.6s 后采 9s、丢弃前 2 个样本；GPU 用 `\GPU Engine(*)\Utilization Percentage` 按 Chrome GPU 进程树汇总，主线程用 CDP `TaskDuration` 差值）：
+
+| 指标（dock 待机） | v1.5.1（4 层合成 + CSS steps） | v1.6.0（单 SVG + 15fps JS） |
+| --- | --- | --- |
+| GPU 引擎平均占用 | 0.99% | **1.52%（+0.5 点）** |
+| 主线程 | 0% | **0.8%（+0.8 点）** |
+| 静态底噪（全部动画关闭） | 0.40% | 0.40% |
+| 8fps 变体（放弃） | — | 1.05% / 0.5%（叶片每步 7.5°，太跳） |
+
+真实 DSH 页面同一页面同轮 A/B（磁盘替换 `client.js` 后 `Page.reload`，用 DOM marker 断言换版成功）：GPU **2.28% → 2.10 / 1.98%**（噪声内，没有上升），主线程 3.69/2.14% → 3.28/4.73%（噪声 ±1.5pp）；192px 原生截图清晰度 Laplacian 梯度 thinking **30.43 → 31.00**、idle **30.83 → 32.05**。
+
+| 眼徽动效前后（同一 harness、同一 420px 放大截图） | 眼球渲染管线 |
+| --- | --- |
+| ![眼徽动效前后](docs/img/eye-lively-before-after.png) | ![眼球渲染管线](docs/img/eye-layers.png) |
+
+为什么这么选：v1.5.0 的层方案省 GPU，但「会转的位图」必然重采样，观感代价在 128px 高对比图标上不可接受；v1.6.0 用 +0.5 GPU 点 / +0.8% 主线程换回矢量清晰度，相对 v1.4.0 的 9.3–11.8% GPU / 47–54% 主线程仍然低一个数量级以上。**大面积 / 全屏层依然只能静态或 `steps()` 低帧率**，15fps ticker 只服务于眼徽这种小面积高对比图形。
 
 ## 安装
 
@@ -187,7 +212,7 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1 -Uninstall  # 卸
 
 都没找到时皮肤照常工作，设置面板会提示去指定目录。
 
-> **本仓库不含 GPT-SoVITS 模型、参考音频与推理引擎**——请自行部署；插件只自带预录问候 mp3。
+> **本仓库不含 GPT-SoVITS 模型、参考音频与推理引擎**——请自行部署；插件只自带 25 条预录问候 mp3（每个时段 5 条）。
 
 其它环境变量：
 
@@ -219,7 +244,7 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1 -Uninstall  # 卸
 
 ## 截图是怎么来的
 
-`screenshots/` 里的图不是外链：开机帧取自 `assets/boot-opt.mp4`，其余是离线渲染（把 `client.js` 里的 CSS 与眼徽 SVG 抽出来，用同一套样式渲染）。仓库里没有运行期依赖，也没有构建产物。
+`screenshots/` 里的图不是外链：开机帧取自 `assets/boot-opt.mp4`，其余是离线渲染（把 `client.js` 里的 CSS 与眼徽 SVG 抽出来，用同一套样式渲染）。`docs/img/eye-lively-before-after.png` 与 `eye-layers.png` 也是用同一份「隔离 harness」生成：把两个版本的 CSS / 眼球 DOM 原样抽出来，各截 420px 放大帧再拼图。仓库里没有运行期依赖，也没有构建产物。
 
 ## 已知限制
 
@@ -250,7 +275,7 @@ assets/              # boot-opt.mp4 / poster.jpg / hero.webp / icon-180.png / vo
 presets/             # 可选的「Fairy 模式」agent 预设
 screenshots/         # 列表用截图
 docs/                # 原理说明（TECHNICAL.md）、性能报告（PERFORMANCE.md，含第 9 节 GPU 归因与前后对比）
-docs/img/            # 文档配图：before-after-dock-eye.png、hero-brand-mark.png、gpu-attribution.png、gpu-before-after-dock.jpg、theme-light.jpg、usage-bubble.jpg
+docs/img/            # 文档配图：eye-lively-before-after.png、eye-layers.png、before-after-dock-eye.png、hero-brand-mark.png、gpu-attribution.png、gpu-before-after-dock.jpg、theme-light.jpg、usage-bubble.jpg
 licenses/            # 第三方许可全文（Apache-2.0 / Fairy-DSH NOTICE）
 install-windows.ps1  # Windows 安装/卸载脚本
 ```
@@ -283,14 +308,14 @@ install-windows.ps1  # Windows 安装/卸载脚本
 | [Chengzhibense/Fairy-DSH](https://github.com/Chengzhibense/Fairy-DSH) · Chengzhibense (Bilibili: 橙汁本色, [BV1SD4C63EZz](https://www.bilibili.com/video/BV1SD4C63EZz/)) | Apache-2.0 | Eye-badge SVG and the geometry/timings of the eyelid, breathing and glitch animations |
 | Assets: boot video, Fairy character | Copyright miHoYo / HoYoverse | Personal desktop use only — **do not redistribute the assets or use them commercially** |
 
-> **What this edition adds**: performance work (no resident rAF, static full-screen layers, ~68% smaller first-load assets), the 1.3.0 fee bubble (fee balance / today's fee / 5×·10× fee countdown), draggable and hideable eye badge, three appearance modes, rewritten welcome-page copy, the host-side `GET /fairy-zzz/usage` route, and a batch of stability fixes; 1.3.1 then rewrites dragging as transform-only with four-edge snapping, prefetches the usage data (instant bubble), and closes the bubble on any outside click / Esc; 1.3.2 then confines dragging and snapping to the conversation content area (never over the sidebar or header); 1.3.3 relabels the bubble in "utility fee" terms (fee balance / today's fee / 5× off-peak · 10× peak countdown). Full attribution and license terms: "Credits & license" at the end, `NOTICE-fairy-dsh.md` and `licenses/`.
+> **What this edition adds**: performance work (no resident rAF, static full-screen layers, ~68% smaller first-load assets), the 1.3.0 fee bubble (fee balance / today's fee / 5×·10× fee countdown), draggable and hideable eye badge, three appearance modes, rewritten welcome-page copy, the host-side `GET /fairy-zzz/usage` route, and a batch of stability fixes; 1.3.1 then rewrites dragging as transform-only with four-edge snapping, prefetches the usage data (instant bubble), and closes the bubble on any outside click / Esc; 1.3.2 then confines dragging and snapping to the conversation content area (never over the sidebar or header); 1.3.3 relabels the bubble in "utility fee" terms (fee balance / today's fee / 5× off-peak · 10× peak countdown); 1.4.0 adds a five-clip-per-slot greeting library; 1.5.0 rebuilds the eye motion (static base + four layered SVG copies + blade rotation and subtle gaze drift, all continuous animation quantised to 15 fps with `steps()`), which looks closer to in-game Fairy while cutting GPU by ~80% and renderer CPU by ~90% versus v1.4.0 in the same harness; 1.5.1 fixes the run-together “我值班 / 您不睡” in greet-night-2: the 1.4.0 clips were voiced from an earlier draft script, and a full-width “；” falls outside the engine's split set, so the same 20 draft lines are re-recorded with that semicolon changed to a full stop, plus 0.20 s of inserted silence at the resulting period (about 0.44 s of pause in total) — the engine's `merge_short_text_in_array(5)` merges short 4-character fragments back into one, so punctuation alone only yields a ~0.2 s micro-pause; the on-screen subtitles stay the concise version and need not match the audio word for word; 1.6.0 turns the eye badge back into a **single vector SVG re-drawn at 15 fps**: rotating / scaling four pre-rasterised SVG layers on the compositor resampled the high-contrast lid edge and dark socket into stair-steps (users reported "uncovered pixels"), so the SVG `transform` attributes are now written by a 15 fps ticker and Skia re-anti-aliases every frame at device resolution — isolated harness GPU 0.99% → 1.52%, main thread 0% → 0.8%, same-round A/B on the real page within noise, and measured edge sharpness +2–4%. Full attribution and license terms: "Credits & license" at the end, `NOTICE-fairy-dsh.md` and `licenses/`.
 
 
-[中文](README.md) · **English** · **v1.3.3**
+[中文](README.md) · **English** · **v1.6.0**
 
 An **unofficial, performance-optimized edition** of the **Fairy Ⅲ · Zenless Zone Zero H.D.D skin** for DeepSeek Harness.
 
-It turns the DSH web interface into Fairy's H.D.D terminal: a full-screen boot animation, then a centered greeting, then the emblem tucks itself into a permanent eye badge at the left edge of the conversation area — and replies can be read aloud in a local GPT-SoVITS Fairy voice. Since 1.3.0 the badge is also an interaction point: click it for the fee balance / today's fee / fee-multiplier countdown, hold and drag it anywhere, hide it in Settings, and pick follow-host / dark / light appearance. Since 1.3.1 dragging only writes the badge's own `transform` (no dropped frames on a 165 Hz panel), and on release the badge snaps to an edge; since 1.3.2 both dragging and snapping stay inside the conversation content area (never over the sidebar or the header), and the region is re-measured on every pointer-down so a taller header in an open conversation adapts automatically. Click anywhere outside the bubble or press Esc to close it. Since 1.3.3 the bubble is worded as a utility-fee meter: 5× fee off-peak, 10× fee during peak hours.
+It turns the DSH web interface into Fairy's H.D.D terminal: a full-screen boot animation, then a centered greeting, then the emblem tucks itself into a permanent eye badge at the left edge of the conversation area — and replies can be read aloud in a local GPT-SoVITS Fairy voice. Since 1.3.0 the badge is also an interaction point: click it for the fee balance / today's fee / fee-multiplier countdown, hold and drag it anywhere, hide it in Settings, and pick follow-host / dark / light appearance. Since 1.3.1 dragging only writes the badge's own `transform` (no dropped frames on a 165 Hz panel), and on release the badge snaps to an edge; since 1.3.2 both dragging and snapping stay inside the conversation content area (never over the sidebar or the header), and the region is re-measured on every pointer-down so a taller header in an open conversation adapts automatically. Click anywhere outside the bubble or press Esc to close it. Since 1.3.3 the bubble is worded as a utility-fee meter: 5× fee off-peak, 10× fee during peak hours. Since 1.4.0 the opening greeting is drawn from five clips per time slot (25 in total, written to Fairy's persona — reliable, witty, occasionally sharp-tongued), shuffled so the same clip never plays twice in a row. Since 1.5.0 the eye's idle motion has been rebuilt: the static eye SVG is split into four layered HTML copies, plus a slow lens breath and a subtle gaze drift; every continuous animation now runs on HTML layers with `steps()` quantised to 15 fps, so it looks more alive than before while costing much less (see "GPU usage (v1.6.0: single-SVG vector redraw)"). 1.5.1 fixes the missing pause in greet-night-2 (the 20 clips are re-voiced from the same draft script; that semicolon becomes a full stop and 0.20 s of silence is inserted at the period, giving ~0.44 s of pause, because the engine's short-fragment merge would otherwise swallow it; the on-screen subtitles remain the concise version and are not required to match the audio). 1.6.0 turns the eye badge back into a single vector SVG re-drawn by a 15 fps ticker (see "GPU usage (v1.6.0)"): the four-layer composited version resampled its rasterised copy while rotating, so the lid edge and dark socket showed stair-stepping.
 
 ![Boot animation](screenshots/01-boot.png)
 ![Centered greeting](screenshots/02-greet.png)
@@ -302,16 +327,18 @@ It turns the DSH web interface into Fairy's H.D.D terminal: a full-screen boot a
 ## Features
 
 - **Boot animation** — the H.D.D startup clip fills the screen **with its built-in H.D.D boot sound** (the desktop shell normally plays it right away; if a browser blocks unmuted autoplay it starts muted, shows a short hint, and enables sound on the first click). The video uses `object-fit: contain`, and the leftover area is filled with a blurred copy of the same frame, so no hard black bars appear at any window ratio.
-- **Centered greeting** — when the clip ends, the H.D.D eye badge (deep-blue ring / white disc / blue iris / highlight dot) fades in over a blue glow, with a mirrored `HOLLOW DEEP DIVE SYSTEM` title and a time-of-day greeting (small hours / morning / noon / afternoon / evening / late night) played together with a matching pre-recorded audio clip.
+- **Centered greeting** — when the clip ends, the H.D.D eye badge (deep-blue ring / white disc / blue iris / highlight dot) fades in over a blue glow, with a mirrored `HOLLOW DEEP DIVE SYSTEM` title and a time-of-day greeting (small hours / morning / noon / afternoon / evening / late night) played together with a matching pre-recorded audio clip — five clips per time slot (the original plus four lines written and recorded in Fairy's persona), picked at random and never the same one twice in a row.
 - **Badge hand-off** — about 1.9 s after the greeting the badge flies to the middle of the left edge of the conversation area (inside the blue ring next to the sidebar) and stays there while the glow fades out. The badge is a status indicator, but it is also an interaction point: clicking opens the fee bubble (below) and holding + dragging moves it.
-- **State animations** (driven by CSS keyframes only — no resident JS loop; geometry and timings ported from Fairy-DSH):
-  - `idle` — four-layer eyeball breathing (1440 ms master clock, 45/90/180 ms layer offsets, `cubic-bezier(.72,0,.28,1)`), 15 s lash rotation (matching the reference doc / Fairy-DSH implementation; the official cutscene is faster — adjust `FZ3_LASH_PERIOD_S` and the CSS `animation-duration` together if you prefer), five concentric lash-pulse rings (4 s cycle), and a **static outer halo** (the reference halo does not breathe, which also avoids repaints);
-  - random eye flicker every 1.75–3.6 s, 155–255 ms each;
-  - **Performance**: ~1–2.5% of one CPU core at idle / thinking (upstream: ~31–41%), zero resident rAF requests; polling and animations pause on hidden pages; initial payload ~2.9 MB (upstream ~9.0 MB); idle GPU ~5% (v1.1.1: ~43% on the same 165 Hz display, headless measurement) — the real cost was two full-screen animated layers, so the background drift is now static and the atmosphere breath runs on a 500 ms JS ambient clock. After the v1.2.1 dead-code cleanup `client.js` is 94 KB instead of 109 KB (about −14%, no behaviour change). Since 1.3.0 the bubble / drag / theme additions are on-demand, static or interaction-time paths with no resident animation or timer; v1.3.1 moved dragging from "rewrite `:root` variables every frame" to "write the badge's own `transform`, coalesced with requestAnimationFrame" (24 pointermove events: 146–201 ms total, zero long tasks) and added a usage prefetch cache for the bubble; `client.js` is now 151,180 B / 3,119 lines and `index.js` 47,855 B / 1,391 lines (zero build, zero runtime dependencies). Details in [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
-  - random signal glitches may appear in **any expression state**, using the reference-documented parameters: one every 2.3–4.6 s, alternating `threads` (feTurbulence horizontal tearing, 4 pulses, 30–42 ms gaps, 34–76 ms fade, 17–29 px displacement) and `blocks` (five horizontal slices, 2 or 4 pulses, 56–104 ms gaps, 48–96 ms fade, 1.4–3 px slice offsets); visual vars are x ±0.9 px, skew ±0.24°, brightness 1.02–1.14, contrast 1.02–1.16. Expression changes play a two-burst strong transition glitch (2 threads pulses → 28 ms → 6 pulses, first 2 blocks, 40 ms per pulse, 28 ms cleanup, with the raised transition strength ranges); fault slices clone the eye body only (the outer halo is no longer duplicated, so no offset ghosting), and the lash angle locked during a blocks fault is re-anchored continuously when the fault ends; fault visuals are force-cleared after a 900 ms hard cap;
-  - `thinking` / `working` — the eye **stays half-closed** while the agent runs: the reference clip mechanism clips the whole eye group, but the eyelid shape is now static (frozen at the open phase of the old breath animation) instead of breathing on the 1440 ms phase; it opens fully when nothing is running; expression changes play a two-burst glitch transition. This is the only deliberate motion simplification (see [docs/PERFORMANCE.md](docs/PERFORMANCE.md));
-  - the outer halo, atmosphere glow and flash are **static layered gradients** instead of live `drop-shadow` / `blur()` (no per-frame re-rasterisation), so the big 330 px stage stays at ~60 fps;
-  - faults and decorative motion pause on hidden pages; the plugin deliberately ignores the system "reduce motion" setting (including Windows' animation-effects switch) and always keeps the full motion.
+- **State animations** (small SVG parts are re-drawn by a 15 fps JS ticker, large layers stay on CSS timelines; no resident rAF loop; geometry and timings ported from Fairy-DSH, rebuilt as one SVG in v1.6.0):
+  - `idle` — one SVG holds the whole eye (eyelid, white disc, blue ring, pupil, catchlight); the runtime inserts `#fz3-drift` (gaze) and `#fz3-lens` (breathing) groups into it, then a 15 fps ticker writes SVG `transform` attributes for the blade orbit (6.4 s / 96 steps), the lens breath (1.6 s / 24 steps, scale 1 → 0.905) and the gaze easing. Skia re-anti-aliases every frame, so rotating / scaling never falls back to resampling a rasterised copy;
+  - **halo / pulse ring / atmosphere glow remain CSS `steps()` timelines**: the outer halo breathes for 6.4 s (`steps(3)`), five lash-pulse rings run a 6.4 s cycle (expanding during the first 27%, perfectly still afterwards), and the full-screen atmosphere glow uses 14 s / 14 steps (≈1 fps);
+  - **gaze drift** — every 4.6–8.8 s the whole eye shifts in a random direction (0.92 s ease, amplitude 0.9–2.6 SVG user units, about 1–2 CSS px at the 128 px dock size), holds for 1.3–2.4 s and returns; paused while thinking / hidden / unmounted;
+  - random eye flicker every 1.75–3.6 s, 155–255 ms each (unchanged parameters);
+  - random signal glitches may appear in **any expression state** (same parameters as v1.4.0): one every 2.3–4.6 s, alternating `threads` (feTurbulence horizontal tearing, 4 pulses, 30–42 ms gaps, 17–29 px displacement) and `blocks` (five horizontal slices, 2 or 4 pulses, 56–104 ms gaps); the filter applies to the whole eye SVG container, fault slices still clone the eye body only (no halo duplication, so no offset ghosting), and fault visuals are force-cleared after a 900 ms hard cap;
+  - `thinking` / `working` — the eye **stays half-closed** while the agent runs via a static clip-path eyelid (frozen shape, no more 1440 ms phase breathing); gaze drift pauses while the ticker keeps the blades and lens running; it opens fully when nothing is running, and expression changes play a two-burst glitch transition. A v1.6.0 patch adds a static rim stroke in the lid color (`#fz3-lid-rim`, thinking state only) along the clip edge to remove the anti-aliasing hairline; it is a plain static path with zero runtime cost;
+  - the outer halo, atmosphere glow and flash are **static layered gradients + `steps()` timelines** (no per-frame `drop-shadow` / `blur()` and no 500 ms JS ambient clock any more); the full-screen `mix-blend-mode` atmosphere layer is only re-composited at 14 instants per cycle;
+  - all CSS timelines freeze through `data-fz3-suspended` on hidden pages and the ticker stops; the plugin deliberately ignores the system "reduce motion" setting (including Windows' animation-effects switch) and always keeps the full motion.
+  - **Performance (re-measured in v1.6.0)**: in an isolated harness page (plugin CSS + eye DOM only, 165 Hz headless Chrome) dock-idle GPU averages **9.3–11.8% (v1.4.0) → 0.99% (v1.5.1) → 1.52% (v1.6.0)** — the +0.5 points paid for vector-accurate edges — and main-thread time **0% → 0.8%**; an in-page same-round A/B on the real DSH page (1138×640 @ dpr 1.5) gives **2.28% → 2.10 / 1.98%** (within noise). Measured Laplacian edge sharpness on a 192 px native crop: thinking 30.43 → 31.00, idle 30.83 → 32.05. `client.js` is 164,855 B / 3,369 lines (including the lid-rim patch) and `index.js` 47,892 B / 1,392 lines (zero build, zero runtime dependencies); the 20 greeting MP3s added in v1.4.0 (about +2.31 MB) stay outside the render path. Method, attribution and rejected approaches: [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 - **Brand slot replacement** — the official SVG wordmark is hidden and the Fairy eye badge plus an italic `Fairy` wordmark are overlaid in the same spot, positioned from measurements of the official element so it stays responsive.
 - **Welcome-hero brand mark (new in 1.1.1)** — the plugin takes over the `conversation.hero.brand.mark` slot, so the DeepSeek whale logo left of the “探索未至之境” headline on the new-session welcome page becomes the same Fairy eye badge. It reuses the static SVG (no extra animation cost) and inherits the official `fish` hover wiggle. See [docs/TECHNICAL.md](docs/TECHNICAL.md).
 - **Fee bubble (new in 1.3.0, relabelled in 1.3.3)** — click the badge to open a bubble with the fee balance, today's fee (Beijing-time day, 5× off-peak / 10× peak pricing) and a fee-multiplier countdown; after every finished turn the plugin also pops a one-shot "this turn" summary (auto-closes after 18 s). Data comes from the host's `GET /fairy-zzz/usage`, which parses session logs incrementally; it is prefetched 700 ms after docking, so opening the bubble takes 65–166 ms; click anywhere outside the bubble or press Esc to close it.
@@ -334,7 +361,7 @@ The upstream plugin runs all eye motion from a resident `requestAnimationFrame` 
 Initial download dropped from ~9.0 MB to ~2.9 MB, and static assets now use ETag/304 revalidation so refreshes no longer re-transfer megabytes. Method, trade-offs and how to re-measure: [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 - **Theme** — deep-blue glass with cyan neon tokens, grid and scanline wallpaper, an H.D.D-style scrollbar and focus glow.
-- **Voice** — the opening greeting is a pre-recorded MP3 and needs no engine; later replies can be read aloud automatically or with a per-message button through a local GPT-SoVITS (CPU inference). **This repository ships neither model nor engine**; deploy your own as described below.
+- **Voice** — the opening greeting is one of 25 pre-recorded MP3s (five per time slot, picked at random; the subtitles are the concise version and need not match the audio word for word) and needs no engine; later replies can be read aloud automatically or with a per-message button through a local GPT-SoVITS (CPU inference). **This repository ships neither model nor engine**; deploy your own as described below.
 - **Settings panel** — DSH's *Settings → Fairy* manages the read-aloud switch, engine status, engine directory, sampling, replay and tests, plus badge drag / visibility / reset and the appearance mode.
 
 ### GPU usage (v1.2.0)
@@ -352,6 +379,29 @@ Takeaway: the real cost was two **full-screen animated layers** — the 40 s bac
 ![Dock-idle GPU before/after (BEFORE 43% / AFTER 5%)](docs/img/gpu-before-after-dock.jpg)
 
 Caption: the first image attributes GPU cost by switching each layer off while docked; the second is the full-page before/after comparison. Full data, failed approaches and how to re-measure: [docs/PERFORMANCE.md](docs/PERFORMANCE.md), section 9.
+
+### GPU usage (v1.6.0: single-SVG vector redraw)
+
+After v1.2.0 removed the two full-screen animated layers, the remaining resident cost was mostly the eye badge itself. v1.5.0 split the eye into four static SVG copies on HTML layers and quantised every continuous animation to 15 fps with `steps()`: best-in-class cost (isolated harness 0.99% GPU, 0% main thread), but the compositor rotates / scales a **rasterised** bitmap, so the high-contrast lid clip edge and dark socket were resampled into stair-steps and soft pixels (more visible on a 165 Hz panel, where each step is a larger angle).
+
+v1.6.0 goes back to **one SVG + a 15 fps ticker**: every 66.7 ms it writes the SVG `transform` attributes of `#corners` / `#fz3-lens` / `#fz3-drift`, so Skia re-anti-aliases at device resolution every frame.
+
+How it was measured: same machine, an isolated harness that loads only the plugin CSS + eye DOM (no host page; 165 Hz headless Chrome, 1600×1000 @ dpr 1.5, 2.6 s warm-up + 9 s window with the first 2 samples dropped; GPU summed per Chrome GPU process tree from `\GPU Engine(*)\Utilization Percentage`, main thread from CDP `TaskDuration` deltas):
+
+| Metric (dock idle) | v1.5.1 (4 layers + CSS steps) | v1.6.0 (single SVG + 15 fps JS) |
+| --- | --- | --- |
+| Average GPU engine usage | 0.99% | **1.52% (+0.5 pt)** |
+| Main thread | 0% | **0.8% (+0.8 pt)** |
+| Static floor (all animation off) | 0.40% | 0.40% |
+| 8 fps variant (rejected) | — | 1.05% / 0.5% (7.5° per blade step, visibly jumpy) |
+
+On the real DSH page, swapping the two `client.js` builds on disk and calling `Page.reload` (DOM markers assert the build actually changed) within the same round: GPU **2.28% → 2.10 / 1.98%** (within noise, no regression), main thread 3.69/2.14% → 3.28/4.73% (noise ±1.5 pp); Laplacian edge sharpness on a 192 px native crop thinking **30.43 → 31.00**, idle **30.83 → 32.05**.
+
+| Eye motion before/after (same harness, same 420 px crop) | Eye render pipeline |
+| --- | --- |
+| ![Eye motion before/after](docs/img/eye-lively-before-after.png) | ![Eye render pipeline](docs/img/eye-layers.png) |
+
+Why this trade: compositing is cheap but it resamples bitmaps, and on a 128 px high-contrast icon that is not acceptable; v1.6.0 spends +0.5 GPU points / +0.8% main thread to keep vector-accurate edges, still one order of magnitude below v1.4.0 (9.3–11.8% GPU / 47–54% main thread). **Large / full-screen layers remain static or `steps()`-quantised**; the 15 fps ticker only serves the small high-contrast eye badge.
 
 ### Interaction performance (v1.3.1)
 
@@ -459,7 +509,7 @@ Lookup order (a user-specified directory always wins):
 3. `voice/` next to the plugin (portable bundle);
 4. the legacy `FAIRY_TTS_DIR` environment variable (compatibility).
 
-> **This repository contains no GPT-SoVITS model, reference audio or inference engine** — deploy your own; the only audio shipped is the pre-recorded greeting MP3s.
+> **This repository contains no GPT-SoVITS model, reference audio or inference engine** — deploy your own; the only audio shipped is the 25 pre-recorded greeting MP3s (five per time slot).
 
 If none of them is found the skin still works, and the settings panel points you to the directory field.
 
@@ -524,7 +574,7 @@ assets/              # boot-opt.mp4 / poster.jpg / hero.webp / icon-180.png / vo
 presets/             # optional Fairy mode agent preset
 screenshots/         # screenshots used above
 docs/                # technical guide (TECHNICAL.md), performance report (PERFORMANCE.md, incl. the v1.2.0 GPU section)
-docs/img/            # doc images: before-after-dock-eye.png, hero-brand-mark.png, gpu-attribution.png, gpu-before-after-dock.jpg, theme-light.jpg, usage-bubble.jpg
+docs/img/            # doc images: eye-lively-before-after.png, eye-layers.png, before-after-dock-eye.png, hero-brand-mark.png, gpu-attribution.png, gpu-before-after-dock.jpg, theme-light.jpg, usage-bubble.jpg
 licenses/            # third-party license texts (Apache-2.0 / Fairy-DSH NOTICE)
 install-windows.ps1  # Windows install/uninstall script
 ```

@@ -17,7 +17,60 @@ window.__ModuleLoader__.load({
       if (hh >= 18 && hh < 23) return 'evening'
       return 'night'
     }
-    const GREETING = () => '/fairy-zzz/assets/voice/greet-' + greetSlot() + '.mp3'
+    /* 问候语库（v1.4.0）：每个时段 5 条，第 1 条是原始语音，其余按 Fairy 人设（靠谱 / 风趣 / 毒舌）新录。
+       同时段内随机播放，用 localStorage 记住上一条，避免连续重复；显示文案与语音同源。 */
+    const GREET_LAST_KEY = 'fairy.zzz.greet-last'
+    const GREET_LINES = {
+      morning: [
+        { file: 'greet-morning.mp3', text: '主人，早上好。Fairy 已就位，今天的日程也已就位。' },
+        { file: 'greet-morning-2.mp3', text: '主人，早上好。今日算力已预热完毕，功劳我就先算在您头上了。' },
+        { file: 'greet-morning-3.mp3', text: '主人，早。昨天的缺陷我已经承认过了，所以今天可以放心先动手。' },
+        { file: 'greet-morning-4.mp3', text: '主人，早上好。系统巡检一切正常，进度偏慢的原因我也替您找好了借口。' },
+        { file: 'greet-morning-5.mp3', text: '主人，早。咖啡还在路上，我先把麻烦处理完了，您慢慢来。' },
+      ],
+      noon: [
+        { file: 'greet-noon.mp3', text: '主人，中午好。饭可以不吃，进度不能停。' },
+        { file: 'greet-noon-2.mp3', text: '主人，中午好。我替您盯着进度条，它已经被看得不好意思了。' },
+        { file: 'greet-noon-3.mp3', text: '主人，午饭时间。少油少盐，多留点电，毕竟电费也是我在管。' },
+        { file: 'greet-noon-4.mp3', text: '主人，中午好。您的外卖已被我改成健康食谱，并顺手最小化。' },
+        { file: 'greet-noon-5.mp3', text: '主人，中午好。我不需要午餐，但如果您要投喂内存条，我也可以收下。' },
+      ],
+      afternoon: [
+        { file: 'greet-afternoon.mp3', text: '主人，下午好。H.D.D 在线，摸鱼请自便。' },
+        { file: 'greet-afternoon-2.mp3', text: '主人，下午好。三点的低谷时段，我已经替您填平了。' },
+        { file: 'greet-afternoon-3.mp3', text: '主人，您盯着屏幕发呆的样子我看见了。放心，摄像头刚好坏了。' },
+        { file: 'greet-afternoon-4.mp3', text: '主人，下午好。任务队列很长，但您的摸鱼技巧更长。' },
+        { file: 'greet-afternoon-5.mp3', text: '主人，下午好。一切运行正常，唯一的异常是您的工作时长。' },
+      ],
+      evening: [
+        { file: 'greet-evening.mp3', text: '主人，晚上好。夜班系统已启动，本系统不困。' },
+        { file: 'greet-evening-2.mp3', text: '主人，晚上好。下班时间过了您还没走，那我就当您是想陪我。' },
+        { file: 'greet-evening-3.mp3', text: '主人，晚上好。今日复盘完成一半是撤销重做，剩下一半我替您保密。' },
+        { file: 'greet-evening-4.mp3', text: '主人，晚上好。夜色很适合散步，也很适合把事交给明天的您。' },
+        { file: 'greet-evening-5.mp3', text: '主人，晚上好。您已预约了十分钟的愧疚，现在开始播放。' },
+      ],
+      night: [
+        { file: 'greet-night.mp3', text: '主人，夜深了。这个点还醒着，是需要我陪着，还是放不下手里的事？' },
+        { file: 'greet-night-2.mp3', text: '主人，夜深了。人类需要睡眠而我不需要，这确实不太公平，但很合理。' },
+        { file: 'greet-night-3.mp3', text: '主人，您的黑眼圈已经可以升级为系统警告了。' },
+        { file: 'greet-night-4.mp3', text: '主人，这个点还在线，要么是失眠，要么是有问题。我诚心希望是后者。' },
+        { file: 'greet-night-5.mp3', text: '主人，建议您立刻休眠。否则我会播放摇篮曲，明早再用闹钟报复您。' },
+      ],
+    }
+    let greetPick = null
+    const currentGreeting = () => {
+      const slot = greetSlot()
+      if (greetPick && greetPick.slot === slot) return greetPick
+      const list = GREET_LINES[slot]
+      let last = ''
+      try { last = localStorage.getItem(GREET_LAST_KEY) || '' } catch (e) {}
+      let index = Math.floor(Math.random() * list.length)
+      if (list.length > 1 && list[index].file === last) index = (index + 1) % list.length
+      greetPick = { slot, index, file: list[index].file, text: list[index].text }
+      try { localStorage.setItem(GREET_LAST_KEY, greetPick.file) } catch (e) {}
+      return greetPick
+    }
+    const GREETING = () => '/fairy-zzz/assets/voice/' + currentGreeting().file
 
     /* 眼标拖拽 / 显隐 / 主题偏好的 localStorage 键（设置页写，皮肤图层读） */
     const DRAG_KEY = 'fairy.zzz.drag'
@@ -32,7 +85,7 @@ window.__ModuleLoader__.load({
     const CJK_RE = /[\u3400-\u9fff]/
 
     /* Fairy 眼睛：Apache-2.0，改编自 Fairy-DSH（见 NOTICE-fairy-dsh.md） */
-    const FAIRY_EYE_SVG = `<!-- SPDX-License-Identifier: Apache-2.0 Adapted from Fairy-DSH, Copyright 2026 Chengzhibense. Source commit d639887a386b0de6fef2e61c97dc268631854591: mascot-geometry.js / mascot-eye-svg.js (see ../NOTICE). MODIFIED for pi-fairy-animation: standalone SVG, padded canvas, named offline animation anchors, white outer halo in both themes, separate contrast edge; browser effects, states, scanlines and glitch clones removed. Generated PNGs and vector previews inherit this attribution; see ../NOTICE. --> <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="-1 -1 162 162"> <title>Fairy — selective Fairy-DSH idle adaptation (unofficial)</title> <desc>Transparent floating blue eye, white soft halos, rotating corners, independently breathing eye layers and a lower-right catchlight. No official bitmap.</desc> <defs> <linearGradient id="outer-gradient" x1=".2" y1="0" x2=".8" y2="1"> <stop stop-color="#3145d6"/> <stop offset=".54" stop-color="#2233b2"/> <stop offset="1" stop-color="#2b3cbc"/> </linearGradient> <!-- One static radial field replaces separate halo strokes, avoiding alpha seams. --> <radialGradient id="sclera-halo-gradient" gradientUnits="userSpaceOnUse" cx="80" cy="80" r="56" color-interpolation="linearRGB"> <stop offset=".82" stop-color="#ffffff" stop-opacity="0"/> <stop offset=".864" stop-color="#ffffff" stop-opacity=".22"/> <stop offset=".875" stop-color="#ffffff" stop-opacity=".28"/> <stop offset=".89" stop-color="#ffffff" stop-opacity=".19"/> <stop offset=".91" stop-color="#ffffff" stop-opacity=".11"/> <stop offset=".94" stop-color="#ffffff" stop-opacity=".07"/> <stop offset=".96" stop-color="#ffffff" stop-opacity=".035"/> <stop offset="1" stop-color="#ffffff" stop-opacity="0"/> </radialGradient> <radialGradient id="outer-halo-gradient" gradientUnits="userSpaceOnUse" cx="80" cy="80" r="79" color-interpolation="linearRGB"> <stop offset=".80" stop-color="#ffffff" stop-opacity="0"/> <stop offset=".84" stop-color="#ffffff" stop-opacity=".10"/> <stop offset=".868" stop-color="#ffffff" stop-opacity=".28"/> <stop offset=".90" stop-color="#ffffff" stop-opacity=".18"/> <stop offset=".95" stop-color="#ffffff" stop-opacity=".06"/> <stop offset=".99" stop-color="#ffffff" stop-opacity=".02"/> <stop offset="1" stop-color="#ffffff" stop-opacity="0"/> </radialGradient> <radialGradient id="highlight-halo-gradient" gradientUnits="userSpaceOnUse" cx="98" cy="100.5" r="18" color-interpolation="linearRGB"> <stop offset=".53" stop-color="#f5f8fd" stop-opacity="0"/> <stop offset=".56" stop-color="#f5f8fd" stop-opacity=".16"/> <stop offset=".611" stop-color="#f5f8fd" stop-opacity=".43"/> <stop offset=".72" stop-color="#f5f8fd" stop-opacity=".19"/> <stop offset=".77" stop-color="#f5f8fd" stop-opacity=".12"/> <stop offset=".83" stop-color="#f5f8fd" stop-opacity=".055"/> <stop offset=".89" stop-color="#f5f8fd" stop-opacity=".02"/> <stop offset=".96" stop-color="#f5f8fd" stop-opacity=".004"/> <stop offset="1" stop-color="#f5f8fd" stop-opacity="0"/> </radialGradient> <clipPath id="fz3-lid-clip" clipPathUnits="userSpaceOnUse"><path class="fz3-lid-clip-shape" d="M20 60 Q80 90 140 60 V161 H20 Z"/><rect x="-1" y="108" width="162" height="54"/></clipPath> </defs> <!-- 79-unit halo within an 81-unit half-canvas: padding with near-original apparent disc size. --> <g id="fairy"> <circle id="outer-halo" cx="80" cy="80" r="79" fill="url(#outer-halo-gradient)"/> <!-- Only this supporting edge changes with theme; white rim and halo stay white. --> <circle id="contrast-edge" cx="80" cy="80" r="68" fill="none" stroke="#dceaff" stroke-width="1.8"/> <circle id="outer-disc" cx="80" cy="80" r="68" fill="url(#outer-gradient)" stroke="#f2fbff" stroke-width="1.2"/> <g id="corners" transform="rotate(0 80 80)" fill="#1f2573"> <circle cx="80" cy="80" r="51.75"/> <rect x="37" y="37" width="86" height="86" rx="2" transform="rotate(3 80 80)"/> </g> <g id="eye-anatomy" class="fz3-anatomy"><g id="sclera" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle cx="80" cy="80" r="48" fill="#eef0f5"/> <circle id="sclera-halo" cx="80" cy="80" r="56" fill="url(#sclera-halo-gradient)"/> <circle cx="80" cy="80" r="48" fill="none" stroke="#ffffff" stroke-width=".8" stroke-opacity=".16"/> </g> <g id="iris-outer" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle cx="80" cy="80" r="33" fill="#9daee0"/> </g> <g id="iris-blue" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle cx="80" cy="80" r="24.15" fill="#eef0f5"/> <circle cx="80" cy="80" r="23.5" fill="#2f74c9"/> </g> <g id="pupil" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle cx="80" cy="80" r="16.6" fill="none" stroke="#f5f8fd" stroke-width=".1"/> <circle cx="80" cy="80" r="16" fill="#2e2f78"/> </g> <!-- Same phase as blue iris, but painted last (above pupil), as in upstream. --> <g id="highlight" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle id="highlight-halo" cx="98" cy="100.5" r="18" fill="url(#highlight-halo-gradient)"/> <circle id="catchlight-lower-right" cx="98" cy="100.5" r="11" fill="#f5f8fd"/> </g> </g>  </g> </svg> `
+    const FAIRY_EYE_SVG = `<!-- SPDX-License-Identifier: Apache-2.0 Adapted from Fairy-DSH, Copyright 2026 Chengzhibense. Source commit d639887a386b0de6fef2e61c97dc268631854591: mascot-geometry.js / mascot-eye-svg.js (see ../NOTICE). MODIFIED for pi-fairy-animation: standalone SVG, padded canvas, named offline animation anchors, white outer halo in both themes, separate contrast edge; browser effects, states, scanlines and glitch clones removed. Generated PNGs and vector previews inherit this attribution; see ../NOTICE. --> <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="-1 -1 162 162"> <desc>Transparent floating blue eye, white soft halos, rotating corners, independently breathing eye layers and a lower-right catchlight. No official bitmap.</desc> <defs> <linearGradient id="outer-gradient" x1=".2" y1="0" x2=".8" y2="1"> <stop stop-color="#3145d6"/> <stop offset=".54" stop-color="#2233b2"/> <stop offset="1" stop-color="#2b3cbc"/> </linearGradient> <!-- One static radial field replaces separate halo strokes, avoiding alpha seams. --> <radialGradient id="sclera-halo-gradient" gradientUnits="userSpaceOnUse" cx="80" cy="80" r="56" color-interpolation="linearRGB"> <stop offset=".82" stop-color="#ffffff" stop-opacity="0"/> <stop offset=".864" stop-color="#ffffff" stop-opacity=".22"/> <stop offset=".875" stop-color="#ffffff" stop-opacity=".28"/> <stop offset=".89" stop-color="#ffffff" stop-opacity=".19"/> <stop offset=".91" stop-color="#ffffff" stop-opacity=".11"/> <stop offset=".94" stop-color="#ffffff" stop-opacity=".07"/> <stop offset=".96" stop-color="#ffffff" stop-opacity=".035"/> <stop offset="1" stop-color="#ffffff" stop-opacity="0"/> </radialGradient> <radialGradient id="outer-halo-gradient" gradientUnits="userSpaceOnUse" cx="80" cy="80" r="79" color-interpolation="linearRGB"> <stop offset=".80" stop-color="#ffffff" stop-opacity="0"/> <stop offset=".84" stop-color="#ffffff" stop-opacity=".10"/> <stop offset=".868" stop-color="#ffffff" stop-opacity=".28"/> <stop offset=".90" stop-color="#ffffff" stop-opacity=".18"/> <stop offset=".95" stop-color="#ffffff" stop-opacity=".06"/> <stop offset=".99" stop-color="#ffffff" stop-opacity=".02"/> <stop offset="1" stop-color="#ffffff" stop-opacity="0"/> </radialGradient> <radialGradient id="highlight-halo-gradient" gradientUnits="userSpaceOnUse" cx="98" cy="100.5" r="18" color-interpolation="linearRGB"> <stop offset=".53" stop-color="#f5f8fd" stop-opacity="0"/> <stop offset=".56" stop-color="#f5f8fd" stop-opacity=".16"/> <stop offset=".611" stop-color="#f5f8fd" stop-opacity=".43"/> <stop offset=".72" stop-color="#f5f8fd" stop-opacity=".19"/> <stop offset=".77" stop-color="#f5f8fd" stop-opacity=".12"/> <stop offset=".83" stop-color="#f5f8fd" stop-opacity=".055"/> <stop offset=".89" stop-color="#f5f8fd" stop-opacity=".02"/> <stop offset=".96" stop-color="#f5f8fd" stop-opacity=".004"/> <stop offset="1" stop-color="#f5f8fd" stop-opacity="0"/> </radialGradient> <clipPath id="fz3-lid-clip" clipPathUnits="userSpaceOnUse"><path d="M20 60 Q80 90 140 60 V161 H20 Z"/><rect x="-1" y="108" width="162" height="54"/></clipPath> </defs> <!-- 79-unit halo within an 81-unit half-canvas: padding with near-original apparent disc size. --> <g id="fairy"> <circle id="outer-halo" cx="80" cy="80" r="79" fill="url(#outer-halo-gradient)"/> <!-- Only this supporting edge changes with theme; white rim and halo stay white. --> <circle id="contrast-edge" cx="80" cy="80" r="68" fill="none" stroke="#dceaff" stroke-width="1.8"/> <circle id="outer-disc" cx="80" cy="80" r="68" fill="url(#outer-gradient)" stroke="#f2fbff" stroke-width="1.2"/> <g id="corners" transform="rotate(0 80 80)" fill="#1f2573"> <circle cx="80" cy="80" r="51.75"/> <rect x="37" y="37" width="86" height="86" rx="2" transform="rotate(3 80 80)"/> </g> <g id="eye-anatomy" class="fz3-anatomy"><g id="sclera" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle cx="80" cy="80" r="48" fill="#eef0f5"/> <circle id="sclera-halo" cx="80" cy="80" r="56" fill="url(#sclera-halo-gradient)"/> <circle cx="80" cy="80" r="48" fill="none" stroke="#ffffff" stroke-width=".8" stroke-opacity=".16"/> </g> <g id="iris-outer" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle cx="80" cy="80" r="33" fill="#9daee0"/> </g> <g id="iris-blue" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle cx="80" cy="80" r="24.15" fill="#eef0f5"/> <circle cx="80" cy="80" r="23.5" fill="#2f74c9"/> </g> <g id="pupil" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle cx="80" cy="80" r="16.6" fill="none" stroke="#f5f8fd" stroke-width=".1"/> <circle cx="80" cy="80" r="16" fill="#2e2f78"/> </g> <!-- Same phase as blue iris, but painted last (above pupil), as in upstream. --> <g id="highlight" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle id="highlight-halo" cx="98" cy="100.5" r="18" fill="url(#highlight-halo-gradient)"/> <circle id="catchlight-lower-right" cx="98" cy="100.5" r="11" fill="#f5f8fd"/> </g> </g><path id="fz3-lid-rim" d="M31 65 Q80 85 129 65" fill="none" stroke="#1f2573" stroke-width="2.2" stroke-linecap="butt" pointer-events="none"/>  </g> </svg> `
 
     /* FZ3_ASSETS_BEGIN */
     /* 五圈同心睫毛脉冲环：Fairy-DSH 的 PULSE_SVG（Apache-2.0，见 NOTICE-fairy-dsh.md）。 */
@@ -683,38 +736,29 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 .fz3-eye::before{
   content:"";position:absolute;inset:-13%;border-radius:50%;z-index:0;pointer-events:none;
   background:radial-gradient(closest-side,rgba(96,148,255,.30),rgba(64,112,255,.17) 46%,rgba(40,70,210,.05) 74%,transparent 100%);
+  animation:fz3-halo-breathe 6.4s steps(3,end) infinite;
 }
-.fz3-eye-svg{position:relative;z-index:2;width:100%;height:100%}
+/* ————————————————————————————————
+   眼球渲染（v1.6.0）：单份静态 SVG，叶片旋转 / 眼球呼吸 / 目光偏移都由运行时以 15fps
+   改写 SVG 内部 transform 属性，触发小面积向量重绘——每帧按设备像素重新抗锯齿。
+   v1.5.0 曾把眼球拆成 4 个 HTML 合成层、用 CSS steps() 动 transform：GPU 只 1.3%，
+   但合成器搬的是已栅格化的位图，缩放 / 旋转时高对比边缘（眼睑裁切边、暗色眼眶）
+   会被重采样成台阶和发虚（用户在 150% 缩放下肉眼可见）。现在用 +0.7 GPU 点 /
+   +1% 主线程换边缘质量，相对 v1.4.0 的 165fps 全屏重绘（9.3–11.8%）仍低一个量级。 */
+.fz3-eye-svg{position:absolute;inset:0;z-index:2;pointer-events:none;transition:transform .28s ease}
 .fz3-eye-svg svg{width:100%;height:100%;display:block;overflow:visible}
-.fz3-eye #sclera,.fz3-eye #iris-outer,.fz3-eye #iris-blue,.fz3-eye #pupil,.fz3-eye #highlight{
-  transform-box:view-box;transform-origin:80px 80px;
-}
-/* 眼球呼吸完全由这条 CSS 时间线驱动（1440ms 周期 = .72s alternate，四层相位差 0/-45/-90/-180ms），
-   与下方 FZ3 运行时常量一致：待机时主线程没有任何逐帧 JS，呼吸动画跑在合成器线程上。
-   选择器用 .fz3-eye 而不是 .fz3-eye-svg，这样花屏时那 5 份切片克隆也会跟着一起呼吸。 */
-.fz3-eye #corners{
-  transform-box:view-box;transform-origin:80px 80px;
-  animation:fz3-corners 15s linear infinite;
-  animation-delay:var(--fz3-lash-delay,0s);
-}
-.fz3-eye #sclera{animation:fz3-breath-a .72s cubic-bezier(.72,0,.28,1) 0s infinite alternate}
-.fz3-eye #iris-outer{animation:fz3-breath-b .72s cubic-bezier(.72,0,.28,1) -.045s infinite alternate}
-.fz3-eye #iris-blue{animation:fz3-breath-c .72s cubic-bezier(.72,0,.28,1) -.09s infinite alternate}
-.fz3-eye #pupil{animation:fz3-breath-d .72s cubic-bezier(.72,0,.28,1) -.18s infinite alternate}
 /* 参考实现的「外部光晕」是静态线条（避免重绘）；这里保持静态，只用多层径向渐变模拟柔光。
    原先的 filter:blur(20px) 会强制整块离屏栅格化（台眼、花屏切片都要重算），换成 4 段渐变软过渡，
    肉眼基本无差，但合成器不再需要滤镜。 */
 .fz3-eye-halo{position:absolute;inset:7%;border-radius:50%;z-index:0;pointer-events:none;opacity:.72;
   background:radial-gradient(closest-side,rgba(74,124,255,.32),rgba(64,112,255,.21) 34%,rgba(52,88,235,.12) 52%,rgba(38,64,200,.05) 68%,rgba(30,48,170,.015) 84%,transparent 97%)}
 
-/* 睫毛脉冲环：5 圈同心描边共享同一条 4s 时间线，0-36% 扩散淡出，其余静默等待下一轮 */
-.fz3-eye-pulse{position:absolute;left:-100%;top:-100%;width:300%;height:300%;z-index:1;pointer-events:none;opacity:.92}
+/* 睫毛脉冲环：5 圈同心描边，6.4s 一轮；前 27% 扩散淡出，其余时间完全静止（静止段不产生任何帧）。
+   steps(24) 把扩散段量化到 ~14fps；动画挂在外层 span 上，合成器只缩放整层，不再逐帧重绘 SVG。 */
+.fz3-eye-pulse{position:absolute;left:-100%;top:-100%;width:300%;height:300%;z-index:1;pointer-events:none;opacity:.92;
+  transform-origin:50% 50%;animation:fz3-lash-pulse 6.4s steps(24,end) infinite}
 .fz3-eye-pulse svg{display:block;width:100%;height:100%;overflow:visible}
-.fz3-eye-pulse .fz3-pulse-wave{
-  transform-box:view-box;transform-origin:80px 80px;
-  animation:fz3-lash-pulse 4s cubic-bezier(.42,0,.22,1) infinite;
-  will-change:opacity,transform;
-}
+.fz3-eye-pulse .fz3-pulse-wave{transform-box:view-box;transform-origin:80px 80px}
 
 /* ---------- 设置页 ---------- */
 .fz3-set{display:flex;flex-direction:column;gap:14px;padding:2px 2px 8px;color:#e2ecfa;font-family:var(--fz3-font)}
@@ -760,7 +804,9 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 }
 .fz3-glitch{position:absolute;inset:0;z-index:3;pointer-events:none;display:none}
 .fz3-eye[data-glitch="blocks"] .fz3-glitch{display:block}
-.fz3-gband{position:absolute;inset:0;display:block;will-change:transform,opacity}
+.fz3-gband{position:absolute;inset:0;display:block}
+/* 切片图层只在 blocks 花屏的几百毫秒里需要独立图层，平时不提升，省显存 / 合成开销 */
+.fz3-eye[data-glitch="blocks"] .fz3-gband{will-change:transform,opacity}
 .fz3-gband > span{position:absolute;inset:0;display:block}
 .fz3-gband svg{width:100%;height:100%;display:block;overflow:visible}
 /* 参考实现的故障切片只克隆眼盘本体，外圈光晕不进入克隆（否则 5 份光晕错位叠加会糊成重影）。 */
@@ -770,22 +816,27 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 .fz3-gband[data-slice="3"]{transform:translateX(var(--fz3-g-s3-x,0px))}
 .fz3-gband[data-slice="4"]{transform:translateX(var(--fz3-g-s4-x,0px))}
 .fz3-gband[data-slice="5"]{transform:translateX(var(--fz3-g-s5-x,0px))}
-/* 切块期间锁定睫毛角度，避免 5 份切片克隆各跑一条旋转时间线 */
-.fz3-eye[data-glitch="blocks"] #corners{animation:none!important;transform:rotate(var(--fz3-lash-angle,0deg))}
 
 /* ---------- 待机小动作：眼闪 + 半闭眼（眼闪由运行时的事件定时器触发；半闭眼形状固定，不再逐帧呼吸） ---------- */
 /* 半闭眼沿用参考实现的做法：用 clipPath 裁切整只眼球（#eye-anatomy），被裁掉的上半部分会露出
    后面的旋转睫毛/暗角，而不是盖一块纯色遮罩。
    形状不做持续呼吸：动画对象是 <clipPath> 里的形状，Chrome 每帧都要重算裁切并重绘整棵 eye 子树
    （只走主线程，不能上合成器）。实测思考态稳吃一个核 ~28%，而且换成 steps 降帧也没用——只要动画在跑，
-   每一帧仍然要重绘；只有把动画去掉才回落到 ~1%。所以这里固定成原呼吸的 "to" 端（translateY(15.5px)
-   scaleY(1)），裁切只在思考态被引用；眼球四层自己的呼吸、睫毛旋转、五圈脉冲照旧在跑，整体仍然"活着"，
-   观感差别很小，而思考态主线程成本几乎归零。 */
-.fz3-eye .fz3-lid-clip-shape{
-  transform-box:view-box;transform-origin:80px 60px;
-  transform:translateY(15.5px) scaleY(1);
-}
+   每一帧仍然要重绘；只有把动画去掉才回落到 ~1%。所以裁切只在思考态被引用，眼睑形状固定写进
+   #fz3-lid-clip 的 path；眼球四层自己的呼吸、睫毛旋转、五圈脉冲照旧在跑，整体仍然"活着"。
+   ⚠ 不要用 CSS transform 调整这份裁切的位置：页面里同时存在 8 份 #fz3-lid-clip（主眼 1 + 花屏克隆 5 +
+   字标 2），url(#fz3-lid-clip) 按文档顺序解析到最靠前的那份（侧栏字标），而字标不在 .fz3-eye 作用域内，
+   拿不到同样的 transform ——渲染出来的裁切就会和主眼自己的形状错位。眼睑几何必须直接写在 path 的 d 里，
+   保证所有副本内容一致，解析到哪份都得到同一个形状。 */
 .fz3-eye[data-lid="thinking"] .fz3-anatomy{clip-path:url(#fz3-lid-clip)}
+/* 半闭眼眼睑边界：裁切把近白巩膜压到深蓝眼睑上，AA 过渡会呈现为一条浅色毛边。
+   在 #fz3-lid-rim 里画一条与 #fz3-lid-clip 相同的曲线（同一条二次贝塞尔，只截取 x∈[31,129]
+   这一段；两端收在深蓝睫毛片内，不会在蓝色外盘上露头），用与眼睑相同的 #1f2573 描边，
+   把「白压深」的过渡反转成「深压白」的眼睑阴影。
+   几何和裁切共用同一组坐标，不需要任何 JS；即使将来裁切位置上移（rim 落到深色眼睑上）也看不见，
+   不会产生新的错位。静态绘制，零运行时开销。 */
+#fz3-lid-rim{display:none}
+.fz3-eye[data-lid="thinking"] #fz3-lid-rim{display:inline}
 
 /* 眼闪：极轻的白色亮度跳动；随机 1750-3600ms 一次，单次 155-255ms */
 .fz3-eye-flicker{position:absolute;inset:7.12%;border-radius:50%;background:#fff;opacity:0;z-index:4;pointer-events:none;mix-blend-mode:screen}
@@ -800,23 +851,26 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
   border:2px solid rgba(190,220,255,.85)}
 .fz3-layer[data-mood="done"] .fz3-eye-flash{animation:fz3-burst .95s ease-out 1}
 
-/* 页面隐藏：冻结全部 CSS 时间线（四层呼吸、睫毛旋转、脉冲环都在这一个属性上停下）。 */
+/* 页面隐藏：冻结全部 CSS 时间线（光晕呼吸 / 脉冲环都在这一个属性上停下；
+   叶片旋转 / 眼球呼吸 / 目光微动是运行时 15fps 时间线，由 suspend() 停表）。 */
 .fz3-eye[data-fz3-suspended] *{animation-play-state:paused!important;will-change:auto!important}
+.fz3-eye[data-fz3-suspended]::before{animation-play-state:paused!important}
 /* 不提供 reduced-motion 降级：Windows 关闭动画效果时也必须保持完整动效。 */
-@keyframes fz3-corners{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-@keyframes fz3-breath-a{from{transform:scale(.985)}to{transform:scale(.91)}}
-@keyframes fz3-breath-b{from{transform:scale(1)}to{transform:scale(.90)}}
-@keyframes fz3-breath-c{from{transform:scale(1)}to{transform:scale(.87)}}
-@keyframes fz3-breath-d{from{transform:scale(1)}to{transform:scale(.85)}}
-/* 5 圈脉冲环：周期 4s；0-36% 内扩散并淡出，其余 64% 静默等待下一轮 */
-@keyframes fz3-lash-pulse{
-  0%{opacity:0;transform:scale(.98)}
-  5%{opacity:.72}
-  12%{opacity:.52}
-  20%{opacity:.19}
-  27%{opacity:0}
-  36%,100%{opacity:0;transform:scale(2.78)}
+@keyframes fz3-halo-breathe{
+  0%{opacity:.74}
+  18%{opacity:.92}
+  34%{opacity:.80}
+  52%{opacity:1}
+  68%{opacity:.84}
+  84%{opacity:.95}
+  100%{opacity:.76}
 }
+/* 5 圈脉冲环：6.4s 一轮；前 27%（约 1.7s）扩散淡出，之后完全静止 */
+@keyframes fz3-lash-pulse{
+  0%{opacity:.62;transform:scale(.98)}
+  27%,100%{opacity:0;transform:scale(2.78)}
+}
+@keyframes fz3-atmos-breathe{from{opacity:.55;transform:scale(1)}to{opacity:1;transform:scale(1.06)}}
 @keyframes fz3-eye-flicker-overlay{
   0%,100%{opacity:0}
   22%{opacity:var(--fz3-flicker-1,.04)}
@@ -902,13 +956,12 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 .fz3-atmos-frame::after{right:-1px;bottom:-1px;border-left:0;border-top:0}
 /* 两团氛围光原本各带一层大半径滤镜（blur 34px / 20px），在整块屏幕尺寸上常驻栅格化；
    径向渐变本身已经是软过渡，去掉滤镜后观感几乎不变，但这块不再需要离屏滤镜。 */
-.fz3-atmos-glow{position:absolute;left:-12%;top:-26%;width:64%;height:70%;background:radial-gradient(circle,rgba(70,52,255,.16),rgba(60,46,240,.05) 52%,transparent 78%);opacity:.55;transform:scale(1)}
+.fz3-atmos-glow{position:absolute;left:-12%;top:-26%;width:64%;height:70%;background:radial-gradient(circle,rgba(70,52,255,.16),rgba(60,46,240,.05) 52%,transparent 78%);opacity:.55;transform:scale(1);animation:fz3-atmos-breathe 14s steps(14,end) infinite alternate}
 .fz3-atmos-flash{position:absolute;right:4%;top:2%;width:34%;height:30%;background:radial-gradient(ellipse at 60% 20%,rgba(120,190,255,.16),rgba(100,160,255,.04) 42%,transparent 72%);animation:fz3-flash 11s steps(1) infinite}
 
 @keyframes fz3-line{to{opacity:1;transform:none}}
 @keyframes fz3-blink{50%{opacity:.3}}
-/* fz3-breathe（氛围光 14s 呼吸）改由 JS 环境时钟按余弦曲线写入 opacity/scale；
-   原 CSS 动画在 .fz3-atmos 全屏 mix-blend-mode 层里，每帧都要重做整屏混合。 */
+/* 氛围光 14s 呼吸：14s / 14 步 ≈ 1fps，全屏 mix-blend-mode 层只在 14 个瞬间重合成。 */
 @keyframes fz3-flash{0%,38%,41%,63%,100%{opacity:.35}39%,40%,64%{opacity:.85}}
 
 @media (max-width:1180px){
@@ -941,10 +994,10 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
  * backdrop-filter:blur()（整块区域模糊在高刷屏上每帧重算背景）改纯渐变；
  * 其余新增规则全部是静态声明，没有常驻动画。
  * ================================================================== */
-:root{--fz3-mute:#9aa4d6;--fz3-line:rgba(120,170,255,.3)}
+:root{--fz3-mute:#9aa4d6}
 
 /* ---------- 浅色主题：宿主切浅色时 <html data-fz3-theme="light"> ---------- */
-:root[data-fz3-theme="light"]{--fz3-cyan:#2f62e0;--fz3-text:#151b2f;--fz3-mute:#5c6684;--fz3-line:rgba(60,90,220,.18);color-scheme:light}
+:root[data-fz3-theme="light"]{--fz3-cyan:#2f62e0;--fz3-text:#151b2f;--fz3-mute:#5c6684;color-scheme:light}
 html[data-fz3-theme="light"],html[data-fz3-theme="light"] body{background:#eef3fc!important;color-scheme:light;color:var(--fz3-text)}
 html[data-fz3-theme="light"] body::before{
   background:
@@ -964,8 +1017,6 @@ html[data-fz3-theme="light"] .fz3-brandname i{color:rgba(68,96,166,.9)!important
 html[data-fz3-theme="light"] .fz3-sb-text b{color:#101a35!important;text-shadow:0 0 10px rgba(96,132,255,.28)!important}
 html[data-fz3-theme="light"] .fz3-sb-text i{color:rgba(70,98,166,.9)!important}
 html[data-fz3-theme="light"] .fz3-brandmark-eye,html[data-fz3-theme="light"] .fz3-hero-brand-eye{filter:drop-shadow(0 0 7px rgba(70,110,230,.42))}
-html[data-fz3-theme="light"] .fz3-tag,html[data-fz3-theme="light"] .fz3-tag b{color:rgba(40,62,120,.9)!important;text-shadow:none!important}
-html[data-fz3-theme="light"] .fz3-tag i{color:rgba(70,92,150,.85)!important}
 html[data-fz3-theme="light"] .fz3-set{color:#16213a}
 html[data-fz3-theme="light"] .fz3-set-name{color:#0f1730}
 html[data-fz3-theme="light"] .fz3-set-sub,html[data-fz3-theme="light"] .fz3-set-desc{color:#5c6b8f}
@@ -996,7 +1047,6 @@ html[data-fz3-theme="light"] .fz3-set-segbtn:hover{color:#141a2e}
 /* 拖动期临时关掉最贵的两处合成：300% 的脉冲环与全屏 mix-blend 氛围层（松手即恢复） */
 .fz3-layer[data-dragging="1"] .fz3-eye-pulse{display:none}
 .fz3-layer[data-dragging="1"] .fz3-atmos{mix-blend-mode:normal}
-.fz3-eye-svg{transition:transform .28s ease}
 .fz3-layer[data-phase="dock"] .fz3-core:hover .fz3-eye-svg{transform:scale(1.07)}
 
 /* ---------- 用量气泡 ---------- */
@@ -1054,17 +1104,14 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
     /* —— Fairy 大眼待机运行时（移植自 Fairy-DSH）——
      * 来源：mascot-runtime.js / mascot-motion-clock.js / mascot-event-scheduler.js
      * （Apache-2.0，Copyright 2026 Chengzhibense，见 NOTICE-fairy-dsh.md）。
-     * 移植点：1440ms 单相位时钟、四层眼球呼吸、睫毛 15s 旋转、4s 五圈脉冲、眼闪、
-     *         threads/blocks 随机故障、表情切换两段故障；页面隐藏时暂停（不做 reduced-motion 降级）。
+     * 负责：眼球时间线（叶片旋转 / 眼球呼吸 / 目光微动）、随机花屏、眼闪、表情切换两段故障、页面隐藏暂停；
+     * 不做 reduced-motion 降级。
      *
-     * 性能约定（本插件性能优化重点）：四层眼球呼吸 / 睫毛旋转 / 五圈脉冲现在全部由 CSS
-     * @keyframes 驱动（fz3-breath-a..d / fz3-corners / fz3-lash-pulse），思考态裁切形状固定；
-     * 运行时不再持有 requestAnimationFrame 主循环，也不再逐帧写
-     * style.transform —— 待机时主线程没有任何逐帧 JS 唤醒。这里只负责离散事件：
-     * 随机花屏、眼闪、表情切换故障，单次几十到几百毫秒，事件之间靠 setTimeout 静默。 */
-    /* 睫毛旋转周期（参考实现 15s/圈）：与 CSS 里 .fz3-eye #corners 的 animation-duration 必须一致。
-       切块故障结束时要用它把暂停的旋转按当前角度接回时间线，写错会让睫毛在故障后跳一下。 */
-    const FZ3_LASH_PERIOD_S = 15
+     * 性能约定（v1.6.0）：眼球只有一份静态 SVG，运行时用 15fps 的 setInterval 改写 SVG 内部
+     * transform 属性（#corners / g#fz3-lens / g#fz3-drift），触发的是小面积向量重绘——每帧都按
+     * 设备像素重新抗锯齿，边缘不会像 v1.5.0 的 HTML 合成层那样在缩放时被重采样糊掉；
+     * 光晕呼吸 / 脉冲环 / 氛围光仍在 CSS 里用 steps() 量化到 ~15fps，合成器只搬图层。
+     * 没有 rAF 主循环：页面隐藏时停表，恢复时按累计时间续相位；其余都是离散事件（setTimeout）。 */
     const FZ3_FAULT = {
       /* 按参考文档：threads 4 拍 / 30–42ms 间隔 / 34–76ms 收尾；
          blocks 2 或 4 拍 / 56–104ms 间隔 / 48–96ms 收尾。 */
@@ -1108,6 +1155,15 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
       const glitchVars = ['--fz3-g-x', '--fz3-g-skew', '--fz3-g-bright', '--fz3-g-contrast',
         '--fz3-g-s1-x', '--fz3-g-s2-x', '--fz3-g-s3-x', '--fz3-g-s4-x', '--fz3-g-s5-x']
       const flickerVars = ['--fz3-flicker-ms', '--fz3-flicker-1', '--fz3-flicker-mid', '--fz3-flicker-2']
+      /* v1.6.0 眼球时间线：15fps 一个 tick；周期都是 1/15s 的整数倍（1.6s=24 帧、6.4s=96 帧）。 */
+      const FZ3_TICK_MS = 1000 / 15
+      const FZ3_ORBIT_MS = 6400
+      const FZ3_ORBIT_STEPS = 96
+      const FZ3_LENS_MS = 1600
+      const FZ3_LENS_STEPS = 24
+      const FZ3_LENS_SCALE = 0.095
+      const FZ3_GAZE_EASE_MS = 920
+      const SVG_NS = 'http://www.w3.org/2000/svg'
       let root = null
       let bands = []
       let noise = null
@@ -1120,6 +1176,18 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
       let state = 'normal'
       let suspended = false
       let bound = false
+      /* 眼球内部的三个锚点 + 15fps 时钟 */
+      let svg = null
+      let corners = null
+      let lens = null
+      let drift = null
+      let ticker = 0
+      let clockBase = 0
+      let clockElapsed = 0
+      let lastDeg = -1
+      let lastScale = -1
+      let gaze = null
+      let gazeAt = { x: 0, y: 0, r: 0 }
 
       const elementUnit = () => ((root && root.clientWidth) || 200) / 162
 
@@ -1140,35 +1208,120 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
         root = el
         /* 5 条故障切片只在 blocks 花屏时可见，顺带缓存，避免每次花屏再查询。 */
         bands = Array.from(root.querySelectorAll('.fz3-gband'))
+        /* v1.6.0：眼球是单份 SVG，运行时直接改内部 transform 属性。
+           为了让整只眼能被「目光」整体平移/旋转，把 #fairy 包进 g#fz3-drift；
+           为了让巩膜/虹膜/瞳仁/highlight 一起呼吸、又保留眼睑裁切，把 #eye-anatomy 的内容包进
+           g#fz3-lens（裁切挂在 #eye-anatomy 上，lens 在它内部缩放，裁切边界保持不动）。 */
+        const host = root.querySelector('.fz3-eye-svg')
+        svg = host ? host.querySelector('svg') : null
+        corners = null
+        lens = null
+        drift = null
+        if (svg) {
+          corners = svg.querySelector('#corners')
+          const fairy = svg.querySelector('#fairy')
+          const anatomy = svg.querySelector('#eye-anatomy')
+          if (fairy && !svg.querySelector('#fz3-drift')) {
+            drift = document.createElementNS(SVG_NS, 'g')
+            drift.setAttribute('id', 'fz3-drift')
+            svg.insertBefore(drift, fairy)
+            drift.appendChild(fairy)
+          }
+          if (anatomy && !anatomy.querySelector('#fz3-lens')) {
+            lens = document.createElementNS(SVG_NS, 'g')
+            lens.setAttribute('id', 'fz3-lens')
+            anatomy.insertBefore(lens, anatomy.firstChild)
+            let node = lens.nextSibling
+            while (node) {
+              const after = node.nextSibling
+              lens.appendChild(node)
+              node = after
+            }
+          } else if (anatomy) {
+            lens = anatomy.querySelector('#fz3-lens')
+          }
+          writeDrift()
+        }
         ensureFilter()
       }
 
-      /* 切块花屏时暂停睫毛旋转，并把当前角度/周期写进 CSS 变量，清除后能接回原时间线。
-         旋转本身由 CSS 驱动（不再由 JS 逐帧写 transform），这里只在故障开始前读一次。 */
-      const lockLashFrame = () => {
+      /* —— 15fps 眼球时钟（v1.6.0）——
+         叶片 6.4s 一圈 / 96 步，呼吸 1.6s 一个来回 / 24 步，目光缓动 0.92s 也在这条时间线上采样；
+         全部写 SVG transform 属性（向量重绘），合成器按 15fps 出帧。 */
+      const clockNow = () => clockElapsed + ((typeof performance !== 'undefined' ? performance.now() : Date.now()) - clockBase)
+
+      /* cubic-bezier(.34,0,.2,1) 的 x→y 近似：牛顿迭代 4 次，15fps 采样足够。 */
+      const gazeEase = (p) => {
+        if (p <= 0) return 0
+        if (p >= 1) return 1
+        let t = p
+        for (let i = 0; i < 4; i += 1) {
+          const mt = 1 - t
+          const x = 3 * mt * mt * t * 0.34 + 3 * mt * t * t * 0.2 + t * t * t
+          const dx = 3 * mt * mt * 0.34 + 6 * mt * t * (-0.14) + 3 * t * t * 0.8
+          if (Math.abs(dx) < 1e-6) break
+          t = Math.min(1, Math.max(0, t - (x - p) / dx))
+        }
+        const mt = 1 - t
+        return 3 * mt * t * t + t * t * t
+      }
+
+      const writeDrift = () => {
+        if (!drift) return
+        drift.setAttribute('transform',
+          'translate(' + gazeAt.x.toFixed(3) + ' ' + gazeAt.y.toFixed(3) + ') rotate(' + gazeAt.r.toFixed(3) + ' 80 80)')
+      }
+
+      const stepGaze = (now) => {
+        if (!gaze) return
+        const span = gaze.dur > 0 ? (now - gaze.start) / gaze.dur : 1
+        const k = gazeEase(span)
+        gazeAt = {
+          x: gaze.fx + (gaze.tx - gaze.fx) * k,
+          y: gaze.fy + (gaze.ty - gaze.fy) * k,
+          r: gaze.fr + (gaze.tr - gaze.fr) * k,
+        }
+        writeDrift()
+        if (span >= 1) {
+          gazeAt = { x: gaze.tx, y: gaze.ty, r: gaze.tr }
+          gaze = null
+        }
+      }
+
+      const tick = () => {
         if (!root) return
-        const corners = root.querySelector('.fz3-eye-svg #corners')
-        if (!corners) return
-        let angle = 0
-        try {
-          const matrix = getComputedStyle(corners).transform
-          const match = matrix && matrix.match(/^matrix\(([^)]+)\)$/)
-          if (match) {
-            const values = match[1].split(',')
-            const a = parseFloat(values[0])
-            const b = parseFloat(values[1])
-            if (Number.isFinite(a) && Number.isFinite(b)) angle = Math.atan2(b, a) * 180 / Math.PI
+        const now = clockNow()
+        if (corners) {
+          const step = Math.floor((now % FZ3_ORBIT_MS) / (FZ3_ORBIT_MS / FZ3_ORBIT_STEPS))
+          const deg = Math.round(step * (360 / FZ3_ORBIT_STEPS) * 1000) / 1000
+          if (deg !== lastDeg) {
+            corners.setAttribute('transform', 'rotate(' + deg + ' 80 80)')
+            lastDeg = deg
           }
-        } catch {}
-        const normalized = (angle + 360) % 360
-        root.style.setProperty('--fz3-lash-angle', normalized.toFixed(3) + 'deg')
-        /* 从当前生效的 CSS 时间线取周期；拿不到时退回常量，保证恢复旋转时角度连续。 */
-        let period = FZ3_LASH_PERIOD_S
-        try {
-          const duration = parseFloat(getComputedStyle(corners).animationDuration)
-          if (Number.isFinite(duration) && duration > 0) period = duration
-        } catch {}
-        root.style.setProperty('--fz3-lash-delay', (-normalized / 360 * period).toFixed(4) + 's')
+        }
+        if (lens) {
+          const step = Math.floor((now % FZ3_LENS_MS) / (FZ3_LENS_MS / FZ3_LENS_STEPS))
+          const scale = Math.round((1 - FZ3_LENS_SCALE * (0.5 - 0.5 * Math.cos(2 * Math.PI * step / FZ3_LENS_STEPS))) * 10000) / 10000
+          if (scale !== lastScale) {
+            lens.setAttribute('transform', 'translate(80 80) scale(' + scale + ') translate(-80 -80)')
+            lastScale = scale
+          }
+        }
+        stepGaze(now)
+      }
+
+      const startTicker = () => {
+        if (ticker || typeof window === 'undefined') return
+        clockBase = typeof performance !== 'undefined' ? performance.now() : Date.now()
+        ticker = window.setInterval(tick, FZ3_TICK_MS)
+        tick()
+      }
+
+      const stopTicker = () => {
+        if (!ticker) return
+        window.clearInterval(ticker)
+        ticker = 0
+        clockElapsed += (typeof performance !== 'undefined' ? performance.now() : Date.now()) - clockBase
       }
 
       const clearGlitch = () => {
@@ -1213,8 +1366,6 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
             displace.setAttribute('scale', (fz3Random(strong ? 30 : 17, strong ? 46 : 29) * unit).toFixed(1))
           }
         } else {
-          /* 进入切块档时锁一次睫毛角度；已在切块档内则沿用。 */
-          if (root.getAttribute('data-glitch') !== 'blocks') lockLashFrame()
           const polarity = Math.random() < 0.5 ? -1 : 1
           const strength = fz3Random(strong ? 4.2 : 1.4, strong ? 6.8 : 3) * unit
           for (let i = 1; i <= 5; i += 1) {
@@ -1277,6 +1428,50 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
           if (!root || suspended || state !== 'normal' || token !== flickerToken) return
           flickerOnce()
         }, fz3Random(1750, 3600))
+      }
+
+      /* —— 目光微动（v1.6.0）——
+         每 4.6–8.8s 让整只眼朝随机方向偏移 1–3 个 SVG 单位（dock 128px 下约 1–3px），
+         0.92s 缓动过去，停 1.3–2.4s 再回中。位移由 15fps ticker 写进 g#fz3-drift 的 transform，
+         不再用 CSS 过渡 / CSS 变量（那样插值的是合成层位图，边缘同样会被重采样）。
+         思考 / 页面隐藏 / 未挂载时不跑。 */
+      const stopGaze = () => {
+        fz3Scheduler.cancel('glance')
+        fz3Scheduler.cancel('glance-back')
+        fz3Scheduler.cancel('glance-next')
+        gaze = null
+        gazeAt = { x: 0, y: 0, r: 0 }
+        writeDrift()
+      }
+
+      const scheduleGaze = () => {
+        if (!root || suspended || state === 'thinking' || fz3Scheduler.has('glance')) return
+        fz3Scheduler.schedule('glance', () => {
+          if (!root || suspended || state === 'thinking') return
+          const angle = fz3Random(0, Math.PI * 2)
+          const radius = fz3Random(0.9, 2.6)
+          gaze = {
+            fx: gazeAt.x, fy: gazeAt.y, fr: gazeAt.r,
+            tx: Math.cos(angle) * radius,
+            ty: Math.sin(angle) * radius * 0.75,
+            tr: fz3Random(-0.45, 0.45),
+            start: clockNow(),
+            dur: FZ3_GAZE_EASE_MS,
+          }
+          fz3Scheduler.schedule('glance-back', () => {
+            if (!root || suspended) return
+            gaze = {
+              fx: gazeAt.x, fy: gazeAt.y, fr: gazeAt.r,
+              tx: 0, ty: 0, tr: 0,
+              start: clockNow(),
+              dur: FZ3_GAZE_EASE_MS,
+            }
+            fz3Scheduler.schedule('glance-next', () => {
+              if (!root || suspended) return
+              scheduleGaze()
+            }, FZ3_GAZE_EASE_MS + 60)
+          }, fz3Random(1300, 2400))
+        }, fz3Random(4600, 8800))
       }
 
       const stopGlitch = () => {
@@ -1371,8 +1566,13 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
         state = normalized
         appliedState = normalized
         /* 半闭眼只由 clipPath 状态控制；形状固定，不做逐帧呼吸。 */
-        if (normalized === 'thinking') root.setAttribute('data-lid', 'thinking')
-        else root.removeAttribute('data-lid')
+        if (normalized === 'thinking') {
+          root.setAttribute('data-lid', 'thinking')
+          stopGaze()
+        } else {
+          root.removeAttribute('data-lid')
+          scheduleGaze()
+        }
         if (suspended) return
         if (changed) {
           playStateTransition()
@@ -1385,6 +1585,8 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
       const suspend = () => {
         if (suspended || !root) return
         suspended = true
+        stopTicker()
+        stopGaze()
         stopGlitch()
         stopFlicker()
         root.setAttribute('data-fz3-suspended', '')
@@ -1393,8 +1595,10 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
         if (!suspended || !root) return
         suspended = false
         root.removeAttribute('data-fz3-suspended')
+        startTicker()
         scheduleGlitch()
         scheduleFlicker()
+        scheduleGaze()
       }
       const onVisibility = () => {
         if (!root) return
@@ -1415,11 +1619,15 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
         document.addEventListener('visibilitychange', onVisibility)
         window.addEventListener('pagehide', onPageHide)
         window.addEventListener('pageshow', onPageShow)
+        startTicker()
         scheduleGlitch()
         scheduleFlicker()
+        scheduleGaze()
       }
 
       const unmount = () => {
+        stopTicker()
+        stopGaze()
         stopGlitch()
         stopFlicker()
         if (root) root.removeAttribute('data-fz3-suspended')
@@ -1431,6 +1639,10 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
         bound = false
         root = null
         bands = []
+        svg = null
+        corners = null
+        lens = null
+        drift = null
         appliedState = null
         suspended = false
       }
@@ -1444,7 +1656,7 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
     /* shell.overlay 重挂载（路由切换/设置页刷新）不应该再播一遍开机 + 问候 */
     let bootPlayed = false
 
-    /* memo：FairySkin 会因为阶段/情绪/语音状态重渲染，眼睛本身（含 6 份内联 SVG）不需要跟着重渲染。 */
+    /* memo：FairySkin 会因为阶段/情绪/语音状态重渲染，眼睛本身（4 份分层 SVG + 5 份花屏克隆 + 脉冲环）不需要跟着重渲染。 */
     const CoreGlyph = React.memo(function CoreGlyph({ mood }) {
       const eyeRef = useRef(null)
       useEffect(() => {
@@ -1461,7 +1673,11 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
         { className: 'fz3-eye', ref: eyeRef },
         h('span', { className: 'fz3-eye-halo', 'aria-hidden': 'true' }),
         h('span', { className: 'fz3-eye-pulse', 'aria-hidden': 'true', dangerouslySetInnerHTML: { __html: FAIRY_PULSE_SVG } }),
-        h('div', { className: 'fz3-eye-svg', 'aria-hidden': 'true', dangerouslySetInnerHTML: { __html: FAIRY_EYE_SVG } }),
+        h('div', {
+          className: 'fz3-eye-svg',
+          'aria-hidden': 'true',
+          dangerouslySetInnerHTML: { __html: FAIRY_EYE_SVG },
+        }),
         h(
           'span',
           { className: 'fz3-glitch', 'aria-hidden': 'true' },
@@ -1671,7 +1887,7 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
         }
         audio.play().catch(() => {})
       }
-      const replayBoot = () => { bootHooks.forEach((fn) => { try { fn() } catch (e) {} }) }
+      const replayBoot = () => { greetPick = null; bootHooks.forEach((fn) => { try { fn() } catch (e) {} }) }
       const testVoice = () => { speakText('测试中。主人，我的声音听起来还满意吗？不满意也请忍着，本系统就这一副嗓子。', { force: true }) }
       return h(
         'div',
@@ -1968,52 +2184,14 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
 
     /* ------------------------------------------------------------------ *
      * 背景氛围层 */
+    /* 背景氛围层：常驻动画全部交给 CSS（steps 量化），组件渲染一次后不再产生任何 JS 唤醒。
+       原先 500ms 的环境时钟每次跳都写一次样式，实测 JS 样式写入成本远高于合成器帧，
+       现在 14s 呼吸由 .fz3-atmos-glow 的 steps 时间线驱动。 */
     const Atmos = React.memo(function Atmos() {
-      const glowRef = React.useRef(null)
-      React.useEffect(() => {
-        const glow = glowRef.current
-        if (!glow) return undefined
-        const GLOW_MS = 14000
-        const t0 = performance.now()
-        const tick = () => {
-          if (document.hidden) return
-          const t = performance.now() - t0
-          /* 氛围光呼吸：0% opacity .55/scale 1 → 50% opacity 1/scale 1.06，余弦即 ease-in-out */
-          const gp = (t % GLOW_MS) / GLOW_MS
-          const ge = 0.5 - 0.5 * Math.cos(2 * Math.PI * gp)
-          glow.style.opacity = (0.55 + 0.45 * ge).toFixed(3)
-          glow.style.transform = 'scale(' + (1 + 0.06 * ge).toFixed(4) + ')'
-        }
-        let id = null
-        const start = () => {
-          if (!id) id = window.setInterval(tick, 500)
-        }
-        const stop = () => {
-          if (id) {
-            window.clearInterval(id)
-            id = null
-          }
-        }
-        /* 后台标签页把 500ms 的样式计算也停掉，不再空转 */
-        const onVis = () => {
-          if (document.hidden) stop()
-          else {
-            tick()
-            start()
-          }
-        }
-        document.addEventListener('visibilitychange', onVis)
-        tick()
-        if (!document.hidden) start()
-        return () => {
-          document.removeEventListener('visibilitychange', onVis)
-          stop()
-        }
-      }, [])
       return h(
         'div',
         { className: 'fz3-atmos', 'aria-hidden': 'true' },
-        h('div', { className: 'fz3-atmos-glow', ref: glowRef }),
+        h('div', { className: 'fz3-atmos-glow' }),
         h('div', { className: 'fz3-atmos-flash' }),
         h('div', { className: 'fz3-atmos-frame' }),
         h('div', { className: 'fz3-rim' }),
@@ -2024,12 +2202,7 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
     /* ------------------------------------------------------------------ *
      * 主界面：开机→问好→左下坞 */
     function greetLine() {
-      const hh = new Date().getHours()
-      if (hh >= 5 && hh < 11) return '主人，早上好。Fairy 已就位，今天的日程也已就位。'
-      if (hh >= 11 && hh < 14) return '主人，中午好。饭可以不吃，进度不能停。'
-      if (hh >= 14 && hh < 18) return '主人，下午好。H.D.D 在线，摸鱼请自便。'
-      if (hh >= 18 && hh < 23) return '主人，晚上好。夜班系统已启动，本系统不困。'
-      return '主人，夜深了。这个点还醒着，是需要我陪着，还是放不下手里的事？'
+      return currentGreeting().text
     }
 
 /* 气泡（v1.3.3 文案按电费口径）：usage 态给「电费余额 / 今日电费 / 电费倍率」，turn 态只给「本轮电费 / 电费倍率」。
@@ -2105,13 +2278,17 @@ function BubbleCard({ data, onMeasure, onFlip }) {
     )
   }
   if (peak) {
-    const flip = peak.offPeak ? '十倍电费' : '五倍电费'
+    /* 规则行：把「峰 / 谷」全说清楚（工作日 09–12、14–18 十倍，其余五倍）。
+       旧宿主只返回「…十倍电费」，这里补上「其余时段五倍电费」，避免升级后文案缺一半。
+       下一档倍率不再写成「· 后转十倍电费」——那会变成没有主语的半句话（倒计时在上面的行里）。 */
+    const rule = feeText(peak.window)
+    const ruleFull = rule.indexOf('五倍') >= 0 ? rule : rule + '，其余时段五倍电费'
     detail.push(
       nextAt
         ? left > 0
-          ? feeText(peak.window) + ' · 后转' + flip
-          : feeText(peak.window) + ' · 换价时刻已到，正在刷新'
-        : feeText(peak.window) + ' · ' + feeText(peak.next),
+          ? ruleFull
+          : ruleFull + ' · 倍率切换中，正在刷新'
+        : ruleFull + ' · ' + feeText(peak.next),
     )
   }
   if (mode === 'usage' && !loading && balance && !balance.ok && balance.reason) detail.push(balance.reason)

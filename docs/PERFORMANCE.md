@@ -2,7 +2,7 @@
 
 This page records why and how the **performance-optimized edition** of
 dsh-fairy-zzz differs from the upstream plugin, plus the measurements used to
-validate the result. 中文在前，English summary at the end. Section 9 adds the v1.2.0 GPU-usage work; §9.10 covers the v1.2.1 dead-code / dead-style cleanup, §9.11 checks the v1.3.0 interaction additions (usage bubble, drag, themes) and why they add no resident cost, §9.12 covers the v1.3.1 interaction-path rewrite, §9.13 covers the v1.3.2 conversation-region drag bounds, and §9.14 records the v1.3.3 fee-label copy change (no performance impact).
+validate the result. 中文在前，English summary at the end. Section 9 adds the v1.2.0 GPU-usage work; §9.10 covers the v1.2.1 dead-code / dead-style cleanup, §9.11 checks the v1.3.0 interaction additions (usage bubble, drag, themes) and why they add no resident cost, §9.12 covers the v1.3.1 interaction-path rewrite, §9.13 covers the v1.3.2 conversation-region drag bounds, and §9.14 records the v1.3.3 fee-label copy change (no performance impact), §9.15 covers the v1.4.0 greeting voice library (no render-path impact), §9.16 records the v1.5.1 re-record of those 20 clips (fixing the greet-night-2 pause only; no render-path impact either), §10 records the v1.5.0 eye-motion rebuild (layered HTML + `steps()` quantisation, cutting GPU by ~78% and renderer CPU by ~85% versus v1.4.0 in the same harness), and §11 records the v1.6.0 reversal for image quality: back to one vector SVG redrawn at 15 fps, trading ~+0.5 GPU points in an isolated harness for edges that are always re-anti-aliased at device resolution.
 
 ## 1. 背景与目标
 
@@ -326,6 +326,194 @@ v1.3.3 只把用量气泡的文案从「用量 / 余额 / 今日花费 / 峰谷�
 - 新增 1 行动态标签文本不会改变布局成本：气泡宽度仍固定 236 px（`--fz3-bubble-w`），最长标签「五倍电费」4 个字单行显示，headless 截图核对无溢出 / 无换行。
 
 因此第 3 / 7 节的 GPU 与主线程数据继续有效；`client.js` 3,192 行 / 155,313 B、`index.js` 1,392 行 / 47,865 B（相对 v1.3.2 分别 +12 行 / +875 B、+1 行 / +10 B）。
+
+### 9.15 v1.4.0：问候语音库（零渲染路径影响）
+
+开屏问候从每个时段 1 条固定语音扩成 5 条（原 1 条 + 按 Fairy 人设新写/合成 4 条），随机播放且避免连续重复，居中台词与所选语音同源。
+
+- 选择逻辑只在组件首次渲染或重播开机时执行一次：`currentGreeting()`（client.js 61-72）读一次 localStorage、做一次 `Math.random()`、写一次 localStorage；没有新增定时器、`requestAnimationFrame`、轮询或请求。
+- 新增 20 条 mp3（v1.4.0 时 2,289,924 B；v1.5.1 按原草稿重录后 2,303,748 B，见 §9.16）只在 greet 阶段按需下载并播放一条，dock 后不驻留解码器；首屏运行时下载仍约 2.9 MB，25 条语音不计入首屏。
+- 体积：`client.js` 3,196 → 3,244 行 / 155,626 → 159,519 B；`index.js` 不变（47,892 B / 1,392 行）；第 3 / 7 节的 GPU / 主线程数据不受影响。
+
+### 9.16 v1.5.1：重新合成 20 条问候语音（只修 night-2 停顿，零渲染路径影响）
+
+v1.4.0 的 20 条新语音是按早期草稿台词合成的；`GREET_LINES.text`（屏幕字幕）是后来改写的简洁理解版，二者本来就允许不一致。用户反馈的 `greet-night-2.mp3` 无停顿，源于草稿句「我值班；您不睡」里的全角「；」不在引擎 `cut5` 切分符号集里。v1.5.1 按**同一份草稿台词**重录 20 条，把该处「；」改成「。」（V1 原版 5 条不动）。只改标点还不够：切句后 `TextPreprocessor.merge_short_text_in_array(threshold=5)` 会把「我值班。」（4 字）和「您不睡，」（4 字）合并回同一片段，模型只给 ~0.2s 微停顿。因此在合成出的 wav 里、该句号的自然停顿处（约 5.93s）插入 0.20s 数字静音，再编码 mp3，得到最终 0.44s 停顿。
+
+- 20 条 **2,303,748 B / 5.24–9.84 s**（旧版 2,289,924 B / 5.08–9.36 s）；25 段合计 **2,708,325 B**（原 5 段 404,577 B）；总发布资源约 7.8 MB。
+- `greet-night-2.mp3`（9.84 s / 159,021 B）的 `silencedetect(-38dB, 0.14s)` 在 **5.76–6.20 s**（「我值班」与「您不睡」之间）命中 **0.44 s** 停顿；其余标点边界 0.33–0.48 s。其余 19 条同样在标点边界有 7–8 处 0.2–0.48 s 停顿。
+- 音频只在 greet 阶段下载并播放一条，仍然**不进渲染路径、不新增定时器 / 请求**；第 3 / 7 节的 GPU / 主线程数据继续有效。
+- `client.js` / `index.js` 未改；`package.json` 1.5.1。
+- 说明：旧 20 条 mp3 被 v1.5.1 早期实现覆盖后不可逐字节恢复，本次是同一引擎、同一份草稿台词重录，个别句子时长可能差 ±0.6 s；字幕仍为简洁版。
+
+---
+
+## 10. 眼徽动效重做：更「灵动」同时再降 GPU / CPU（v1.5.0）
+
+### 10.1 目标与约束
+
+用户反馈：眼徽虽然稳定了，但和游戏内 Fairy 的动图（米游社 Fairy 动图帖（article/54939105））相比「不够灵动」——游戏里最显眼的是**白环上一颗亮彗星高光持续绕圈**、外圈辉光不规则闪烁、蓝色光圈叶片缓慢公转、蓝环内圈轻微缩放，而插件原来的眼徽只有一个 catchlight 静止不动、四层 scale 呼吸 + 睫毛旋转。
+
+约束：**观感要更活，但 GPU / CPU 不能涨，最好继续降**。所以先把「贵在哪」测清楚，再决定动效做法。
+
+### 10.2 测量方法
+
+两种互补的测法（都在 165Hz headless Chrome、1610×883 @ dpr 1.5、丢弃前 2 个样本）：
+
+1. **隔离 harness**：只加载插件 CSS + 眼球 DOM（不含宿主页面），排除 DSH 自身基线，直接比较「动效本身」的 GPU / 渲染进程 CPU。GPU 用 `\GPU Engine(*)\Utilization Percentage` 按 Chrome GPU 进程汇总；CPU 用渲染进程 `TotalProcessorTime`（`Get-Process` 的 `CPU` 增量 / 采样秒数）。
+2. **DSH 真页面 A/B**：同一轮里交替替换新旧 `client.js`，每次刷新重新 dock，各采 12–14s；能带上宿主自身约 2–3% 的基线，验证结论在真实环境成立。
+
+### 10.3 关键实验：为什么「SVG 内部动画」必须整体搬走
+
+在 v1.4.0 页面上做变体实验（同一轮内切换 CSS/注入不同实现，每次 8s，meanMax；数值是 GPU 引擎平均占用）：
+
+| 变体 | 做法 | GPU 平均 |
+| --- | --- | --- |
+| full | v1.4.0 原样：SVG 内部 4 层呼吸 + #corners 旋转 + 脉冲环，全部 165fps | 13.9–15.2% |
+| static | 关掉全部持续动画与氛围层 | 0.8–1.0% |
+| steps_breath | 只把 SVG 内部呼吸改成 `steps(6,end)`（≈8fps 量化） | 13.3% |
+| html_smooth | 把同样动画挪到 HTML 图层，但用 ease 连续播放 | 11.3% |
+| html_steps | HTML 图层 + `steps(38)` / 3.2s（≈12fps）只动一层 | **1.9%** |
+| html_steps_pulse | 在上一条基础上再加一层脉冲环 steps 动画 | 2.3% |
+| timer_only | 只挂一个空 `setInterval(41.7ms)`，不写样式 | 1.5% |
+| js24 / js12 | JS 每 41.7ms / 83.3ms 写一次 CSS 变量到 SVG transform | 10.7% / 10.4% |
+| timer_write_scale | JS 每 41.7ms 写一次 `--t-scale`（与 js24 同类，不同目标） | 10.9% |
+
+结论（后来所有实现都遵守）：
+
+1. **对 SVG 内部元素做 CSS 动画，`steps()` 量化几乎没用**（13.3 vs 13.9）——Chrome 仍在每帧重绘整棵 SVG 子树，量化只减少插值、不减少重绘。
+2. **持续 JS 写样式极贵**（约 +0.4 GPU 点/次）：每次写入都会触发样式失效 + 主线程 paint + 整屏混合重新合成；把写入频率从 24Hz 降到 12Hz 几乎不降 GPU（10.7 → 10.4），所以「用 JS 降帧」这条路直接放弃。
+3. **HTML 图层 + `steps()` 近乎免费**：同样内容只动 HTML 图层时 1.9%（相对 static 只 +0.9）；但**连续 165fps 合成仍然贵**（html_smooth 11.3%），所以必须同时量化。
+4. 空定时器本身只有约 1.5%（测量噪声量级），JS 不是问题，「JS 每帧写样式」才是。
+
+### 10.4 实现（client.js，v1.5.0）
+
+- **眼球分层**：同一份静态 `FAIRY_EYE_SVG` 复制 4 份，按父层选择器只显示各自要的部件（`.fz3-eye-plate` / `-blades` / `-anatomy` / `-shine`）；外层 `.fz3-eye-gaze` 负责目光位移，内层 `.fz3-eye-body` 负责 hover 缩放与故障滤镜。
+- **持续动画全部走 HTML 图层 + steps**：`.fz3-eye-blades{animation:fz3-orbit 6.4s steps(96,end) infinite}`（15fps 旋转）、`.fz3-eye-anatomy{animation:fz3-lens-breathe 1.6s steps(24,end) infinite alternate}`（scale 1→0.905）、`.fz3-eye::before{animation:fz3-halo-breathe 6.4s steps(3,end) infinite}`、`.fz3-eye-pulse{animation:fz3-lash-pulse 6.4s steps(24,end) infinite}`（前 27% 扩散、其余静止）。周期都是 1/15s 的整数倍（1.6s = 24 帧、6.4s = 96 帧），多段动画落在同一帧网格。
+- **一次被否决的尝试**：初版还做过「白环上的亮彗星高光绕环公转」（亮头 + 蓝柔光 + 渐隐尾点，独立 HTML 图层 + `steps(96)`，成本很低），但用户实际观感觉得**太突兀**，定稿前整个删掉（含 SVG 常量、CSS 图层与 `fz3-orbit-rev` 关键帧），分层因此从 5 层减到 4 层——这也是为什么 v1.5.0 的动画数量是 4 个而不是 5 个。
+- **目光微动**：`scheduleGaze()` 每 4.6–8.8s 写一次 `--fz3-gaze-x/y/r`（1–3px + ±0.45°），0.92s 过渡在合成器上完成，隔 1.3–2.4s 回中再排下一次；思考 / 页面隐藏 / 未挂载时 `stopGaze()`。整个动效每秒只产生 2 次样式写入，不占逐帧预算。
+- **氛围光回归 CSS**：删掉 v1.2.0 里 500ms 的 JS 环境时钟（每跳一次样式写入），`.fz3-atmos-glow` 用 `14s steps(14,end) infinite alternate` 呼吸（≈1fps）；全屏 `mix-blend-mode` 层只在 14 个瞬间重合成。`Atmos` 组件退化成纯静态渲染。
+- **运行时清理**：删除 `FZ3_LASH_PERIOD_S`、`lockLashFrame()`（SVG 内旋转已不需要锁角度）、`setPulse` 里的锁帧调用；`.fz3-gband` 的静态 `will-change` 改成只在 `data-glitch="blocks"` 时启用；故障滤镜目标从 `.fz3-eye-svg` 改为 `.fz3-eye-body`。
+- **保留的东西**：花屏 / 眼闪参数、思考态静态半闭眼 clipPath、页面隐藏暂停、拖拽期关闭最贵合成层等逻辑不变。
+
+### 10.5 最终数据（同一 harness、同一轮）
+
+| 指标（dock 待机） | v1.4.0 | v1.5.0 | 变化 |
+| --- | --- | --- | --- |
+| GPU 引擎平均占用（隔离 harness） | 9.3–11.8% | **1.9–2.3%** | 约 −80% |
+| 渲染进程 CPU（单核 %） | 47–54% | **4.5–6.6%** | 约 −90% |
+| GPU（DSH 真页面 A/B，测的是还带彗星层的中间版本） | 14.6–14.9% | **4.4%** | 约 −70% |
+| 常驻动画 | 6 个（SVG 内部 165fps） | 4 个（HTML 图层 15fps） | 帧数 1/11 |
+| `client.js` 体积 | 159,519 B / 3,244 行 | 160,210 B / 3,231 行 | +0.7 KB、−13 行（分层 CSS 换掉了 SVG 内部动画与运行时锁帧代码） |
+
+隔离 harness 里 v1.5.0 已接近 static 底噪（0%），说明眼徽本身不再是常驻开销大头；真页面剩下的主要是宿主界面自身。
+
+### 10.6 观感
+
+- 叶片公转 + 眼球轻微收放 + 外圈辉光的 steps 呼吸，整体比原来「四层呼吸 + 睫毛旋转」更活；「白环亮彗星绕圈」试过但按用户反馈删除（见 10.4 / 10.7）；
+- 眼球呼吸用「整组 scale 1→0.905」近似原来的四层异相呼吸，放大看仍能看到蓝环/瞳仁一起轻微收放；睫毛/叶片公转保留；
+- 思考态仍是静态半闭眼（原取舍不变），此时目光暂停，反而更省。
+
+### 10.7 放弃 / 未采纳的方案
+
+| 方案 | 为什么放弃 |
+| --- | --- |
+| 只把 SVG 内部动画改 `steps()` | 量化不影响重绘，13.3 vs 13.9，几乎无收益 |
+| JS 降帧驱动（24Hz→12Hz） | 每次样式写入固定成本，降频无用（10.7→10.4） |
+| 保留连续 ease 合成、只拆图层 | 165fps 连续合成仍 11.3% |
+| 用 `backdrop-filter` / 动态 `filter` 做光晕 | 全屏离屏滤镜每帧重栅格化，v1.2.0 已验证不可行 |
+| 白环彗星高光（v1.5.0 初版已实现） | 用户反馈**太突兀**，与整体气质不搭；删除后少一个动画层，GPU/CPU 还略降。教训：游戏里成立的高光放到 128px 眼徽上不一定好看 |
+
+### 10.8 复现
+
+1. 从 `client.js` 抽出 `CSS` 与 SVG 常量，按 `CoreGlyph` 的 DOM 结构生成两个静态页面（旧版：`.fz3-eye-svg` + 6 个 SVG 内部动画；新版：`.fz3-eye-gaze > .fz3-eye-body >` 四个图层）；
+2. 用 headless Chrome 打开页面，`--force-device-scale-factor=1.5 --window-size=1610,883`；
+3. 每轮先跑 1.5s 预热，再用 `Get-Counter '\GPU Engine(*)\Utilization Percentage' -SampleInterval 1 -MaxSamples 13` 采 12s，按 `pid_<GPU进程号>` 过滤后丢弃前 2 个样本求均值；CPU 用渲染进程 `CPU` 字段增量 / 秒数；
+4. 两个版本交替各跑 2–3 轮（本报告数据为 old/new 各 2–3 轮）。
+
+harness 脚本同样**不随仓库发布**，属于一次性验证工具。
+
+---
+
+## 11. v1.6.0：眼徽改回单 SVG 向量重绘（修旋转 / 缩放边缘重采样）
+
+### 11.1 问题
+
+v1.5.0 把眼徽拆成「4 份静态 SVG 副本 + 4 个 HTML 合成层」，用 CSS `steps()` 做旋转 / 缩放 / 呼吸。性能很好，但**合成器动的是已经栅格化的位图**：旋转 / 缩放时只能对位图重采样，眼睑 `clipPath` 硬边与深蓝眼眶这类高对比边缘会出现台阶 / 发虚（165 Hz 屏每步角度更大，更明显）。用户截图反馈「有些像素没覆盖到」，要求恢复 v1.3.3 的平滑边缘。
+
+在本地复现时发现：静态对比页里两种实现几乎一样（512px 放大对照几何与平滑度一致），说明问题只出现在**动画中的中间帧**；把同一帧按 1x 栅格化再 1.5x 放大，得到的块状台阶与用户截图高度一致，佐证了「合成层位图被放大 / 旋转」这一机制。
+
+### 11.2 方案对比（隔离 harness，dock 待机，1600×1000 dpr1.5）
+
+| 变体 | GPU 平均 | 主线程 | 说明 |
+| --- | --- | --- | --- |
+| A. v1.5.0 四层合成 + CSS steps | 0.99% | 0% | 边缘会被重采样 |
+| B. 单 SVG + JS 15fps（**采用**） | **1.52%** | 0.8% | 每拍重写 SVG transform，Skia 重新抗锯齿 |
+| C. 单 SVG + JS 8fps | 1.05% | 0.5% | 叶片每步 7.5°，肉眼太跳，放弃 |
+| D. 完全静态 | 0.40% | 0% | 底噪参考 |
+
+结论：**+0.5 GPU 点 / +0.8% 主线程**换「边缘永远按设备像素矢量重绘」；相对 v1.4.0 的 9.3–11.8% / 47–54% 仍是约 1/6 与 1/50。
+
+### 11.3 真页面 A/B
+
+同一 headless Chrome 会话、同一页面，磁盘替换 `client.js` 后 `Page.reload`（用 DOM marker 断言换版成功：v1.5.1 有 `.fz3-eye-gaze`、无 `.fz3-eye-svg`；v1.6.0 相反且有 `#fz3-drift` / `#fz3-lens`）：
+
+| 指标 | v1.5.1 | v1.6.0 | 结论 |
+| --- | --- | --- | --- |
+| GPU（Chrome GPU 进程树 sum，8 样本去前 2） | 2.28% | 2.10% / 1.98% | 噪声内，没有上升 |
+| 主线程 TaskDuration（两次 run） | 3.69% / 2.14% | 3.28% / 4.73% | 噪声 ±1.5pp，趋势 +0.5–1pp |
+| 清晰度（192px 原生截图 Laplacian 梯度）thinking | 30.43 | **31.00** | +1.9% |
+| 清晰度 idle | 30.83 | **32.05** | +4.0% |
+
+### 11.4 实现要点
+
+- `CoreGlyph` 只渲染一份 `.fz3-eye-svg`（innerHTML = `FAIRY_EYE_SVG`）；
+- `cache(el)` 在 SVG 内插入两个 g：`#fz3-drift`（包住 `#fairy`，做目光位移 / 旋转）与 `#fz3-lens`（包住 `#eye-anatomy` 的内容，做呼吸缩放）；裁切仍挂在 `#eye-anatomy` 上，所以 `clip-path` 不会被缩放破坏；
+- ticker（`setInterval(tick, 1000/15)`）每拍写三个属性：`#corners` 的 `rotate(deg 80 80)`、`#fz3-lens` 的 `translate(80 80) scale(s) translate(-80 -80)`、`#fz3-drift` 的 `translate(x y) rotate(r 80 80)`（目光缓动，920ms cubic-bezier 自实现）；
+- 相位用 `clockNow() = clockElapsed + (performance.now() - clockBase)`；`suspend` 时 `stopTicker()` 并把已过时间累进 `clockElapsed`，恢复后不跳帧；
+- 光晕 / 脉冲环 / 氛围光保持 CSS `steps()` 时间线；页面隐藏时仍靠 `[data-fz3-suspended]` 暂停 CSS 并停 ticker。
+
+### 11.5 放弃的方案
+
+| 方案 | 为什么放弃 |
+| --- | --- |
+| 保留 4 层合成、只修边缘像素 | 位图重采样是本质问题，修边缘无解 |
+| 8fps ticker | 省 0.5 点，但叶片每步 7.5° 明显跳帧 |
+| 30/60fps ticker | 成本线性上涨，15fps 已看不出与连续动画的差别 |
+| 用 Canvas 画眼 | 要重画全部几何与渐变，且失去 SVG 的 CSS 主题联动 |
+
+### 11.6 复现
+
+1. 隔离 harness：从 `client.js` 抽出 `CSS` 与 SVG 常量，按 `CoreGlyph` 的 DOM 生成 4 个静态页（A/B/C/D 四变体），headless Chrome `1600x1000 --force-device-scale-factor=1.5`，每变体预热 2.6s 后采 9s；GPU 用 `Get-Counter "\GPU Engine(*)\Utilization Percentage"` 按 Chrome 进程树 pid 过滤，丢前 2 样本；主线程用 CDP `Performance.getMetrics` 的 `TaskDuration` 差值 / 墙钟。
+2. 真页面 A/B：headless Chrome 自签 cookie 登录 GUI（`dsh-auth-<b64u sha256(authority)>`，值 `v1.<b64u JSON>.<b64u HMAC-SHA256>`，时间戳用毫秒），等 `[data-phase="dock"]`，测一轮后把磁盘上的 `client.js` 换成另一版、`Page.reload` 再测；清晰度用 `Page.captureScreenshot` 的 clip（眼徽 rect 外扩 8px、scale 1）截 192px 原生图，再用 PIL + numpy 算 Laplacian 梯度均值。
+
+harness 脚本同样**不随仓库发布**。
+
+### 11.7 v1.6.0 补丁：半闭眼眼睑白边 + 死代码清理
+
+**白边是回归，不是审美问题**（用户：「这个白色的边缘以前没有的，都是统一的颜色」）。根因不在 v1.6.0 的渲染管线，而在**重复的内联 SVG id**：页面同时存在 8 份 `#fz3-lid-clip`（主眼 1 + 花屏克隆 5 + 品牌位 / 字标 2），`url(#fz3-lid-clip)` 按文档顺序解析到最靠前的**侧栏字标副本**；字标不在 `.fz3-eye` 作用域内，拿不到 `.fz3-eye .fz3-lid-clip-shape{transform:translateY(15.5px)}`，于是主眼的裁切边界一直是 path 的原始曲线 `y=75`（而不是设计中的 `y=90.5`）。边界正好横穿近白巩膜光晕，抗锯齿把「白压深」的过渡画成了眼睑上的浅色毛边。
+
+**修法（零运行时代价）**：
+
+1. 删掉那条从未生效的 `.fz3-lid-clip-shape{transform}` 规则，注释里写明「8 份重复 id → 眼睑几何必须写死进 path `d`」；
+2. 在 `#eye-anatomy` 之后加一条静态 `<path id="fz3-lid-rim">`：与裁切**同一条二次贝塞尔**（`M31 65 Q80 85 129 65`，只截 `x∈[31,129]`，两端收在深蓝睫毛片内），`stroke:#1f2573`、`stroke-width:2.2`、`fill:none`，默认 `display:none`、`.fz3-eye[data-lid="thinking"]` 时 `inline`；
+3. rim 放在 `#fairy` 内 → 随 `#fz3-drift` 目光一起移动，但**不在** `#fz3-lens` 里 → 不随呼吸缩放，与裁切边界永远同坐标系；
+4. 效果是把「白压深」的 AA 过渡反转成「深压白」的眼睑阴影，边界看起来是一条深色眼睑线。
+
+**为什么没有性能回退**：rim 是**静态 path**，只在 thinking 态多画一条 2.2 SVG 单位宽的描边，没有动画、没有 filter、没有新增合成层；它不进入 15fps ticker，也不改任何 `:root` 变量。隔离 harness 的 dock 待机数值不变（该 harness 走 idle 态、不显示 rim）；真实页面截图 A/B 只是在同一帧里多了一条线。
+
+**验证数据**：
+
+| 检查 | 结果 |
+| --- | --- |
+| 静态 128px A/B（修复前 / 后） | 差异 407 px，bbox `(413,301)-(564,317)`，max 560 —— 只改了眼睑边界一条线，其余像素完全一致 |
+| live A/B（headless Chrome 登录真实 GUI，dpr 1.5、clip 4×） | 差异 2,881 px，bbox `(222,385)-(689,436)`，全部沿眼睑边界 |
+| rim 数量与显隐 | 8 条：品牌位 / 字标 2 条 `display:none`，主眼 + 5 条花屏克隆 6 条 `inline` |
+| 其他状态 | idle 全开眼外观不变；`data-glitch="blocks"` 花屏帧的克隆用同一曲线，天然对齐 |
+
+**同批死代码清理**（按软件工程标准，零用户可见行为变化）：`--fz3-line`（定义 2 次、0 引用）、两条 `html[data-fz3-theme="light"] .fz3-tag,…` 覆盖（DOM 已无该元素）、clipPath 上无 CSS 引用的 `fz3-lid-clip-shape` class。扫描基线：CSS 32,288 chars / 80 个 class、`@keyframes` 11 个全部有引用、顶层声明 103 个最少引用 2 次；其余 `--fz3-g-*` / `--fz3-flicker-*` / `--fz3-brand-*` 均由运行时 JS 写入，保留。清理后 `client.js` 164,855 B / 3,369 行、CSS 文本 489 行（其中 rim 规则与注释 5 行）。
+
+补丁后的隔离 harness 与真实页面都没有再跑全量 GPU 采样：rim 是纯静态绘制，而清理只删死规则，不改变任何仍在生效的样式 / 动画；`node --check` 与真机 DOM 断言（8 条 rim、`--fz3-line` 计算值为空、`.fz3-tag` 元素 0、控制台 0 exception）通过。
+
 ---
 
 ## English summary
@@ -345,6 +533,7 @@ This edition:
   (the eye itself still breathes, the lashes still rotate, the pulse rings and
   flicker are intact);
 - replaces live `blur()` / `drop-shadow` with static layered gradients;
+- (v1.5.0) rebuilds the eye motion: the static eye SVG is split into four layered HTML copies, plus a lens breath, gaze drift and a CSS-driven atmosphere breath. All continuous animation now runs on HTML layers quantised to 15 fps with `steps()` instead of animating inside the SVG. In an isolated harness the dock-idle cost drops from 9.3–11.8% GPU / 47–54% renderer CPU to 1.9–2.3% / 4.5–6.6% (about −80% / −90%); an in-page A/B on the real DSH page gives 14.6–14.9% → 4.4% GPU (that run measured an intermediate build that still had an extra comet layer, which was later removed as too flashy). The eye is no longer the main resident cost, and the motion looks closer to the in-game Fairy reference (see §10).
 - makes the boot stage a single `boot-opt.mp4` without a full-screen blur backfill,
   and wrote progress straight to the DOM until v1.2.1 removed the progress bar
   together with the hidden boot HUD;
@@ -389,6 +578,8 @@ This edition:
   grows automatically in an open conversation) and falls back to the full viewport when either
   element is missing. `client.js` is now 154,438 B / 3,180 lines; no CSS or asset changes and no
   resident cost.
+- adds (v1.4.0) a greeting voice library: five clips per time slot (25 in total), picked at random with a localStorage-backed anti-repeat rule; the pick runs once per boot / replay (no timer, rAF or polling), only the chosen MP3 is fetched during the greet stage, and the on-screen greeting line now comes from the same pick as the audio. `client.js` is now 159,519 B / 3,244 lines; no render-path change. (v1.5.1 re-records those 20 clips from the same draft script, changes the greet-night-2 semicolon to a full stop and inserts 0.20 s of silence at the resulting period — the engine merges 4-character fragments back together via `merge_short_text_in_array(5)`, so punctuation alone only gives ~0.2 s — for a 0.44 s pause; 2,303,748 B, render cost unchanged. On-screen subtitles are the concise version and are not required to match the audio.)
+- replaces (v1.6.0) the four-layer eye badge (pre-rasterised SVG copies animated on the compositor) with a single vector SVG re-drawn at 15 fps, fixing edge resampling. Rotating / scaling a rasterised copy resamples it, which showed up as stair-stepping and soft pixels on the high-contrast lid edge and dark socket; a 15 fps JS ticker now writes the SVG `transform` attributes for the blades orbit, lens breathing and gaze drift so Skia re-anti-aliases every frame at device resolution. In an isolated harness this costs 0.99% → 1.52% GPU and 0% → 0.8% main-thread time; on the real page the same-round A/B is within noise (2.28% → 2.10 / 1.98% GPU), and measured edge sharpness improves by 2–4%. Full-screen layers keep the static / `steps()` rules; the halo, pulse ring and atmosphere glow are still pure CSS timelines. `client.js` is now 164,014 B / 3,364 lines.
 Pixel-level comparison of frozen animation frames shows the boot screen is
 pixel-identical and idle / greeting screens differ only by 0.23–1.49 / 255 on
 average (the eye halo is the only visible region, from switching from a live
