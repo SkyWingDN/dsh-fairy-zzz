@@ -1,4 +1,4 @@
-# dsh-fairy-zzz 插件技术说明（v1.6.2）
+# dsh-fairy-zzz 插件技术说明（v1.7.0）
 
 > 目标读者：**没有参与过本项目、但要继续维护或修改这个插件的人 / AI 智能体**。读完这篇文档，应该能独立定位代码、改功能、打版本、发布到 GitHub，并复现验证。
 > 最后更新：2026-11-04，对应版本 v1.6.2（v1.6.2 删掉设置页「外观三档」，皮肤始终自动跟随宿主深浅色；「试听问候」改为每次点击都从本时段 5 条语音里重新随机抽一条并显示台词，不再复用开机抽中的那条。v1.6.0 把眼徽渲染从 v1.5.0 的「4 份 HTML 合成层 + CSS steps 动画」换回 **单 SVG + 15fps JS 向量重绘**：合成层的旋转 / 缩放动的是已经栅格化的位图副本，眼睑 clip 边、深蓝眼眶这类高对比边缘在重采样时会出现台阶 / 发虚（用户截图报「像素没覆盖到」）；v1.6.0 每 66.7ms 直接写 `#corners` / `#fz3-lens` / `#fz3-drift` 的 SVG transform 属性，由 Skia 按设备像素重新抗锯齿，边缘始终干净。代价：隔离 harness GPU 0.99% → 1.52%（+0.5 点）、主线程 0% → 0.8%；真实页面同轮 A/B 在噪声内（2.28% → 2.10 / 1.98%），相对 v1.4.0 的 9.3–11.8% / 47–54% 仍是约 1/6 与 1/50；192px 原生截图清晰度 +2%–4%。没有新增常驻层，动画数量与 v1.5.0 相同（4 个，全部 15fps）。v1.5.1 修问候语音 greet-night-2 的断句停顿：v1.4.0 那 20 条 mp3 本就按早期草稿台词合成，其中全角「；」不在引擎 cut5 的切分符号里，导致「我值班 / 您不睡」连读；现按同一份草稿台词重新合成，把该处「；」改成「。」，并在合成后于该句号的自然停顿处补 0.20s 静音（总停顿约 0.44s）；注意引擎 `merge_short_text_in_array(threshold=5)` 会把「我值班。」（4 字）与「您不睡，」（4 字）合并回同一片段，仅改标点只有模型自然的 ~0.2s 微停顿；屏幕字幕仍保留简洁版、与音频不强制逐字一致，V1 原版 5 条未动；v1.5.0 眼徽动效重做：4 份静态 SVG 副本 + 叶片公转 / 目光微动，持续动画用 steps() 量化到 15fps，GPU / CPU 再降约 80% / 90%；v1.4.0 新增问候语音库：每个时段 5 条（原 1 条 + 新录 4 条），按 Fairy 人设撰写 / 录制，随机播放且避免连续重复，屏幕台词为音频的简洁理解版；v1.3.4 修气泡脚注半句与眼标悬停原生提示；v1.3.0 新增：眼徽用量 / 花费气泡、眼徽拖拽与隐藏、外观三档（跟随 / 深色 / 浅色）、欢迎页文案改写，以及 host 侧 GET /fairy-zzz/usage 路由与 5 个稳定性修复；v1.3.1 把拖拽重写为 transform-only + 四边吸附 + 遮挡让位、用量改为预取缓存（点开即显）、气泡支持点外 / Esc 关闭、设置页删掉「（本地 CPU 推理）」后缀；v1.3.2 把拖拽与吸附范围从整个视口收进**会话内容区**（左 = 侧栏右缘、上 = 标题栏底缘，右 / 下 = 窗口边缘），边界在每次 pointerdown 时实时重量；v1.2.1 的死代码清理成果保留；v1.3.3 只改文案：气泡里的「用量 / 花费 / 峰谷」统一成「电费」口径（用量→电费、余额→电费余额、今日花费→今日电费、峰谷→五倍电费 / 十倍电费，峰段窗口提示为「十倍电费」），客户端对旧宿主的「高峰 / 空闲」字样做兜底改写）。
@@ -883,3 +883,47 @@ v1.3.0 的回归 harness（`tmp/merge/`，一次性）：`t7-routes.mjs`（8 个
 - 眼徽动效参考：[Chengzhibense/Fairy-DSH](https://github.com/Chengzhibense/Fairy-DSH)（Apache-2.0）
 - 本仓库：[SkyWingDN/dsh-fairy-zzz](https://github.com/SkyWingDN/dsh-fairy-zzz)
 - 许可证：[LICENSE](../LICENSE)、[NOTICE-fairy-dsh.md](../NOTICE-fairy-dsh.md)、[licenses/](../licenses/)
+
+---
+
+## 21. 宿主皮肤层（v1.7.0「绳网终端」）
+
+> 设计规范见 [UI-DESIGN.md](UI-DESIGN.md)；本文只记实现位置、改法与回退。
+
+### 21.1 它改了什么
+
+v1.7.0 在保留原有 H.D.D 开场 / 眼徽 / 问候 / 语音的前提下，把宿主 DSH Web GUI 的**外壳**整体重绘：侧栏、顶栏、欢迎页、composer、会话气泡、设置弹窗、插件自有设置页，以及 boot 覆盖层。设计语言 = 官网表达层（纸白 / 墨黑 / 荧光青柠 #d8fa00 / 斜切块 / Impact 数字）+ 绳网情报站工作层（三层黑面板 / 1px hairline / 12px 圆角 / 等宽 `//` 小标 / 单强调色）；浅色 = 纸面 + 墨黑侧栏，深色 = 监控台。
+
+### 21.2 代码位置
+
+- 全部皮肤样式是 **client.js 里 `const CSS` 模板字符串末尾追加的一大段静态 CSS**（搜索 `WIRE-NET TERMINAL` 或 `/* ===== SECTION` 即可定位）。它排在旧规则之后，靠后置 + 更高特异度 + `!important` 覆盖宿主默认样式；没有新增 React 组件、没有新增 DOM。
+- 参考副本：`docs/skin/wire-net-terminal.css`（与 client.js 内该段一致，便于审阅 / diff / 单独改）。
+- 两套设计 token 由 `theme.overrideTokens(PKG, TOKENS)` 覆盖（原 1.6.2 已有的机制，v1.7.0 把键扩到 41 个 × 2 主题）：基础面、描边、文本 4 档、interactive、状态色、按钮、sidebar/bubble/input/selector、滚动条、代码块、elevation、radius。深色值放 `baseTokens`，浅色值放 `lightTokens`。
+- 主题判定仍是插件原有逻辑：读宿主 `theme.getTheme().active.id` / 量 `--dsw-alias-bg-base` 亮度 / `prefers-color-scheme` 三级回退，结果写 `html[data-fz3-theme="light"|"dark"]`；皮肤 CSS 只按这个属性分叉，不监听宿主类名。
+
+### 21.3 选择器策略（宿主升级时先看这里）
+
+1. **优先** `[data-slot="..."]`（宿主稳定锚点，如 `sidebar.brand.mark`、`conversation.hero.brand.mark`、`conversation.composer`、`main.conversation`、`settings.launcher`）、语义角色 `[role="menu"]` / `aria-selected`。
+2. **其次** hash 类名前缀：`.wtg9ga_`（侧栏）、`.wnFoaW_`（会话行）、`.GRgSLq_`（composer）、`.WOwLGG_`（欢迎页）、`.AnXs9G_`（设置）、`.an3WzG_`（顶栏/布局）、`.LOmM4q_`（消息）。这些来自 DSH 0.2.1-rc.5 的 CSS Modules，**宿主升级后可能全部失效**。
+3. 失效时的回退流程：按 `docs/research/dsh-host.md` 的 CDP 流程重新导出 DOM map（`docs/research/host-classes.json` 是当前快照），先保侧栏与 composer，欢迎页装饰可暂缺。
+4. 皮肤**不改宿主布局变量**（`--dsh-chat-content-width`、`--dsh-composer-card-max-width`、侧栏宽度），只改颜色、描边、圆角、字体与装饰；需要宽度差异时用容器自身 max-width，不动宿主断点。
+
+### 21.4 改法（调皮肤）
+
+1. 先改 `docs/skin/wire-net-terminal.css`（或直接定位 client.js 内同名段落）。
+2. 把改动同步进 client.js 的 `const CSS`：该段在旧 CSS 之后、模板字符串收尾反引号之前。
+3. 若改 token 值，改 client.js 里 `baseTokens` / `lightTokens` 两个对象（保持 41 键同名），刷新页面即生效（client.js 是动态加载的，整页刷新即可，无需重启 DSH）。
+4. 验证：`node --check client.js`；无头 Chrome 截图（cookie 认证 + 等 9s + 隐藏 `.fz3-layer`/`.fz3-atmos` 才能看到宿主 UI）；浅/深各截欢迎页 + 设置 + 会话；像素校验关键值（青柠 #d8fa00、纸面 #efefed、深色面板 #1b1d1b、侧栏 #111210）。
+5. 同步安装目录 `%USERPROFILE%\.dsh\plugins\dsh-fairy-zzz\client.js` 后才真正生效；仓库副本与安装副本要 SHA256 一致。
+
+### 21.5 回退
+
+- 只回退皮肤：删除 client.js 中 `WIRE-NET TERMINAL` 起至 CSS 模板字符串收尾前的整段，并把 `baseTokens` / `lightTokens` 恢复为 1.6.2 的 15 键版本（`docs/skin/wire-net-terminal.css` 只做参考，不参与运行）。
+- 完全回退版本：`git checkout v1.6.2` 并同步安装目录即可。
+
+### 21.6 性能与动效纪律
+
+- 皮肤是纯静态声明：无新增 `@keyframes`、无 `backdrop-filter`、无 `mix-blend-mode`、无逐帧 JS；交互只给颜色 / 1px 位移 / 硬偏移，统一 140ms。
+- 原 boot 视频滤镜调暗为 `grayscale(.45) contrast(1.05) brightness(.84) saturate(.78)`，不新增层。
+- 面积纪律：青柠（#d8fa00）只做行动 / 选中填充，任一张截图取色 < 5%；浅色下青柠**不作文本色**（文本强调用 #6f8700）。
+

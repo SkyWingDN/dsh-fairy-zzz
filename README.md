@@ -18,7 +18,7 @@
 
 # Fairy Ⅲ · 绝区零 H.D.D 皮肤（性能优化修改版）
 
-**中文** · [English](#english) · **v1.6.2**
+**中文** · [English](#english) · **v1.7.0**
 
 > **第三方修改版，非官方。** 本仓库由 [SkyWingDN](https://github.com/SkyWingDN) 基于 [AssassinVIX/fairy-zzz-plugin](https://github.com/AssassinVIX/fairy-zzz-plugin)（MIT）修改：主要工作是**性能优化与资源压缩**（待机 GPU 占用约 -88%，首屏资源约 -68%；v1.5.0 重做眼徽动效后，同一 harness 再降约 -78% GPU / -85% 渲染进程 CPU；v1.6.0 为修边缘重采样改回单 SVG 15fps 向量重绘，隔离测量 +0.5 GPU 点，换到边缘永远按设备像素抗锯齿），并附带少量必要的行为调整（思考态眼睑由动态呼吸改为静态半闭）。原作者与素材来源见文末「致谢与许可」，性能细节见 [docs/PERFORMANCE.md](docs/PERFORMANCE.md)。本仓库**不包含** GPT-SoVITS 模型或推理引擎。
 
@@ -30,6 +30,20 @@
 | 眼徽状态 | 设置面板 |
 | --- | --- |
 | ![眼徽](screenshots/03-eye-states.png) | ![设置](screenshots/04-settings.png) |
+
+## 界面皮肤 v1.7.0「绳网终端」（新）
+
+1.7.0 起插件不只重做 H.D.D 开场与眼徽，也给宿主 DSH Web GUI 加了一层完整皮肤：官网的表达层（纸白 / 墨黑 / 荧光青柠 #d8fa00 / 斜切块 / Impact 数字）与绳网情报站的工作层（三层黑面板 / 1px 描边 / 12px 圆角 / 等宽 `//` 小标 / 单强调色）合成一套「绳网终端 / WIRE-NET TERMINAL」。浅色 = 纸面印刷品 + 墨黑侧栏；深色 = 监控台；青柠只给行动与选中（整屏 < 5%），不新增 `@keyframes`、不用毛玻璃。
+
+| 欢迎页（浅色） | 欢迎页（深色） |
+| --- | --- |
+| ![绳网终端浅色首屏](docs/img/skin-v17-light-home.jpg) | ![绳网终端深色首屏](docs/img/skin-v17-dark-home.jpg) |
+
+| 设置面板（浅色） | 会话页（深色） |
+| --- | --- |
+| ![设置面板](docs/img/skin-v17-light-settings.jpg) | ![会话页](docs/img/skin-v17-dark-chat.jpg) |
+
+完整设计规范（token、字号阶梯、组件映射、Do/Don't、Responsive、实现说明、截图索引）见 **[docs/UI-DESIGN.md](docs/UI-DESIGN.md)**；官网 / wiki 的实测研究稿在 `docs/research/`，皮肤样式全文在 `docs/skin/wire-net-terminal.css`。
 
 ## 特性
 
@@ -311,7 +325,7 @@ install-windows.ps1  # Windows 安装/卸载脚本
 > **What this edition adds**: performance work (no resident rAF, static full-screen layers, ~68% smaller first-load assets), the 1.3.0 fee bubble (fee balance / today's fee / 5×·10× fee countdown), draggable and hideable eye badge, rewritten welcome-page copy, the host-side `GET /fairy-zzz/usage` route, and a batch of stability fixes; 1.3.1 then rewrites dragging as transform-only with four-edge snapping, prefetches the usage data (instant bubble), and closes the bubble on any outside click / Esc; 1.3.2 then confines dragging and snapping to the conversation content area (never over the sidebar or header); 1.3.3 relabels the bubble in "utility fee" terms (fee balance / today's fee / 5× off-peak · 10× peak countdown); 1.4.0 adds a five-clip-per-slot greeting library; 1.5.0 rebuilds the eye motion (static base + four layered SVG copies + blade rotation and subtle gaze drift, all continuous animation quantised to 15 fps with `steps()`), which looks closer to in-game Fairy while cutting GPU by ~80% and renderer CPU by ~90% versus v1.4.0 in the same harness; 1.5.1 fixes the run-together “我值班 / 您不睡” in greet-night-2: the 1.4.0 clips were voiced from an earlier draft script, and a full-width “；” falls outside the engine's split set, so the same 20 draft lines are re-recorded with that semicolon changed to a full stop, plus 0.20 s of inserted silence at the resulting period (about 0.44 s of pause in total) — the engine's `merge_short_text_in_array(5)` merges short 4-character fragments back into one, so punctuation alone only yields a ~0.2 s micro-pause; the on-screen subtitles stay the concise version and need not match the audio word for word; 1.6.0 turns the eye badge back into a **single vector SVG re-drawn at 15 fps**: rotating / scaling four pre-rasterised SVG layers on the compositor resampled the high-contrast lid edge and dark socket into stair-steps (users reported "uncovered pixels"), so the SVG `transform` attributes are now written by a 15 fps ticker and Skia re-anti-aliases every frame at device resolution — isolated harness GPU 0.99% → 1.52%, main thread 0% → 0.8%, same-round A/B on the real page within noise, and measured edge sharpness +2–4%; 1.6.2 removes the redundant appearance switch (the skin always follows the host light/dark theme) and makes Play greeting re-roll a fresh random clip from the current slot on every click (even within one session), showing the line it just played. Full attribution and license terms: "Credits & license" at the end, `NOTICE-fairy-dsh.md` and `licenses/`.
 
 
-[中文](README.md) · **English** · **v1.6.2**
+[中文](README.md) · **English** · **v1.7.0**
 
 An **unofficial, performance-optimized edition** of the **Fairy Ⅲ · Zenless Zone Zero H.D.D skin** for DeepSeek Harness.
 
@@ -323,6 +337,16 @@ It turns the DSH web interface into Fairy's H.D.D terminal: a full-screen boot a
 | Eye badge states | Settings panel |
 | --- | --- |
 | ![Eye badge](screenshots/03-eye-states.png) | ![Settings](screenshots/04-settings.png) |
+
+## UI skin v1.7.0 “Wire-Net Terminal” (new)
+
+Since 1.7.0 the plugin no longer stops at the boot sequence and eye badge — it restyles the host DSH Web UI itself: the official site's expressive layer (paper white / ink black / fluorescent lime `#d8fa00` / diagonal cuts / Impact numerals) fused with the wire-net wiki's working layer (three-layer dark panels / 1px hairlines / 12px radii / monospace `//` labels / one accent). Light = a printed sheet with an ink-black sidebar; dark = a monitoring console; lime is reserved for actions and selection (<5% of any screen), no new `@keyframes`, no frosted glass.
+
+| Welcome (light) | Welcome (dark) |
+| --- | --- |
+| ![Wire-Net Terminal light home](docs/img/skin-v17-light-home.jpg) | ![Wire-Net Terminal dark home](docs/img/skin-v17-dark-home.jpg) |
+
+Full design spec (tokens, type scale, component mapping, do/don't, responsive, implementation notes, screenshot index): **[docs/UI-DESIGN.md](docs/UI-DESIGN.md)**; measured studies of the official site and wiki live in `docs/research/`, the full skin CSS in `docs/skin/wire-net-terminal.css`.
 
 ## Features
 
