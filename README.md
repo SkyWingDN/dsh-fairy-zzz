@@ -18,7 +18,7 @@
 
 # Fairy Ⅲ · 绝区零 H.D.D 皮肤（性能优化修改版）
 
-**中文** · [English](#english) · **v1.7.2**
+**中文** · [English](#english) · **v1.7.3**
 
 > **第三方修改版，非官方。** 本仓库由 [SkyWingDN](https://github.com/SkyWingDN) 基于 [AssassinVIX/fairy-zzz-plugin](https://github.com/AssassinVIX/fairy-zzz-plugin)（MIT）修改：主要工作是**性能优化与资源压缩**（待机 GPU 占用约 -88%，首屏资源约 -68%；v1.5.0 重做眼徽动效后，同一 harness 再降约 -78% GPU / -85% 渲染进程 CPU；v1.6.0 为修边缘重采样改回单 SVG 15fps 向量重绘，隔离测量 +0.5 GPU 点，换到边缘永远按设备像素抗锯齿），并附带少量必要的行为调整（思考态眼睑由动态呼吸改为静态半闭）。原作者与素材来源见文末「致谢与许可」，性能细节见 [docs/PERFORMANCE.md](docs/PERFORMANCE.md)。本仓库**不包含** GPT-SoVITS 模型或推理引擎。
 
@@ -31,7 +31,7 @@
 | --- | --- |
 | ![眼徽](screenshots/03-eye-states.png) | ![设置](screenshots/04-settings.png) |
 
-## 界面皮肤 v1.7.0「绳网终端」（v1.7.1 / v1.7.2 修整）
+## 界面皮肤 v1.7.0「绳网终端」（v1.7.1 / v1.7.2 / v1.7.3 修整）
 
 1.7.0 起插件不只重做 H.D.D 开场与眼徽，也给宿主 DSH Web GUI 加了一层完整皮肤：官网的表达层（纸白 / 墨黑 / 荧光青柠 #d8fa00 / 斜切块 / Impact 数字）与绳网情报站的工作层（三层黑面板 / 1px 描边 / 12px 圆角 / 等宽 `//` 小标 / 单强调色）合成一套「绳网终端 / WIRE-NET TERMINAL」。浅色 = 纸面印刷品 + 墨黑侧栏；深色 = 监控台；青柠只给行动与选中（整屏 < 5%），不新增 `@keyframes`、不用毛玻璃。
 
@@ -51,6 +51,12 @@
 | 侧栏选中态（v1.7.2） | 顶栏选中态（v1.7.2） |
 | --- | --- |
 | ![侧栏选中胶囊](docs/img/skin-v172-nav-pill.jpg) | ![顶栏选中胶囊](docs/img/skin-v172-tab-pill.jpg) |
+
+**v1.7.3 修整**：① 底部状态栏不再透出对话文字——宿主给 composer 座位铺的遮罩是「透明 → 半透明 `--dsw-alias-bg-base`」渐变，皮肤把该 token 映射成 90–94% 半透明后遮罩收不实；现按宿主同款语法把渐变终点改成不透明画布色（深色 `#0a0a0a` / 浅色 `#efefed`），只作用于 composer 座位。② 打开大会话的样式成本下降：把只被覆盖层子树消费的 `--fz3-dock-*` / `--fz3-brand-*` 自定义属性从 `:root` 改写到 `.fz3-layer`（不再触发整文档样式失效），dock 测量改为侧栏 / 标题栏锚点 + 退避重试（不再全文档扫描），hero 标题同步改用挂载 / 卸载事件（不再用 `MutationObserver` 观察整棵 body），dock 相把整屏氛围层从 `mix-blend-mode` 混合降为普通合成。4K（2560×1440 @ dpr 1.5，同机 headless Chrome）重复 A/B：打开 21k 字大会话的 style 时间 637 → 567 ms（约 −11%）、long task 总量 1254 → 1140 ms（约 −9%），插件相对「关掉插件」的净增量从约 +180 ms 降到约 +110 ms；稳态切换持平。
+
+| 会话页底部状态栏（v1.7.3） | 深色会话页（v1.7.3） |
+| --- | --- |
+| ![状态栏无透字](docs/img/skin-v173-statusbar.jpg) | ![深色会话页](docs/img/skin-v173-dark-chat.jpg) |
 
 ## 特性
 
@@ -332,7 +338,7 @@ install-windows.ps1  # Windows 安装/卸载脚本
 > **What this edition adds**: performance work (no resident rAF, static full-screen layers, ~68% smaller first-load assets), the 1.3.0 fee bubble (fee balance / today's fee / 5×·10× fee countdown), draggable and hideable eye badge, rewritten welcome-page copy, the host-side `GET /fairy-zzz/usage` route, and a batch of stability fixes; 1.3.1 then rewrites dragging as transform-only with four-edge snapping, prefetches the usage data (instant bubble), and closes the bubble on any outside click / Esc; 1.3.2 then confines dragging and snapping to the conversation content area (never over the sidebar or header); 1.3.3 relabels the bubble in "utility fee" terms (fee balance / today's fee / 5× off-peak · 10× peak countdown); 1.4.0 adds a five-clip-per-slot greeting library; 1.5.0 rebuilds the eye motion (static base + four layered SVG copies + blade rotation and subtle gaze drift, all continuous animation quantised to 15 fps with `steps()`), which looks closer to in-game Fairy while cutting GPU by ~80% and renderer CPU by ~90% versus v1.4.0 in the same harness; 1.5.1 fixes the run-together “我值班 / 您不睡” in greet-night-2: the 1.4.0 clips were voiced from an earlier draft script, and a full-width “；” falls outside the engine's split set, so the same 20 draft lines are re-recorded with that semicolon changed to a full stop, plus 0.20 s of inserted silence at the resulting period (about 0.44 s of pause in total) — the engine's `merge_short_text_in_array(5)` merges short 4-character fragments back into one, so punctuation alone only yields a ~0.2 s micro-pause; the on-screen subtitles stay the concise version and need not match the audio word for word; 1.6.0 turns the eye badge back into a **single vector SVG re-drawn at 15 fps**: rotating / scaling four pre-rasterised SVG layers on the compositor resampled the high-contrast lid edge and dark socket into stair-steps (users reported "uncovered pixels"), so the SVG `transform` attributes are now written by a 15 fps ticker and Skia re-anti-aliases every frame at device resolution — isolated harness GPU 0.99% → 1.52%, main thread 0% → 0.8%, same-round A/B on the real page within noise, and measured edge sharpness +2–4%; 1.6.2 removes the redundant appearance switch (the skin always follows the host light/dark theme) and makes Play greeting re-roll a fresh random clip from the current slot on every click (even within one session), showing the line it just played. Full attribution and license terms: "Credits & license" at the end, `NOTICE-fairy-dsh.md` and `licenses/`.
 
 
-[中文](README.md) · **English** · **v1.7.2**
+[中文](README.md) · **English** · **v1.7.3**
 
 An **unofficial, performance-optimized edition** of the **Fairy Ⅲ · Zenless Zone Zero H.D.D skin** for DeepSeek Harness.
 
@@ -345,7 +351,7 @@ It turns the DSH web interface into Fairy's H.D.D terminal: a full-screen boot a
 | --- | --- |
 | ![Eye badge](screenshots/03-eye-states.png) | ![Settings](screenshots/04-settings.png) |
 
-## UI skin v1.7.0 “Wire-Net Terminal” (v1.7.1 / v1.7.2 fixes)
+## UI skin v1.7.0 “Wire-Net Terminal” (v1.7.1 / v1.7.2 / v1.7.3 fixes)
 
 Since 1.7.0 the plugin no longer stops at the boot sequence and eye badge — it restyles the host DSH Web UI itself: the official site's expressive layer (paper white / ink black / fluorescent lime `#d8fa00` / diagonal cuts / Impact numerals) fused with the wire-net wiki's working layer (three-layer dark panels / 1px hairlines / 12px radii / monospace `//` labels / one accent). Light = a printed sheet with an ink-black sidebar; dark = a monitoring console; lime is reserved for actions and selection (<5% of any screen), no new `@keyframes`, no frosted glass.
 
@@ -361,6 +367,12 @@ Full design spec (tokens, type scale, component mapping, do/don't, responsive, i
 | Active nav row (v1.7.2) | Active top-bar tab (v1.7.2) |
 | --- | --- |
 | ![Active nav pill](docs/img/skin-v172-nav-pill.jpg) | ![Active tab pill](docs/img/skin-v172-tab-pill.jpg) |
+
+**v1.7.3 fixes**: ① the bottom status bar no longer lets conversation text bleed through. The host paints the composer seat with a `transparent → --dsw-alias-bg-base` gradient; because the skin maps that token to a 90–94 % translucent colour the mask never becomes opaque. The same gradient is now re-declared with an opaque canvas endpoint (dark `#0a0a0a`, light `#efefed`), scoped to the composer seat only. ② opening a large conversation is cheaper: the `--fz3-dock-*` / `--fz3-brand-*` custom properties (consumed only inside the overlay subtree) are written on `.fz3-layer` instead of `:root`, so they no longer invalidate the whole document; dock measurement anchors to the sidebar / header edges with back-off retries instead of scanning the document; hero-title syncing moved from a body-wide `MutationObserver` to mount/unmount events; and the dock-phase ambience layer drops from `mix-blend-mode` to normal compositing. Repeated A/B on 4K (2560×1440 @ dpr 1.5, same headless Chrome) opening a 21k-character conversation: style 637 → 567 ms (−11 %), total long tasks 1254 → 1140 ms (−9 %); the plugin's net add-on over “plugin off” falls from ~+180 ms to ~+110 ms, with steady-state switching unchanged.
+
+| Composer status bar (v1.7.3) | Dark conversation (v1.7.3) |
+| --- | --- |
+| ![Status bar without bleed-through](docs/img/skin-v173-statusbar.jpg) | ![Dark conversation](docs/img/skin-v173-dark-chat.jpg) |
 
 ## Features
 

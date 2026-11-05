@@ -1,5 +1,5 @@
 ---
-version: 1.7.2
+version: 1.7.3
 name: 绳网终端 / WIRE-NET TERMINAL
 description: >-
   《绝区零》官网的表达层语法（纸白/墨黑、荧光青柠 #d8fa00、斜切块、Impact 数字、白胶囊 active）
@@ -486,6 +486,7 @@ components:
 - 胶片孔母题未落地为组件，只在 boot 扫描线中暗示。
 - 深色 text-3 .40 与浅色 .42 的不一致未统一；部分控件存在 .34/.44/.50 等中间透明度，尚未收敛为 token。
 - 未验证：移动端触控（voice 26px 是否过小）、boot 视频滤镜在低性能机上的开销。键盘 focus 已在 v1.7.1 专项验证：附件缩略图内嵌环完整，但尚未逐控件走完整链路。选中态边线在胶囊圆角上的退化已在 v1.7.2 专项验证并写入 §15。
+- v1.7.3 已专项验证底部状态栏遮罩（无透字）与「打开大会话」的样式成本（见 §15）；仍未归因的：paint / 合成成本、超长会话滚动（无头 Chrome 采集时会卡死渲染线程）、以及用户「关掉插件明显更快」中 long task 之外的主观成分（本轮 A/B 里 ON 与 OFF 的 long task 总量差异在噪声内）。
 
 ## 14. 设计 token ↔ 宿主变量映射
 
@@ -540,6 +541,20 @@ v1.7.2 的两处修复都是「边线装饰放错了形状」：
 2. **宿主自带的选中指示要显式关掉。** 顶栏 tab 的选中不只靠底色，宿主还有 `.an3WzG_tabActive::after` 的 2px 商业色下划线；皮肤把商业色映射成青柠后，下划线从纸白胶囊下缘露出一截。只给胶囊加底色不够，必须同时 `::after{display:none}`。
 3. 与官网对齐的结论：官网顶栏 active tab 就是 **一颗纯纸白胶囊**（无竖线、无下划线），这是本皮肤选中态唯一正确的语法。
 
+### v1.7.3：遮罩要收成实色、性能纪律四条
+
+1. **sticky 底部的遮罩必须有不透明终点。** 宿主给 `.an3WzG_composerSeat` 铺 `linear-gradient(180deg, transparent 0, var(--dsw-alias-bg-base) 36px)`；皮肤把 `--dsw-alias-bg-base` 映射成 90–94% 半透明后，宿主「实色遮罩」的假设失效，滚动中的对话文字会从状态行下方透出来。现在按宿主同款语法重铺渐变、终点换成画布实色（深色 `#0a0a0a` / 浅色 `#efefed`），作用域限定 composer 座位，不动全局 token。
+2. **继承型自定义属性写到作用域元素，不写 `:root`。** `--fz3-dock-x/y`、`--fz3-brand-top/left/h` 只被 `.fz3-layer` 子树消费；写到 `document.documentElement` 会让整棵文档样式失效——打开大会话（约 11k 节点）时叠出数百 ms style 成本。改为写 `.fz3-layer`（带缓存去重、元素换新即失效），失效范围缩到覆盖层子树。
+3. **不要用整文档观察器找宿主节点。** hero 标题同步从「`MutationObserver` 观察 body 整棵子树」改为插件自己派发的 `fz3:hero-mount` / `fz3:hero-unmount` 事件；dock 测量从「全文档扫描可定位元素」改为侧栏右缘 / 标题栏底缘锚点 + 退避重试，路由切换时不再触发布局抖动。
+4. **整屏混合层只在需要时混合。** dock 相（日常态）把 `.fz3-atmos` 从 `mix-blend-mode` 降为普通合成（`html[data-fz3-phase="dock"] .fz3-atmos{mix-blend-mode:normal}`），boot / greet 相保持原混合，观感不变。
+
+**验证（4K 2560×1440 @ dpr 1.5，同机 headless Chrome，插件 ON，3 轮交错 A/B）**：打开 21k 字大会话 style 637 → 567 ms（−11%）、long task 总量 1254 → 1140 ms（−9%）；插件相对「关掉插件」（OFF 基线 style 约 459 ms）的净增量从约 +180 ms 降到约 +110 ms；稳态切换 253 → 242 ms 基本持平。剩余成本主要在宿主自身渲染；皮肤层已无整文档级样式失效。
+
+验证快照（v1.7.3 深色，2560×1440 物理像素 → 1440 宽）：
+
+- 会话页底部状态栏（遮罩收实，无透字）：![v173 statusbar](img/skin-v173-statusbar.jpg)
+- 深色会话页整屏：![v173 chat](img/skin-v173-dark-chat.jpg)
+
 ### 验证快照（v1.7.1，深色，1624×1042）
 
 - 欢迎页：![v171 home](img/skin-v171-dark-home.jpg)
@@ -563,4 +578,5 @@ v1.7.2 的两处修复都是「边线装饰放错了形状」：
 - wiki 工作层参考：[ref-wiki-home-00](img/ref-wiki-home-00.jpg) 至 [ref-wiki-home-04](img/ref-wiki-home-04.jpg)（1440×900 五屏，取三层黑面板、1px 描边、// 小标、黄色选中胶囊）。
 - v1.7.1 修整快照：[深色欢迎页](img/skin-v171-dark-home.jpg) / [缩略图焦点环](img/skin-v171-dark-thumb.jpg) / [插件页重启用](img/skin-v171-dark-plugin-on.jpg)（见 §15）。
 - v1.7.2 选中态快照（2560×1440 桌面实例，物理像素）：[深色会话页](img/skin-v172-dark-home.jpg) / [侧栏 active 胶囊](img/skin-v172-nav-pill.jpg) / [顶栏 active tab](img/skin-v172-tab-pill.jpg)。
+- v1.7.3 修整快照（2560×1440 @ dpr1.5 无头 Chrome，缩到 1440 宽）：[状态栏无透字](img/skin-v173-statusbar.jpg) / [深色会话页](img/skin-v173-dark-chat.jpg) / [深色欢迎页](img/skin-v173-dark-home.jpg)。
 - 实现参考：皮肤样式全文见 [skin/wire-net-terminal.css](skin/wire-net-terminal.css)；宿主 DOM/类名清单见 [research/host-classes.json](research/host-classes.json)。

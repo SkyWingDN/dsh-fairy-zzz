@@ -1,7 +1,7 @@
-# dsh-fairy-zzz 插件技术说明（v1.7.2）
+# dsh-fairy-zzz 插件技术说明（v1.7.3）
 
 > 目标读者：**没有参与过本项目、但要继续维护或修改这个插件的人 / AI 智能体**。读完这篇文档，应该能独立定位代码、改功能、打版本、发布到 GitHub，并复现验证。
-> 最后更新：2026-11-06，对应版本 v1.7.2（v1.7.2 修 v1.7.1 遗留的两处选中态边线伪影：侧栏 active 胶囊左端青柠月牙、顶栏 active tab 下缘青柠下划线，见 §21.8；v1.7.1 修 v1.7.0 皮肤期的 6 类用户回归：删 boot 左上 `// H.D.D. NORTH SEEK DATA SYSTEM`；问候 kicker / 中文标题回 Fairy 冰蓝；禁用插件后 `--dsw-*` token 残留改为自己挂 `ctx.effect` 释放 `overrideTokens` 的 disposer；重启用插件不再重播开机动画（`bootPlayed` 存到 `window`）；设置弹窗几何恢复宿主默认、皮肤只换色；附件缩略图焦点环由外扩改内嵌、重绘移除按钮。v1.7.0 新增「绳网终端」宿主皮肤层，见 §21。此前：v1.6.2 删掉设置页「外观三档」，皮肤始终自动跟随宿主深浅色；「试听问候」改为每次点击都从本时段 5 条语音里重新随机抽一条并显示台词，不再复用开机抽中的那条。v1.6.0 把眼徽渲染从 v1.5.0 的「4 份 HTML 合成层 + CSS steps 动画」换回 **单 SVG + 15fps JS 向量重绘**：合成层的旋转 / 缩放动的是已经栅格化的位图副本，眼睑 clip 边、深蓝眼眶这类高对比边缘在重采样时会出现台阶 / 发虚（用户截图报「像素没覆盖到」）；v1.6.0 每 66.7ms 直接写 `#corners` / `#fz3-lens` / `#fz3-drift` 的 SVG transform 属性，由 Skia 按设备像素重新抗锯齿，边缘始终干净。代价：隔离 harness GPU 0.99% → 1.52%（+0.5 点）、主线程 0% → 0.8%；真实页面同轮 A/B 在噪声内（2.28% → 2.10 / 1.98%），相对 v1.4.0 的 9.3–11.8% / 47–54% 仍是约 1/6 与 1/50；192px 原生截图清晰度 +2%–4%。没有新增常驻层，动画数量与 v1.5.0 相同（4 个，全部 15fps）。v1.5.1 修问候语音 greet-night-2 的断句停顿：v1.4.0 那 20 条 mp3 本就按早期草稿台词合成，其中全角「；」不在引擎 cut5 的切分符号里，导致「我值班 / 您不睡」连读；现按同一份草稿台词重新合成，把该处「；」改成「。」，并在合成后于该句号的自然停顿处补 0.20s 静音（总停顿约 0.44s）；注意引擎 `merge_short_text_in_array(threshold=5)` 会把「我值班。」（4 字）与「您不睡，」（4 字）合并回同一片段，仅改标点只有模型自然的 ~0.2s 微停顿；屏幕字幕仍保留简洁版、与音频不强制逐字一致，V1 原版 5 条未动；v1.5.0 眼徽动效重做：4 份静态 SVG 副本 + 叶片公转 / 目光微动，持续动画用 steps() 量化到 15fps，GPU / CPU 再降约 80% / 90%；v1.4.0 新增问候语音库：每个时段 5 条（原 1 条 + 新录 4 条），按 Fairy 人设撰写 / 录制，随机播放且避免连续重复，屏幕台词为音频的简洁理解版；v1.3.4 修气泡脚注半句与眼标悬停原生提示；v1.3.0 新增：眼徽用量 / 花费气泡、眼徽拖拽与隐藏、外观三档（跟随 / 深色 / 浅色）、欢迎页文案改写，以及 host 侧 GET /fairy-zzz/usage 路由与 5 个稳定性修复；v1.3.1 把拖拽重写为 transform-only + 四边吸附 + 遮挡让位、用量改为预取缓存（点开即显）、气泡支持点外 / Esc 关闭、设置页删掉「（本地 CPU 推理）」后缀；v1.3.2 把拖拽与吸附范围从整个视口收进**会话内容区**（左 = 侧栏右缘、上 = 标题栏底缘，右 / 下 = 窗口边缘），边界在每次 pointerdown 时实时重量；v1.2.1 的死代码清理成果保留；v1.3.3 只改文案：气泡里的「用量 / 花费 / 峰谷」统一成「电费」口径（用量→电费、余额→电费余额、今日花费→今日电费、峰谷→五倍电费 / 十倍电费，峰段窗口提示为「十倍电费」），客户端对旧宿主的「高峰 / 空闲」字样做兜底改写）。
+> 最后更新：2026-11-06，对应版本 v1.7.3（v1.7.3 修底部状态栏透字：composer 座位渐变的终点改为不透明画布色；并把只被覆盖层子树消费的 `--fz3-dock-*` / `--fz3-brand-*` 从 `:root` 改写到 `.fz3-layer`、hero 标题同步改挂载 / 卸载事件、dock 测量改锚点退避重试、dock 相氛围层降为普通合成——4K 下打开 21k 字大会话 style 637→567 ms、long task 1254→1140 ms，见 §21.9；v1.7.2 修 v1.7.1 遗留的两处选中态边线伪影：侧栏 active 胶囊左端青柠月牙、顶栏 active tab 下缘青柠下划线，见 §21.8；v1.7.1 修 v1.7.0 皮肤期的 6 类用户回归：删 boot 左上 `// H.D.D. NORTH SEEK DATA SYSTEM`；问候 kicker / 中文标题回 Fairy 冰蓝；禁用插件后 `--dsw-*` token 残留改为自己挂 `ctx.effect` 释放 `overrideTokens` 的 disposer；重启用插件不再重播开机动画（`bootPlayed` 存到 `window`）；设置弹窗几何恢复宿主默认、皮肤只换色；附件缩略图焦点环由外扩改内嵌、重绘移除按钮。v1.7.0 新增「绳网终端」宿主皮肤层，见 §21。此前：v1.6.2 删掉设置页「外观三档」，皮肤始终自动跟随宿主深浅色；「试听问候」改为每次点击都从本时段 5 条语音里重新随机抽一条并显示台词，不再复用开机抽中的那条。v1.6.0 把眼徽渲染从 v1.5.0 的「4 份 HTML 合成层 + CSS steps 动画」换回 **单 SVG + 15fps JS 向量重绘**：合成层的旋转 / 缩放动的是已经栅格化的位图副本，眼睑 clip 边、深蓝眼眶这类高对比边缘在重采样时会出现台阶 / 发虚（用户截图报「像素没覆盖到」）；v1.6.0 每 66.7ms 直接写 `#corners` / `#fz3-lens` / `#fz3-drift` 的 SVG transform 属性，由 Skia 按设备像素重新抗锯齿，边缘始终干净。代价：隔离 harness GPU 0.99% → 1.52%（+0.5 点）、主线程 0% → 0.8%；真实页面同轮 A/B 在噪声内（2.28% → 2.10 / 1.98%），相对 v1.4.0 的 9.3–11.8% / 47–54% 仍是约 1/6 与 1/50；192px 原生截图清晰度 +2%–4%。没有新增常驻层，动画数量与 v1.5.0 相同（4 个，全部 15fps）。v1.5.1 修问候语音 greet-night-2 的断句停顿：v1.4.0 那 20 条 mp3 本就按早期草稿台词合成，其中全角「；」不在引擎 cut5 的切分符号里，导致「我值班 / 您不睡」连读；现按同一份草稿台词重新合成，把该处「；」改成「。」，并在合成后于该句号的自然停顿处补 0.20s 静音（总停顿约 0.44s）；注意引擎 `merge_short_text_in_array(threshold=5)` 会把「我值班。」（4 字）与「您不睡，」（4 字）合并回同一片段，仅改标点只有模型自然的 ~0.2s 微停顿；屏幕字幕仍保留简洁版、与音频不强制逐字一致，V1 原版 5 条未动；v1.5.0 眼徽动效重做：4 份静态 SVG 副本 + 叶片公转 / 目光微动，持续动画用 steps() 量化到 15fps，GPU / CPU 再降约 80% / 90%；v1.4.0 新增问候语音库：每个时段 5 条（原 1 条 + 新录 4 条），按 Fairy 人设撰写 / 录制，随机播放且避免连续重复，屏幕台词为音频的简洁理解版；v1.3.4 修气泡脚注半句与眼标悬停原生提示；v1.3.0 新增：眼徽用量 / 花费气泡、眼徽拖拽与隐藏、外观三档（跟随 / 深色 / 浅色）、欢迎页文案改写，以及 host 侧 GET /fairy-zzz/usage 路由与 5 个稳定性修复；v1.3.1 把拖拽重写为 transform-only + 四边吸附 + 遮挡让位、用量改为预取缓存（点开即显）、气泡支持点外 / Esc 关闭、设置页删掉「（本地 CPU 推理）」后缀；v1.3.2 把拖拽与吸附范围从整个视口收进**会话内容区**（左 = 侧栏右缘、上 = 标题栏底缘，右 / 下 = 窗口边缘），边界在每次 pointerdown 时实时重量；v1.2.1 的死代码清理成果保留；v1.3.3 只改文案：气泡里的「用量 / 花费 / 峰谷」统一成「电费」口径（用量→电费、余额→电费余额、今日花费→今日电费、峰谷→五倍电费 / 十倍电费，峰段窗口提示为「十倍电费」），客户端对旧宿主的「高峰 / 空闲」字样做兜底改写）。
 > 姊妹文档：[docs/PERFORMANCE.md](PERFORMANCE.md)（性能优化报告：为什么这么改、数据怎么量出来的）。
 
 ---
@@ -740,6 +740,15 @@ v1.3.0 的回归 harness（`tmp/merge/`，一次性）：`t7-routes.mjs`（8 个
 
 ## 19. 变更记录
 
+### 1.7.3（2026-11-06）
+
+- **修底部状态栏透字**：宿主 `.an3WzG_composerSeat` 用 `linear-gradient(180deg, transparent 0, var(--dsw-alias-bg-base) 36px)` 做 sticky 遮罩；皮肤把 `--dsw-alias-bg-base` 映射成 90–94% 半透明（`rgba(10,10,10,.90)` 等），遮罩收不实，滚动中的对话文字从状态行下方透出。改为按宿主同款语法重铺渐变、终点换不透明画布色（深色 `#0a0a0a` / 浅色 `#efefed`），选择器限定 `.an3WzG_root[data-phase="active"] .an3WzG_composerSeat` / `.an3WzG_embeddedBody[data-content-phase="active"] .an3WzG_composerSeat`（skin CSS +11 行）。见 §21.9。
+- **降低打开会话的样式成本**（用户 m02373：「点插件↔工作区对话有卡顿，关掉插件好很多」）：① 新增 `setLayerVar()`，把只被 `.fz3-layer` 子树消费的 `--fz3-dock-x/y`、`--fz3-brand-top/left/h` 从 `:root` 改写到覆盖层元素（带值缓存去重、元素换新即失效），不再让根节点自定义属性变化使整棵文档样式失效；② hero 标题同步由 body 级 `MutationObserver` 改为插件自己派发的 `fz3:hero-mount` / `fz3:hero-unmount` 事件；③ dock 定位改为 NARROW 候选 + 侧栏右缘 / 标题栏底缘锚点 + ResizeObserver + `DELAYS=[0,160,400,900,1800,3200]` 退避重试，不再全文档扫描；④ dock 相（日常态）`.fz3-atmos` 从 `mix-blend-mode` 降为 `normal`（base CSS 4 行，boot / greet 相不变）。见 §21.9。
+- **测量**（2560×1440 @ dpr1.5，同机 headless Chrome，插件 ON，3 轮交错 A/B v1.7.2 vs v1.7.3）：打开 21k 字大会话 style 中位 637 → 567 ms（−11%）、long task 中位 1254 → 1140 ms（−9%）、task 1508 → 1422 ms；稳态切换 253/622 → 242/619 ms（噪声内）。插件 OFF 基线 style 459 ms ⇒ 插件净增量约 +180 → +110 ms。试验过把眼徽 ticker 从 15fps 降到 6fps：open style 626→586、long task 1224→1187（n=2，噪声内）且观感变卡，**不采用**。
+- **构建**：`docs/skin/wire-net-terminal.css` 24,537 → 25,399 B；`node scripts/build-client.mjs` 内联；`client.js` 191,625 → 196,026 B；`node --check` 通过、`build-client.mjs --check` 幂等。
+- **验证**：无头 Chrome（cookie 认证 + `__fz3BootPlayed=true`），DOM 点击 `[class*=projectRow]` / `[class*=sessionRow]` 打开 21,162 字会话；computed `backgroundImage` 终点为 `rgb(10, 10, 10)`；截图 `docs/img/skin-v173-*.jpg`；仓库与安装目录 `client.js` SHA256 均为 `975FC3ECB1E0721E6289B7659280DD19BD7B2A1C44C3955D164B0545D0D54B9F`。
+- `package.json` 1.7.2 → 1.7.3。
+
 ### 1.7.2（2026-11-06）
 
 - **修两处选中态边线伪影**（用户发两张截图、红框标出后判定为 v1.7.0 皮肤实现 bug，非设计意图）：① 侧栏一级导航 active 纸白胶囊左端的青柠「月牙」——选中规则里的 `box-shadow:inset 2px 0 0 var(--fz3-lime)` 在 `999px` 圆角上会被切成弧；② 顶栏 `对话 / 轨迹` active 胶囊下缘的半截青柠下划线——宿主自带 `.an3WzG_tabActive::after`（2px `--dsw-alias-state-business-primary` 下划线）没被胶囊覆盖。两处均回到「active pill 只有纸白胶囊」的官网语法。见 §21.8。
@@ -905,7 +914,7 @@ v1.3.0 的回归 harness（`tmp/merge/`，一次性）：`t7-routes.mjs`（8 个
 
 ---
 
-## 21. 宿主皮肤层（v1.7.0「绳网终端」，v1.7.1 / v1.7.2 修整）
+## 21. 宿主皮肤层（v1.7.0「绳网终端」，v1.7.1 / v1.7.2 / v1.7.3 修整）
 
 > 设计规范见 [UI-DESIGN.md](UI-DESIGN.md)；本文只记实现位置、改法与回退。
 
@@ -945,6 +954,9 @@ v1.7.0 在保留原有 H.D.D 开场 / 眼徽 / 问候 / 语音的前提下，把
 - 皮肤是纯静态声明：无新增 `@keyframes`、无 `backdrop-filter`、无 `mix-blend-mode`、无逐帧 JS；交互只给颜色 / 1px 位移 / 硬偏移，统一 140ms。
 - 原 boot 视频滤镜调暗为 `grayscale(.45) contrast(1.05) brightness(.84) saturate(.78)`，不新增层。
 - 面积纪律：青柠（#d8fa00）只做行动 / 选中填充，任一张截图取色 < 5%；浅色下青柠**不作文本色**（文本强调用 #6f8700）。
+- **继承型自定义属性写到作用域元素**（v1.7.3 起）：`--fz3-dock-*` / `--fz3-brand-*` 只被 `.fz3-layer` 子树消费，经 `setLayerVar()` 写到覆盖层元素（带值缓存去重），不写 `:root`——根节点自定义属性变化会让整棵文档样式失效，打开大会话时会被放大成数百 ms 的 style 成本。
+- **不要用整文档观察器 / 扫描找宿主节点**：hero 标题同步走 `fz3:hero-mount` / `fz3:hero-unmount` 事件；dock 测量用侧栏右缘 / 标题栏底缘锚点 + 退避重试。
+- **整屏混合层按相位降级**：base 的 `.fz3-atmos` 只在 boot / greet 相保留 `mix-blend-mode`，dock 相为 `normal`。
 
 ### 21.7 v1.7.1 修整（用户回归 6 类 bug）
 
@@ -975,3 +987,35 @@ v1.7.0 皮肤上线后用户报 6 类问题（截图编号 1–7）。逐条根�
 **设计纪律（写入 UI-DESIGN §15）**：① 选中态只用底色，不在 999px 胶囊上叠加 `inset` 边线或下划线——直边装饰在圆角上会退化成弧；需要左划线时只用在 6px 圆角的列表行（会话行 `.wnFoaW_sessionRow` 的 `inset 2px` 是正确用法）。② 宿主自带的选中指示（tab 下划线等）必须显式关掉，否则会和皮肤胶囊叠加。
 
 **验证方式（本轮起可复用）**：1280 端口的自签 cookie 在桌面实例（7287）上无效（推测 secret / harness home 不同），改走「pwsh DPI-aware 截全屏 + user32 点击」：`SetProcessDPIAware()` 后 `Screen.Bounds` 才是 2560×1440，`SetCursorPos` 才按物理像素命中；刷新用 `ShowWindow(h,3)` + `SetForegroundWindow` + `SendKeys("{F5}")`。截图存于 `docs/img/skin-v172-dark-home.jpg` / `skin-v172-nav-pill.jpg` / `skin-v172-tab-pill.jpg`。
+
+### 21.9 v1.7.3 修整（状态栏透字 + 打开会话的样式成本）
+
+#### 21.9.1 底部状态栏透出对话文字
+
+| 现象 | 根因 | 改法 / 位置 |
+| --- | --- | --- |
+| 会话滚动后，底部状态行（轮次 / tok/s / 缓存命中）下缘能看到对话正文 | 宿主 `.an3WzG_composerSeat` 的 sticky 遮罩是 `linear-gradient(180deg, transparent 0, var(--dsw-alias-bg-base) 36px)`；皮肤把 `--dsw-alias-bg-base` 映射成 90–94% 半透明，渐变终点不是实色，遮罩收不实 | 按宿主同款语法重铺渐变、终点换不透明画布色：深色 `linear-gradient(180deg,rgba(10,10,10,0) 0px,#0a0a0a 36px)`、浅色 `rgba(239,239,237,0) → #efefed`；选择器限定 `.an3WzG_root[data-phase="active"] .an3WzG_composerSeat` 与 `.an3WzG_embeddedBody[data-content-phase="active"] .an3WzG_composerSeat`（skin CSS「D. 输入区」段，+11 行）；不动全局 token |
+
+验证：无头 Chrome 打开 21,162 字会话，computed `backgroundImage = linear-gradient(rgba(10, 10, 10, 0) 0px, rgb(10, 10, 10) 36px)`；状态行 y=970、seat (280,870,1310,130)，整段落在实色区内；截图 `docs/img/skin-v173-statusbar.jpg`。
+
+#### 21.9.2 打开会话为什么慢（插件侧归因）
+
+先做干净基线：同一台机器 / 同一宿主 / 同一临时 DSH_HOME，只切换插件 bundles 与 client.js 版本，2560×1440 @ dpr1.5（4K 等效）跑 headless Chrome，DOM 点击打开 21k 字会话（opened len=21162 校验），每轮读 `Performance.getMetrics` 增量与 longtask。
+
+| 版本 | open style (ms) | open long task (ms) | steady style (ms) | 备注 |
+| --- | --- | --- | --- | --- |
+| 插件 OFF（干净基线） | 459 | 1124 | 209 | 宿主自身成本 |
+| v1.7.2（皮肤 + 旧实现） | 637 | 1254 | 253 | 插件净增 +178 ms style |
+| v1.7.3（本轮修复） | 567 | 1140 | 242 | 插件净增 +108 ms style（−11%） |
+
+四个改动（都在 client.js）：
+
+1. **`:root` 继承变量作用域化**：`applyPos` / `measureOnce` 原本往 `document.documentElement.style` 写 `--fz3-dock-x/y`、`--fz3-brand-top/left/h`，而消费方只有 `.fz3-core`（client.js:787）与 `.fz3-sb-brand`（client.js:1004）——即 `.fz3-layer` 子树。根节点自定义属性变化使整棵文档样式失效（约 11k 节点），且每次路由切换 / 打开会话都会重测重写。新增 `layerVars` ref + `setLayerVar(name,value)`（元素换新自动失效、值未变不写），改写到 `.fz3-layer` 元素。
+2. **hero 标题同步改事件**：原实现 `MutationObserver` 观察 `[class*="_headline"] [class*="_titleGroup"]` 的 `childList/subtree/characterData`，另有 120/420/900 ms 三次重试；改为插件在 hero 槽位挂载 / 卸载时派发 `fz3:hero-mount` / `fz3:hero-unmount`，观察范围缩到 0。
+3. **dock 测量改锚点 + 退避**：不再扫描全文档找侧栏 / 标题栏，改为 NARROW 候选列表 + 侧栏右缘 / 标题栏底缘锚点 + `ResizeObserver`，以 `DELAYS=[0,160,400,900,1800,3200]` 退避重试吸收字体 / 首屏布局变化；测量结果经 `setLayerVar` 写入（同 1）。
+4. **dock 相氛围层去混合**：`html[data-fz3-phase="dock"] .fz3-atmos{mix-blend-mode:normal}`（base CSS，4 行）——日常态整屏不再走混合合成；boot / greet 相保持原 `mix-blend-mode`。
+
+**已排除的方向**（避免后人重复踩）：① 插件 JS 不是热点（profiler）；② 单独保留皮肤 CSS 与单独保留 base CSS 都同样重，说明成本不是某一段规则集；③ 眼徽 ticker 15fps → 6fps 只带来噪声内变化（open style 626→586、long task 1224→1187，n=2）且观感变卡，未采用；④ 运行时删规则 / 隐藏图层类的 subset 实验会同时破坏点击路径（全屏覆盖层恢复 `pointer-events:auto`），造成「会话没打开、longtask=0」的伪影——做 A/B 必须用真产物换文件 + `opened` 校验。剩余成本主要在宿主自身渲染（OFF 基线 style 459 ms）；ON 与 OFF 的 long task 总量差异在噪声内，用户「关掉插件明显更快」可能还含 paint / 持续动画成分，本轮未归因。
+
+**验证环境**：临时 DSH_HOME `tmp/perf-v173/home`（只放测试插件副本），真实桌面实例不参与；cookie 用临时 home 的 `.credentials.yaml` secret 自签（`dsh-auth-<sha256(authority)>`，HMAC-SHA256）；基线脚本 `tmp/perf-v173/compare.mjs`（真产物 A/B）、截图 `tmp/perf-v173/shots-v173.mjs`。
+

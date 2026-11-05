@@ -1024,6 +1024,10 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
    径向渐变本身已经是软过渡，去掉滤镜后观感几乎不变，但这块不再需要离屏滤镜。 */
 .fz3-atmos-glow{position:absolute;left:-12%;top:-26%;width:64%;height:70%;background:radial-gradient(circle,rgba(70,52,255,.16),rgba(60,46,240,.05) 52%,transparent 78%);opacity:.55;transform:scale(1);animation:fz3-atmos-breathe 14s steps(14,end) infinite alternate}
 .fz3-atmos-flash{position:absolute;right:4%;top:2%;width:34%;height:30%;background:radial-gradient(ellipse at 60% 20%,rgba(120,190,255,.16),rgba(100,160,255,.04) 42%,transparent 72%);animation:fz3-flash 11s steps(1) infinite}
+/* v1.7.3（性能）：dock 相（日常使用）把整屏氛围层从「混合」降为普通合成。
+   v1.7.0 让这层常驻 mix-blend-mode:screen：任何下层内容变化都要重算整屏混合，
+   2560×1440@150%（3840×2160 物理像素）尤其贵；boot / greet 仍保留混合效果。 */
+html[data-fz3-phase="dock"] .fz3-atmos{mix-blend-mode:normal}
 
 @keyframes fz3-line{to{opacity:1;transform:none}}
 @keyframes fz3-blink{50%{opacity:.3}}
@@ -1301,6 +1305,17 @@ html[data-fz3-theme="light"] .an3WzG_tab:hover{color:#101110!important}
 html[data-fz3-theme="light"] .an3WzG_tabActive{background:#101110!important;color:#f2f2ee!important}
 
 /* ---------- D. 输入区：纸卡 / 墨卡 + 青柠发送 ---------- */
+/* v1.7.3：宿主给 composer 座位铺「透明 → --dsw-alias-bg-base」的 36px 渐变遮罩（sticky 底部），
+   皮肤把 bg-base 映射成 90~94% 半透明，遮罩收不实——滚动中的对话文字会从状态行下方透出来。
+   这里按同样的渐变语法把终点改成不透明画布色（只作用于 composer 座位，不动全局 token）。 */
+.an3WzG_root[data-phase="active"] .an3WzG_composerSeat,
+.an3WzG_embeddedBody[data-content-phase="active"] .an3WzG_composerSeat{
+  background:linear-gradient(180deg,rgba(10,10,10,0) 0px,#0a0a0a 36px)!important;
+}
+html[data-fz3-theme="light"] .an3WzG_root[data-phase="active"] .an3WzG_composerSeat,
+html[data-fz3-theme="light"] .an3WzG_embeddedBody[data-content-phase="active"] .an3WzG_composerSeat{
+  background:linear-gradient(180deg,rgba(239,239,237,0) 0px,#efefed 36px)!important;
+}
 .GRgSLq_card{
   border-radius:20px!important;background:#141614!important;border:1px solid #2b2d28!important;
   box-shadow:none!important;
@@ -2437,6 +2452,14 @@ button,a,[role="button"],[role="treeitem"]{transition-duration:.14s!important}
     function HeroBrandMark(props) {
       const size = props && typeof props.size === 'number' ? props.size : 34
       const extra = props && props.className ? ' ' + props.className : ''
+      /* v1.7.3（性能）：hero 插槽挂载/卸载时发事件，标题改写只在这两个时机去找节点，
+         不再用全 body MutationObserver 逐节点扫子树。 */
+      useEffect(() => {
+        try { window.dispatchEvent(new Event('fz3:hero-mount')) } catch (e) {}
+        return () => {
+          try { window.dispatchEvent(new Event('fz3:hero-unmount')) } catch (e) {}
+        }
+      }, [])
       return h(
         'span',
         {
@@ -2714,6 +2737,11 @@ function BubbleCard({ data, onMeasure, onFlip }) {
     function FairySkin() {
       /* 已经完整播过一次开机 → 重挂载直接从 dock 开始；设置页「重播开机动画」会清标记 */
       const [phase, setPhase] = useState(() => (bootPlayed ? 'dock' : 'boot'))
+      /* v1.7.3（性能）：氛围层是独立挂载点（shell.overlay），相位不在它的祖先链上，
+         所以在 <html> 上同步一个 data 属性给样式用：dock 相把整屏 mix-blend-mode 关掉。 */
+      useEffect(() => {
+        try { document.documentElement.dataset.fz3Phase = phase } catch (e) {}
+      }, [phase])
       const aliveRef = useRef(true)
       useEffect(() => {
         aliveRef.current = true
@@ -2749,7 +2777,9 @@ function BubbleCard({ data, onMeasure, onFlip }) {
           const sr = sidebar ? sidebar.getBoundingClientRect() : null
           const left = sr && sr.width > 0 && sr.right < vw * 0.6 ? Math.round(sr.right) : 0
           let top = 0
-          const headers = document.querySelectorAll('header')
+          /* v1.7.3：宿主顶栏不一定是 <header> 标签（Web 端是带哈希类名的 div），
+             把 [class*="_header"] 也纳入；高度/位置过滤保证只命中真正的顶栏。 */
+          const headers = document.querySelectorAll('header,[class*="_header"]')
           for (const hr of headers) {
             const r = hr.getBoundingClientRect()
             if (r.height > 0 && r.height < 120 && r.top <= 12 && r.width > vw * 0.3 && r.left > left - 8) {
@@ -2851,11 +2881,24 @@ function BubbleCard({ data, onMeasure, onFlip }) {
         }
       }, [])
 
-      const applyPos = useCallback((p) => {
-        const root = document.documentElement
-        root.style.setProperty('--fz3-dock-x', p.x + 'px')
-        root.style.setProperty('--fz3-dock-y', p.y + 'px')
+      /* v1.7.3（性能）：--fz3-dock-x/y 与 --fz3-brand-* 只被 .fz3-layer 子树里的元素读取。
+         写到 :root 会让整棵文档的样式失效（大会话几千个节点），而 overlay 每次路由切换 /
+         打开会话都会重挂载并测量一次——这是「点一下卡一下」里最长的一段 Style 时间。
+         改为写到图层元素本身（失效范围缩到这一小棵子树），并把「值没变就不写」去重；
+         图层元素换新时缓存自动作废。 */
+      const layerVars = useRef(null)
+      const setLayerVar = useCallback((name, value) => {
+        const layer = document.querySelector('.fz3-layer')
+        const el = layer || document.documentElement
+        const cache = layerVars.current && layerVars.current.el === el ? layerVars.current.vals : (layerVars.current = { el, vals: {} }).vals
+        if (cache[name] === value) return
+        cache[name] = value
+        el.style.setProperty(name, value)
       }, [])
+      const applyPos = useCallback((p) => {
+        setLayerVar('--fz3-dock-x', p.x + 'px')
+        setLayerVar('--fz3-dock-y', p.y + 'px')
+      }, [setLayerVar])
 
       useEffect(() => {
         /* 官方字标位置测量：拿到 logo 行 / brandIdentity 的矩形，把我们的
@@ -2872,10 +2915,9 @@ function BubbleCard({ data, onMeasure, onFlip }) {
           if (!row) return false
           const r = row.getBoundingClientRect()
           if (r.width <= 0 || r.height <= 0) return false
-          const root = document.documentElement
-          root.style.setProperty('--fz3-brand-top', Math.round(r.top - 6) + 'px')
-          root.style.setProperty('--fz3-brand-left', Math.round(r.left) + 'px')
-          root.style.setProperty('--fz3-brand-h', Math.round(Math.max(34, r.height + 10)) + 'px')
+          setLayerVar('--fz3-brand-top', Math.round(r.top - 6) + 'px')
+          setLayerVar('--fz3-brand-left', Math.round(r.left) + 'px')
+          setLayerVar('--fz3-brand-h', Math.round(Math.max(34, r.height + 10)) + 'px')
           if (!target) {
             target = row
             if (timer) {
@@ -2917,7 +2959,7 @@ function BubbleCard({ data, onMeasure, onFlip }) {
           if (observer) observer.disconnect()
           window.removeEventListener('resize', onResize)
         }
-      }, [])
+      }, [setLayerVar])
       useEffect(() => {
         /* 主人自己拖过眼徽：用记住的坐标，不再自动测量 */
         if (customPos) {
@@ -2925,103 +2967,113 @@ function BubbleCard({ data, onMeasure, onFlip }) {
           return undefined
         }
         if (eyeHidden) return undefined
-        /* dock 定位：找到会话区（左侧最靠左的宽容器），把眼标钉在它的左缘中部，
-           与参考视频里「对话时靠在聊天区左边」的位置一致；找不到就退回 25vw / 52vh。
-           性能注意：全量 getBoundingClientRect 扫描会强制同步布局（上千个 div），原来最多扫 16 次；
-           现在只要扫到过一次就缓存命中的那个容器，之后重试/窗口缩放只量它一个元素。 */
+        /* dock 定位（v1.7.3 性能重写）：眼标钉在「会话内容区」左缘中部。
+           v1.7.0 的实现在窄选择器没命中时会退到 document.querySelectorAll('div,main,section')
+           逐个 getBoundingClientRect —— 每次 shell.overlay 重挂载（任何路由切换、打开会话）
+           都会跑最多 3 轮全文档强制布局，正是「点一下卡一下」的另一半原因。
+           现在只用两个稳定锚点：侧栏右缘（左边界）与顶部标题栏底缘（上边界），
+           各一次 querySelector + 一次 gBCR；失败就按退避表重试，彻底没有全文档扫描。 */
         let tries = 0
-        let timer = null
+        let retryTimer = null
+        let resizeTimer = null
         let cached = null
-        let observer = null
-        /* 会话区的候选容器：先查窄选择器（通常十来个元素），找不到才退回全文档扫描，
-           而且全量扫描只在最初几次重试里允许，避免长会话时反复强制布局。 */
-        const NARROW = '[data-chat-flow],[data-conversation-scroll],[class*="_conversation"],[class*="_chatBody"],[class*="_threadBody"],main'
+        let ro = null
+        const NARROW = '[data-chat-flow],[data-conversation-scroll],[class*="_conversation"],[class*="_chatBody"],[class*="_threadBody"],[class*="_centerCol"],[class*="_scrollBody"],[class*="_mainCol"],main'
         const fits = (r, vw) => r.width >= 420 && r.height >= 300 && r.left >= 260 && r.left <= vw * 0.5 && r.width <= vw * 0.9
-        const pick = (nodes, vw) => {
-          let best = null
-          let bestEl = null
-          for (let i = 0; i < nodes.length; i += 1) {
-            const el = nodes[i]
-            const r = el.getBoundingClientRect()
-            if (!fits(r, vw)) continue
-            if (!best || r.left < best.left) {
-              best = r
-              bestEl = el
-            }
-          }
-          return { best, bestEl }
-        }
-        const watch = () => {
-          if (!cached || observer || typeof ResizeObserver !== 'function') return
-          observer = new ResizeObserver(() => {
-            try { measure() } catch (e) {}
-          })
-          try { observer.observe(cached) } catch (e) {}
-        }
-        const measure = () => {
-          let best = null
-          const root = document.documentElement
-          const vw = window.innerWidth
-          /* 先量上次命中的容器：窗口缩放后它通常还是同一个会话区。 */
+        /* 侧栏/标题栏渲染完成前左侧会是 0：此时只在「窄选择器」的十来个候选里量一次，
+           仍然不做全文档扫描。 */
+        const guessLeft = (vw) => {
           if (cached && cached.isConnected) {
             const r = cached.getBoundingClientRect()
-            if (fits(r, vw)) best = r
+            if (fits(r, vw)) return Math.round(r.left)
+            cached = null
           }
-          if (!best) {
-            let found = pick(document.querySelectorAll(NARROW), vw)
-            if (!found.bestEl && tries <= 3) found = pick(document.querySelectorAll('div,main,section'), vw)
-            best = found.best
-            if (found.bestEl) {
-              cached = found.bestEl
-              watch()
-            }
+          let nodes
+          try { nodes = document.querySelectorAll(NARROW) } catch (e) { return 0 }
+          for (let i = 0; i < nodes.length; i += 1) {
+            const r = nodes[i].getBoundingClientRect()
+            if (!fits(r, vw)) continue
+            cached = nodes[i]
+            return Math.round(r.left)
           }
-          if (best) {
-            /* 拖拽 / 吸附的范围（v1.3.2）= 会话内容区，而不是整个窗口：
-               左边界取左侧栏右缘，上边界取顶部标题栏底缘，右 / 下到窗口边缘。 */
-            const vh = window.innerHeight
-            const region = measureRegion()
-            if (!region.left) region.left = Math.round(best.left)
-            regionRef.current = region
-            if (customPos) {
-              const c = clampPos(customPos.x, customPos.y)
-              root.style.setProperty('--fz3-dock-x', c.x + 'px')
-              root.style.setProperty('--fz3-dock-y', c.y + 'px')
-            } else {
-              const size = parseFloat(getComputedStyle(root).getPropertyValue('--fz3-dock-size')) || 128
-              const half = size / 2 + 4
-              let cx = Math.round(region.left + half + 10)
-              let cy = Math.round(region.top + (region.bottom - region.top) * 0.5)
-              cx = Math.min(Math.max(cx, region.left + half), region.right - half)
-              cy = Math.min(Math.max(cy, region.top + half), region.bottom - half)
-              root.style.setProperty('--fz3-dock-x', cx + 'px')
-              root.style.setProperty('--fz3-dock-y', cy + 'px')
-            }
-          }
-          return !!best
+          return 0
         }
+        const watchAnchors = () => {
+          if (ro || typeof ResizeObserver !== 'function') return
+          let sidebar = null
+          let header = null
+          try { sidebar = document.querySelector('[class*="_sidebarCol"]') } catch (e) {}
+          try { header = document.querySelector('header,[class*="_header"]') } catch (e) {}
+          const els = []
+          if (sidebar) els.push(sidebar)
+          if (header) els.push(header)
+          if (!els.length) return
+          ro = new ResizeObserver(() => {
+            if (resizeTimer) return
+            resizeTimer = setTimeout(() => { resizeTimer = null; try { measureOnce() } catch (e) {} }, 260)
+          })
+          for (let i = 0; i < els.length; i += 1) {
+            try { ro.observe(els[i]) } catch (e) {}
+          }
+        }
+        const measureOnce = () => {
+          const root = document.documentElement
+          let region = null
+          try { region = measureRegion() } catch (e) { region = null }
+          if (!region) region = { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight }
+          if (!region.left) {
+            const left = guessLeft(window.innerWidth)
+            if (left) region.left = left
+          }
+          if (!region.left) return false
+          regionRef.current = region
+          if (customPos) {
+            const c = clampPos(customPos.x, customPos.y)
+            setLayerVar('--fz3-dock-x', c.x + 'px')
+            setLayerVar('--fz3-dock-y', c.y + 'px')
+          } else {
+            const size = parseFloat(getComputedStyle(root).getPropertyValue('--fz3-dock-size')) || 128
+            const half = size / 2 + 4
+            let cx = Math.round(region.left + half + 10)
+            let cy = Math.round(region.top + (region.bottom - region.top) * 0.5)
+            cx = Math.min(Math.max(cx, region.left + half), region.right - half)
+            cy = Math.min(Math.max(cy, region.top + half), region.bottom - half)
+            setLayerVar('--fz3-dock-x', cx + 'px')
+            setLayerVar('--fz3-dock-y', cy + 'px')
+          }
+          watchAnchors()
+          return true
+        }
+        /* 退避重试：0 / 160 / 400 / 900 / 1800 / 3200ms，命中即停，最多 6 次。 */
+        const DELAYS = [0, 160, 400, 900, 1800, 3200]
         const kick = () => {
           tries += 1
-          try { if (measure() || tries > 16) clearInterval(timer) } catch (e) { clearInterval(timer) }
+          let ok = false
+          try { ok = measureOnce() } catch (e) { ok = false }
+          if (ok || tries >= DELAYS.length) return
+          if (retryTimer) return
+          retryTimer = setTimeout(() => {
+            retryTimer = null
+            kick()
+          }, DELAYS[tries])
         }
-        timer = setInterval(kick, 600)
-        /* 拖动窗口会连续触发 resize；原来每个事件都排一个 setTimeout，拖动期间会堆出几十个定时器。 */
-        let resizeTimer = null
+        kick()
+        /* 拖动窗口会连续触发 resize；去抖后只重排一个定时器。 */
         const onResize = () => {
           if (resizeTimer) return
           resizeTimer = setTimeout(() => {
             resizeTimer = null
-            kick()
+            try { measureOnce() } catch (e) {}
           }, 260)
         }
         window.addEventListener('resize', onResize)
         return () => {
-          clearInterval(timer)
+          if (retryTimer) clearTimeout(retryTimer)
           if (resizeTimer) clearTimeout(resizeTimer)
-          if (observer) observer.disconnect()
+          if (ro) ro.disconnect()
           window.removeEventListener('resize', onResize)
         }
-      }, [customPos, eyeHidden, applyPos, clampPos])
+      }, [customPos, eyeHidden, applyPos, clampPos, setLayerVar])
 
       /* 记住的位置也要跟着窗口缩放夹一下，别把眼标留在屏幕外 */
       useEffect(() => {
@@ -3055,8 +3107,11 @@ function BubbleCard({ data, onMeasure, onFlip }) {
       }, [])
 
       /* 欢迎页 hero 的标题与「预览版」徽章没有插槽，只能改写 DOM 文本。
-         参考实现是每 900ms 轮询一次；这里改成 MutationObserver：只在 hero 重新挂载
-         （节点被加进来）时改一次，文本已经对了就不写，空闲时零定时器。 */
+         v1.7.3（性能）：v1.7.0 观察整个 body，并对每条 childList 里的每个新增节点跑
+         一次子树 querySelector —— 打开大会话 / 流式输出时是 O(N²) 的同步扫描，
+         正是「点会话明显卡一下」的主因之一。
+         现在只在这两种时机找节点：hero 插槽挂载（fz3:hero-mount，由 HeroBrandMark 派发）
+         与首次挂载后的几次退避重试；找到后只观察标题所在的小容器，离开 hero 立刻断开。 */
       useEffect(() => {
         if (typeof document === 'undefined') return undefined
         const rewrite = () => {
@@ -3070,43 +3125,70 @@ function BubbleCard({ data, onMeasure, onFlip }) {
           if (badge && badge.textContent !== copy.badge) badge.textContent = copy.badge
           return true
         }
-        rewrite()
+        let group = null
+        let observer = null
         let pending = null
-        const observer = new MutationObserver((records) => {
-          if (pending) return
-          let hit = false
-          for (let i = 0; i < records.length && !hit; i += 1) {
-            const record = records[i]
-            /* 文本被宿主重新渲染（characterData）也算命中：只认标题与徽章内的改动 */
-            if (record.type === 'characterData') {
-              const parent = record.target && record.target.parentElement
-              if (parent && parent.closest && parent.closest('[class*="_headline"],[class*="_previewBadge"]')) hit = true
-              continue
-            }
-            const added = record.addedNodes
-            for (let j = 0; j < added.length; j += 1) {
-              const node = added[j]
-              if (!node || node.nodeType !== 1) continue
-              if ((node.matches && node.matches('[class*="_headline"]')) || (node.querySelector && node.querySelector('[class*="_headline"]'))) {
-                hit = true
-                break
-              }
+        const timers = []
+        const attach = () => {
+          if (group && !group.isConnected) {
+            group = null
+            if (observer) {
+              try { observer.disconnect() } catch (e) {}
+              observer = null
             }
           }
-          if (!hit) return
-          pending = setTimeout(() => {
-            pending = null
-            try { rewrite() } catch (e) {}
-          }, 60)
-        })
-        try {
-          observer.observe(document.body, { childList: true, subtree: true, characterData: true })
-        } catch (e) {
-          return undefined
+          if (!group) {
+            group = document.querySelector('[class*="_headline"] [class*="_titleGroup"]')
+            if (!group) return false
+          }
+          try { rewrite() } catch (e) {}
+          if (!observer) {
+            observer = new MutationObserver(() => {
+              if (pending) return
+              pending = setTimeout(() => {
+                pending = null
+                try { attach() } catch (e) {}
+              }, 80)
+            })
+            try {
+              observer.observe(group, { childList: true, subtree: true, characterData: true })
+            } catch (e) {
+              observer = null
+            }
+          }
+          return true
         }
+        const later = (ms) => {
+          timers.push(setTimeout(() => {
+            try { attach() } catch (e) {}
+          }, ms))
+        }
+        const onHero = () => {
+          try { attach() } catch (e) {}
+          later(120)
+          later(420)
+          later(900)
+        }
+        const onLeave = () => {
+          group = null
+          if (observer) {
+            try { observer.disconnect() } catch (e) {}
+            observer = null
+          }
+        }
+        attach()
+        later(200)
+        later(700)
+        window.addEventListener('fz3:hero-mount', onHero)
+        window.addEventListener('fz3:hero-unmount', onLeave)
         return () => {
+          window.removeEventListener('fz3:hero-mount', onHero)
+          window.removeEventListener('fz3:hero-unmount', onLeave)
           if (pending) clearTimeout(pending)
-          observer.disconnect()
+          for (let i = 0; i < timers.length; i += 1) clearTimeout(timers[i])
+          if (observer) {
+            try { observer.disconnect() } catch (e) {}
+          }
         }
       }, [])
 

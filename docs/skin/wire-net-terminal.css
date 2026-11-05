@@ -147,6 +147,17 @@ html[data-fz3-theme="light"] .an3WzG_tab:hover{color:#101110!important}
 html[data-fz3-theme="light"] .an3WzG_tabActive{background:#101110!important;color:#f2f2ee!important}
 
 /* ---------- D. 输入区：纸卡 / 墨卡 + 青柠发送 ---------- */
+/* v1.7.3：宿主给 composer 座位铺「透明 → --dsw-alias-bg-base」的 36px 渐变遮罩（sticky 底部），
+   皮肤把 bg-base 映射成 90~94% 半透明，遮罩收不实——滚动中的对话文字会从状态行下方透出来。
+   这里按同样的渐变语法把终点改成不透明画布色（只作用于 composer 座位，不动全局 token）。 */
+.an3WzG_root[data-phase="active"] .an3WzG_composerSeat,
+.an3WzG_embeddedBody[data-content-phase="active"] .an3WzG_composerSeat{
+  background:linear-gradient(180deg,rgba(10,10,10,0) 0px,#0a0a0a 36px)!important;
+}
+html[data-fz3-theme="light"] .an3WzG_root[data-phase="active"] .an3WzG_composerSeat,
+html[data-fz3-theme="light"] .an3WzG_embeddedBody[data-content-phase="active"] .an3WzG_composerSeat{
+  background:linear-gradient(180deg,rgba(239,239,237,0) 0px,#efefed 36px)!important;
+}
 .GRgSLq_card{
   border-radius:20px!important;background:#141614!important;border:1px solid #2b2d28!important;
   box-shadow:none!important;
