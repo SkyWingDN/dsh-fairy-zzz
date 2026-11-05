@@ -1189,8 +1189,9 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
 }
 
 /* ---------- A. 画布：纸面 / 墨黑 + 斜纹 + 网点 ----------
- * 纹理全部合成进 body 背景（background-attachment:fixed），
- * 不新增 position:fixed 层，维持 v1.6 的 fixed=10 性能预算。 */
+ * 纹理全部合成进 body 背景，不新增 position:fixed 层，维持 v1.6 的 fixed=10 性能预算。
+ * v1.7.4（性能）：改回默认 background-attachment:scroll —— 宿主的内容滚动都在内层容器里，
+ * body 本身不滚，所以画布观感完全一致；但省掉了「全屏 fixed 背景层」参与每次合成的机会。 */
 html{background:#0a0a0a!important}
 body{
   background-color:#0a0a0a!important;
@@ -1200,7 +1201,7 @@ body{
     radial-gradient(rgba(255,255,255,.05) 1px,transparent 1.4px),
     repeating-linear-gradient(-45deg,rgba(255,255,255,.028) 0 1px,transparent 1px 11px)!important;
   background-size:auto,auto,18px 18px,auto!important;
-  background-attachment:fixed,fixed,fixed,fixed!important;
+  background-attachment:scroll!important;
 }
 :root[data-fz3-theme="light"] body,html[data-fz3-theme="light"] body{
   background-color:#efefed!important;
@@ -1515,6 +1516,24 @@ html[data-fz3-theme="light"] .fz3-bubble-sub{color:rgba(16,17,16,.44)!important}
 /* ---------- J. 动效纪律：只留 120–160ms 的色彩/位移 ---------- */
 button,a,[role="button"],[role="treeitem"]{transition-duration:.14s!important}
 
+/* v1.7.4（性能）：dock 相（= 用户真正在干活的相位）停掉背景氛围层的两个常驻无限动画。
+ * 它们是全屏 fixed 图层上的 loop（14s 呼吸 + 11s 闪烁），在 165Hz 屏上等于喂给合成器
+ * 一份永不结束的活；静止后观感几乎无差（青柠辉光本来就是极慢的呼吸）。
+ * hero / greet / boot 三相保留动画——那几秒本来就在看开场。 */
+html[data-fz3-phase="dock"] .fz3-atmos-glow,
+html[data-fz3-phase="dock"] .fz3-atmos-flash{animation:none!important}
+
+/* v1.7.4（性能）：.fz3-rim 原先带 blur(8px)。它是一层 560×560 的 fixed 装饰光斑，
+ * 底图本身就是 radial-gradient（边缘已经自然淡出），模糊只是把同一张图再算一遍；
+ * 去掉后观感无差，但少一层全屏级离屏模糊。 */
+.fz3-rim{filter:none!important}
+
+/* v1.7.4（性能）：dock 相时宿主界面是不透明的纸面/墨黑面板，body 上的两张全屏 fixed
+ * 装饰层（::before 大渐变、::after 48px 网格）永远被盖住，却仍参与每帧合成；
+ * dock 相直接停绘。boot / greet / hero 三相保留——那几屏才是它们露脸的时候。 */
+html[data-fz3-phase="dock"] body::before,
+html[data-fz3-phase="dock"] body::after{display:none!important}
+
 `
 
     /* ------------------------------------------------------------------ *
@@ -1710,6 +1729,9 @@ button,a,[role="button"],[role="treeitem"]{transition-duration:.14s!important}
 
       const tick = () => {
         if (!root) return
+        /* v1.7.4（性能）：窗口在后台时浏览器本来就会把 interval 节流，但桌面端
+           （Electron 常驻后台）仍有实测唤醒；这里显式跳过，省掉一次不必要的 SVG 属性写。 */
+        if (typeof document !== 'undefined' && document.hidden) return
         const now = clockNow()
         if (corners) {
           const step = Math.floor((now % FZ3_ORBIT_MS) / (FZ3_ORBIT_MS / FZ3_ORBIT_STEPS))
@@ -2961,6 +2983,10 @@ function BubbleCard({ data, onMeasure, onFlip }) {
         }
       }, [setLayerVar])
       useEffect(() => {
+        /* v1.7.4（性能）：只在 dock 相测量。hero/greet 期眼徽用的是 CSS 位置，
+           测了也没人用；而开机覆盖层播放期间 DOM 还在长，测量必然失败并触发重试，
+           正好把强制布局塞进最卡的启动窗口。 */
+        if (phase !== 'dock') return undefined
         /* 主人自己拖过眼徽：用记住的坐标，不再自动测量 */
         if (customPos) {
           applyPos(clampPos(customPos.x, customPos.y))
@@ -2990,7 +3016,10 @@ function BubbleCard({ data, onMeasure, onFlip }) {
           }
           let nodes
           try { nodes = document.querySelectorAll(NARROW) } catch (e) { return 0 }
-          for (let i = 0; i < nodes.length; i += 1) {
+          /* v1.7.4：候选最多量 24 个。正常命中在前几个；命中不了说明 DOM 还没稳定，
+             交给 ResizeObserver 等布局落定，不再无限往下读（每次 gBCR 都是强制布局）。 */
+          const limit = Math.min(nodes.length, 24)
+          for (let i = 0; i < limit; i += 1) {
             const r = nodes[i].getBoundingClientRect()
             if (!fits(r, vw)) continue
             cached = nodes[i]
@@ -3044,8 +3073,11 @@ function BubbleCard({ data, onMeasure, onFlip }) {
           watchAnchors()
           return true
         }
-        /* 退避重试：0 / 160 / 400 / 900 / 1800 / 3200ms，命中即停，最多 6 次。 */
-        const DELAYS = [0, 160, 400, 900, 1800, 3200]
+        /* v1.7.4（性能）：先挂 ResizeObserver 再量。测量失败时不再用 6 段退避表反复
+           触发强制布局（0/160/400/900/1800/3200 —— 用户点完还会在 1.8s、3.2s 再卡一下），
+           而是等侧栏/标题栏尺寸变化（RO）自己回来量一次。 */
+        watchAnchors()
+        const DELAYS = [0, 240]
         const kick = () => {
           tries += 1
           let ok = false
@@ -3073,7 +3105,7 @@ function BubbleCard({ data, onMeasure, onFlip }) {
           if (ro) ro.disconnect()
           window.removeEventListener('resize', onResize)
         }
-      }, [customPos, eyeHidden, applyPos, clampPos, setLayerVar])
+      }, [phase, customPos, eyeHidden, applyPos, clampPos, setLayerVar])
 
       /* 记住的位置也要跟着窗口缩放夹一下，别把眼标留在屏幕外 */
       useEffect(() => {

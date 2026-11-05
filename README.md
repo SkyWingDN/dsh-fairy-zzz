@@ -31,7 +31,7 @@
 | --- | --- |
 | ![眼徽](screenshots/03-eye-states.png) | ![设置](screenshots/04-settings.png) |
 
-## 界面皮肤 v1.7.0「绳网终端」（v1.7.1 / v1.7.2 / v1.7.3 修整）
+## 界面皮肤 v1.7.0「绳网终端」（v1.7.1 / v1.7.2 / v1.7.3 / v1.7.4 修整）
 
 1.7.0 起插件不只重做 H.D.D 开场与眼徽，也给宿主 DSH Web GUI 加了一层完整皮肤：官网的表达层（纸白 / 墨黑 / 荧光青柠 #d8fa00 / 斜切块 / Impact 数字）与绳网情报站的工作层（三层黑面板 / 1px 描边 / 12px 圆角 / 等宽 `//` 小标 / 单强调色）合成一套「绳网终端 / WIRE-NET TERMINAL」。浅色 = 纸面印刷品 + 墨黑侧栏；深色 = 监控台；青柠只给行动与选中（整屏 < 5%），不新增 `@keyframes`、不用毛玻璃。
 
@@ -53,6 +53,8 @@
 | ![侧栏选中胶囊](docs/img/skin-v172-nav-pill.jpg) | ![顶栏选中胶囊](docs/img/skin-v172-tab-pill.jpg) |
 
 **v1.7.3 修整**：① 底部状态栏不再透出对话文字——宿主给 composer 座位铺的遮罩是「透明 → 半透明 `--dsw-alias-bg-base`」渐变，皮肤把该 token 映射成 90–94% 半透明后遮罩收不实；现按宿主同款语法把渐变终点改成不透明画布色（深色 `#0a0a0a` / 浅色 `#efefed`），只作用于 composer 座位。② 打开大会话的样式成本下降：把只被覆盖层子树消费的 `--fz3-dock-*` / `--fz3-brand-*` 自定义属性从 `:root` 改写到 `.fz3-layer`（不再触发整文档样式失效），dock 测量改为侧栏 / 标题栏锚点 + 退避重试（不再全文档扫描），hero 标题同步改用挂载 / 卸载事件（不再用 `MutationObserver` 观察整棵 body），dock 相把整屏氛围层从 `mix-blend-mode` 混合降为普通合成。4K（2560×1440 @ dpr 1.5，同机 headless Chrome）重复 A/B：打开 21k 字大会话的 style 时间 637 → 567 ms（约 −11%）、long task 总量 1254 → 1140 ms（约 −9%），插件相对「关掉插件」的净增量从约 +180 ms 降到约 +110 ms；稳态切换持平。
+
+**v1.7.4 修整（性能核查）**：针对「桌面壳比 web 端卡」的反馈做了真实窗口 A/B：同一台机、同一 2.1 万字会话，v1.6.2（无皮肤）与 v1.7.4 打开会话的 Task（0.94 / 0.93 s vs 0.93 / 0.91 s）、样式（0.38 / 0.44 s vs 0.41 / 0.41 s）持平；插件页导航在「停掉皮肤装饰层」后也没有变化——皮肤不是桌面端卡顿的根因，残余卡顿来自宿主渲染大会话本身。本版仍把皮肤的常驻合成成本继续压低：body 的 4 条 `background-attachment: fixed` 改为 `scroll`；dock 相停掉两个被面板完全遮住的无限氛围动画、停绘 `body::before/::after` 两张全屏 fixed 装饰层；去掉眼徽外圈 560×560 fixed 层的 `blur(8px)`；15 fps ticker 在页面隐藏时不再写 SVG transform。dock 待机实测 165 fps（帧间隔 P95 6.2 ms）、无长任务。完整数据见 `docs/PERFORMANCE.md` §12。
 
 | 会话页底部状态栏（v1.7.3） | 深色会话页（v1.7.3） |
 | --- | --- |
@@ -351,7 +353,7 @@ It turns the DSH web interface into Fairy's H.D.D terminal: a full-screen boot a
 | --- | --- |
 | ![Eye badge](screenshots/03-eye-states.png) | ![Settings](screenshots/04-settings.png) |
 
-## UI skin v1.7.0 “Wire-Net Terminal” (v1.7.1 / v1.7.2 / v1.7.3 fixes)
+## UI skin v1.7.0 “Wire-Net Terminal” (v1.7.1 / v1.7.2 / v1.7.3 / v1.7.4 fixes)
 
 Since 1.7.0 the plugin no longer stops at the boot sequence and eye badge — it restyles the host DSH Web UI itself: the official site's expressive layer (paper white / ink black / fluorescent lime `#d8fa00` / diagonal cuts / Impact numerals) fused with the wire-net wiki's working layer (three-layer dark panels / 1px hairlines / 12px radii / monospace `//` labels / one accent). Light = a printed sheet with an ink-black sidebar; dark = a monitoring console; lime is reserved for actions and selection (<5% of any screen), no new `@keyframes`, no frosted glass.
 
@@ -369,6 +371,8 @@ Full design spec (tokens, type scale, component mapping, do/don't, responsive, i
 | ![Active nav pill](docs/img/skin-v172-nav-pill.jpg) | ![Active tab pill](docs/img/skin-v172-tab-pill.jpg) |
 
 **v1.7.3 fixes**: ① the bottom status bar no longer lets conversation text bleed through. The host paints the composer seat with a `transparent → --dsw-alias-bg-base` gradient; because the skin maps that token to a 90–94 % translucent colour the mask never becomes opaque. The same gradient is now re-declared with an opaque canvas endpoint (dark `#0a0a0a`, light `#efefed`), scoped to the composer seat only. ② opening a large conversation is cheaper: the `--fz3-dock-*` / `--fz3-brand-*` custom properties (consumed only inside the overlay subtree) are written on `.fz3-layer` instead of `:root`, so they no longer invalidate the whole document; dock measurement anchors to the sidebar / header edges with back-off retries instead of scanning the document; hero-title syncing moved from a body-wide `MutationObserver` to mount/unmount events; and the dock-phase ambience layer drops from `mix-blend-mode` to normal compositing. Repeated A/B on 4K (2560×1440 @ dpr 1.5, same headless Chrome) opening a 21k-character conversation: style 637 → 567 ms (−11 %), total long tasks 1254 → 1140 ms (−9 %); the plugin's net add-on over “plugin off” falls from ~+180 ms to ~+110 ms, with steady-state switching unchanged.
+
+**v1.7.4 fixes (performance audit)**: a visible-window A/B on the same machine and the same 21k-character conversation shows the skin adds no measurable cost: v1.6.2 (no skin) vs v1.7.4 open-conversation Task 0.94 / 0.93 s vs 0.93 / 0.91 s and style 0.38 / 0.44 s vs 0.41 / 0.41 s, and plugin-page navigation is unchanged even with every skin decoration layer disabled — the skin is not the cause of the desktop lag; the remaining cost is the host rendering the large conversation itself. This release still trims resident compositing further: the four `background-attachment: fixed` body layers now scroll; while docked, the two infinite atmosphere animations and two full-screen fixed decoration layers that sit under opaque panels stop; the 560×560 fixed rim layer loses its `blur(8px)`; and the 15 fps ticker no longer writes SVG transforms while the page is hidden. Dock idle measures 165 fps (frame-gap P95 6.2 ms) with no long tasks. Full data in `docs/PERFORMANCE.md` §12.
 
 | Composer status bar (v1.7.3) | Dark conversation (v1.7.3) |
 | --- | --- |

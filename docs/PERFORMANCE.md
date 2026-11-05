@@ -514,6 +514,48 @@ harness 脚本同样**不随仓库发布**。
 
 补丁后的隔离 harness 与真实页面都没有再跑全量 GPU 采样：rim 是纯静态绘制，而清理只删死规则，不改变任何仍在生效的样式 / 动画；`node --check` 与真机 DOM 断言（8 条 rim、`--fz3-line` 计算值为空、`.fz3-tag` 元素 0、控制台 0 exception）通过。
 
+## 12. v1.7.4：皮肤渲染核查与常驻合成成本削减（针对「桌面端比 web 卡」的反馈）
+
+**背景**：用户反馈桌面壳在「点插件 / 开会话」时卡顿、眼徽停转，点插件 UI 时 CPU 频率上升，而同一会话在 web 端更顺。要回答两件事：皮肤是否引入回归；若没有，插件侧还能压低什么。
+
+### 12.1 方法（真实 GUI 窗口 + 隔离实例）
+
+- **隔离实例**：Electron `--user-data-dir=…\perf-v174\udd3`、独立 `DSH_HOME` / `APPDATA`，CDP 9231；窗口 2568×1440 @ dpr 1.5、165 Hz，`ShowWindow(9)` + `SetWindowPos` 移到 (1920,190) 真实上屏，不影响用户的桌面宿主。
+- **版本 A/B**：同一台机、同一会话（21,158 字）、同一 DOM `.click()` 路径；把 v1.6.2（无皮肤）/ v1.7.2 / v1.7.3 / v1.7.4 的 `client.js` 依次拷进实际加载源 `profiles\desktop\node_modules\dsh-fairy-zzz\client.js` 后重启实例（直接改安装目录或 `home2\plugins` 不会生效）。
+- **指标**：CDP `Performance.getMetrics` 的 `TaskDuration` / `RecalcStyleDuration` 差值；`requestAnimationFrame` 采帧间隔；`PerformanceObserver` 记 long task；GPU / CPU 用 `Win32_PerfFormattedData_PerfProc_*` 250 ms 循环采样。
+- **装饰层 A/B**：`css-ab.mjs` 注入「停 atmos / 去 rim blur / 去混合 / 隐藏屏层 / 全停」变体；`nav-ab.mjs` 在插件页导航里交替开/关装饰层 3 轮。
+
+### 12.2 实测结果（load-bearing）
+
+| 场景（可见窗口 2568×1440 @ dpr1.5，2.1 万字会话） | v1.6.2（无皮肤） | v1.7.4 | 判断 |
+| --- | --- | --- | --- |
+| 插件页 → 点开会话：Task | 0.943 / 0.931 s | 0.928 / 0.910 s | 持平 |
+| 同上：Recalc style | 0.384 / 0.444 s | 0.411 / 0.407 s | 持平 |
+| 同上：long task 总量 | 387 / 519 ms | 470 / 468 ms | ±15% 内，噪声 |
+| 插件页导航 Task（装饰层开 / 关交替） | 0.434 / 0.487 / 0.422 s | 关层 0.449 / 0.441 / 0.448 s | 装饰层非主因 |
+| dock 待机帧间隔 P95 | — | 6.2 ms（≈165 fps） | 常驻渲染稳定、无长任务 |
+
+- **结论**：打开大会话的 ~0.4–0.9 s 样式 / 任务成本是**宿主渲染这颗会话本身**的开销；v1.6.2 与 v1.7.4 同条件持平 ⇒ 皮肤不是桌面端卡顿的根因。web 体感更轻更可能来自窗口尺寸 / DPR / 刷新率与宿主侧负载差异，插件端无法消除宿主成本。
+- GPU / CPU 旁证（3D 引擎）：v1.7.4 dock 待机 renderer CPU ≈22%、GPU ≈7.7%；v1.6.2 ≈38% / ≈12.5%。采样实际约 1.3 s/样本、4 s 窗口 2–3 个点，只作旁证，不作结论。
+- 另一组 CSS 变体（顺序注入、各自重复调用）：baseline 1.23 / 1.015 s，no-atmos 0.791 s，no-rim 0.79 s，no-blend 0.936 s，no-screen 0.965 s，kill 0.872 s —— 顺序噪声大于效应，装饰层最多 ~0.2 s 且非单调，与上表互相印证。
+
+### 12.3 本版削减的常驻合成成本（保守，不改变观感）
+
+1. `body` 的 4 条 `background-attachment: fixed` 改为 `scroll`（滚动时不再全屏同步重绘）；
+2. dock 相停掉 `.fz3-atmos-glow` / `.fz3-atmos-flash` 两个无限动画（被不透明面板完全遮住）；
+3. `.fz3-rim` 去掉 560×560 fixed 层的 `blur(8px)`（底图本身已柔化，肉眼无差）；
+4. dock 相 `body::before` / `body::after` 两张全屏 fixed 装饰层 `display:none`（被不透明面板盖住，直接停绘）；
+5. 15 fps ticker 在 `document.hidden` 时直接 return，后台不再写 SVG `transform`。
+
+第 2–5 项是 v1.7.4 在 12.1 台架上验证后新加的；v1.7.4 同时保留此前全部策略（不新增 `@keyframes`、不用毛玻璃、无逐帧 `filter`）。
+
+### 12.4 验证与复现
+
+- `node scripts/build-client.mjs`：`wire-net-terminal.css` 24,790 B 内联进 `client.js`（178,174 B），`node --check` 通过，幂等重跑无差异。
+- 隔离实例真机断言：`{phase:"dock", rimFilter:"none", bodyBeforeDisplay:"none", animations:3}`；欢迎页 / 插件页 / 会话页（1920×1233）截图观感正常、无破版；打开会话 `{opened:true, len:21158}`。
+- 台架脚本在开发机 `Desktop\tmp\perf-v174\`（`start-instance.ps1`、`flow-ab.mjs`、`nav-ab.mjs`、`css-ab.mjs`、`verify-vis.mjs` 等），**不随仓库发布**；复现需自备隔离 profile 与同一大会话。
+- 未采纳：`.fz3-screen` 常驻 `display:none`（会丢交互层）；去掉全屏氛围层（设计语言需要它，实测也无收益）。
+
 ---
 
 ## English summary
