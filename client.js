@@ -1256,8 +1256,10 @@ html[data-fz3-theme="light"] .wtg9ga_root{border-right-color:rgba(255,255,255,.1
   color:rgba(242,242,238,.60)!important;transition:background-color .14s ease,color .14s ease;
 }
 .wtg9ga_panelRow:hover{background:rgba(255,255,255,.07)!important;color:#fff!important}
+/* 选中只留纸白胶囊本身。不要再加 inset 左划线：999px 胶囊的圆角会把 2px 直边切成一弯月牙，
+   v1.7.1 已因此被误认为残留高亮，v1.7.2 移除（官网顶栏 active pill 本来也没有竖线装饰）。 */
 .wtg9ga_panelRow[aria-current="page"],.wtg9ga_panelRow[data-active="true"],.wtg9ga_panelRow[data-selected="true"]{
-  background:#f2f2ee!important;color:#0a0b08!important;box-shadow:inset 2px 0 0 var(--fz3-lime);
+  background:#f2f2ee!important;color:#0a0b08!important;box-shadow:none!important;
 }
 .wtg9ga_panelRow[aria-current="page"] *,.wtg9ga_panelRow[data-active="true"] *{color:#0a0b08!important}
 /* 分区小标：// 等宽大写（官网 VIDEO / BACKGROUND kicker + wiki /// 模块标题的合并） */
@@ -1291,6 +1293,9 @@ html[data-fz3-theme="light"] .an3WzG_header{border-bottom-color:rgba(16,17,16,.1
 }
 .an3WzG_tab:hover{color:#fff!important}
 .an3WzG_tabActive{background:#f2f2ee!important;color:#0a0b08!important}
+/* 宿主默认用 .an3WzG_tabActive:after 的 2px 下划线当选中指示；胶囊底已经表达了选中，
+   二者叠加会在纸白胶囊下缘露出半截青柠线，v1.7.2 关掉宿主下划线。 */
+.an3WzG_tabActive::after{display:none!important}
 html[data-fz3-theme="light"] .an3WzG_tab{color:rgba(16,17,16,.46)!important}
 html[data-fz3-theme="light"] .an3WzG_tab:hover{color:#101110!important}
 html[data-fz3-theme="light"] .an3WzG_tabActive{background:#101110!important;color:#f2f2ee!important}

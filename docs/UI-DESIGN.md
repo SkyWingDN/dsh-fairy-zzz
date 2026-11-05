@@ -1,5 +1,5 @@
 ---
-version: 1.7.1
+version: 1.7.2
 name: 绳网终端 / WIRE-NET TERMINAL
 description: >-
   《绝区零》官网的表达层语法（纸白/墨黑、荧光青柠 #d8fa00、斜切块、Impact 数字、白胶囊 active）
@@ -269,7 +269,7 @@ components:
 
 名字与氛围：浅色 = 印在纸上的终端说明书（#efefed 纸面 + 墨黑侧栏）；深色 = 监控台本身（#0a0a0a + 三层黑面板）。同一台机器换光照，不换语法。
 
-版本 1.7.0。范围 = DSH Web GUI 宿主 + dsh-fairy-zzz 插件自有组件；不改变模型、会话与插件功能。已验收证据（1624×1042）：欢迎页 [浅色](img/skin-v17-light-home.jpg) / [深色](img/skin-v17-dark-home.jpg)；会话页 [浅色](img/skin-v17-light-chat.jpg) / [深色](img/skin-v17-dark-chat.jpg)；设置面板 [浅色](img/skin-v17-light-settings.jpg) / [深色](img/skin-v17-dark-settings.jpg)；开场覆盖层 [浅色](img/skin-v17-light-boot.jpg) / [深色](img/skin-v17-dark-boot.jpg)。
+版本 1.7.0（v1.7.1 / v1.7.2 修整）。范围 = DSH Web GUI 宿主 + dsh-fairy-zzz 插件自有组件；不改变模型、会话与插件功能。已验收证据（1624×1042）：欢迎页 [浅色](img/skin-v17-light-home.jpg) / [深色](img/skin-v17-dark-home.jpg)；会话页 [浅色](img/skin-v17-light-chat.jpg) / [深色](img/skin-v17-dark-chat.jpg)；设置面板 [浅色](img/skin-v17-light-settings.jpg) / [深色](img/skin-v17-dark-settings.jpg)；开场覆盖层 [浅色](img/skin-v17-light-boot.jpg) / [深色](img/skin-v17-dark-boot.jpg)；v1.7.2 选中态复验 [侧栏胶囊](img/skin-v172-nav-pill.jpg) / [顶栏胶囊](img/skin-v172-tab-pill.jpg)。
 
 ## 2. Design principles
 
@@ -485,7 +485,7 @@ components:
 - Responsive 清单未实现（无 media query）；幽灵数字隐藏、斜纹减淡目前只是约定。
 - 胶片孔母题未落地为组件，只在 boot 扫描线中暗示。
 - 深色 text-3 .40 与浅色 .42 的不一致未统一；部分控件存在 .34/.44/.50 等中间透明度，尚未收敛为 token。
-- 未验证：移动端触控（voice 26px 是否过小）、boot 视频滤镜在低性能机上的开销。键盘 focus 已在 v1.7.1 专项验证：附件缩略图内嵌环完整，但尚未逐控件走完整链路。
+- 未验证：移动端触控（voice 26px 是否过小）、boot 视频滤镜在低性能机上的开销。键盘 focus 已在 v1.7.1 专项验证：附件缩略图内嵌环完整，但尚未逐控件走完整链路。选中态边线在胶囊圆角上的退化已在 v1.7.2 专项验证并写入 §15。
 
 ## 14. 设计 token ↔ 宿主变量映射
 
@@ -522,7 +522,7 @@ components:
 
 > 口径：宿主变量是「机制」，本文 token 是「设计意图」。同名映射之外的场景以 §3 的面积纪律为准，不以变量名为准。
 
-## 15. v1.7.1 修整（设计侧记录）
+## 15. v1.7.1 / v1.7.2 修整（设计侧记录）
 
 v1.7.0 上线后按用户截图修了 6 类回归，其中 4 条改的是「设计纪律」而不是单纯 bug，后续改皮肤必须遵守：
 
@@ -532,11 +532,19 @@ v1.7.0 上线后按用户截图修了 6 类回归，其中 4 条改的是「设�
 4. **token 覆盖要能撤销。** `theme.overrideTokens` 返回 disposer；静态客户端插件不会自动清理，必须自己 `ctx.effect` 释放，否则禁用插件后宿主仍被 44 个 `--dsw-*` 变量染色。
 5. 装饰层（boot 左上角小标、kicker 染色）不比原生信息重要：用户嫌「突兀」就删，不要为了「像 ZZZ」加戏。
 
+### v1.7.2：选中态只用底色
+
+v1.7.2 的两处修复都是「边线装饰放错了形状」：
+
+1. **不在 999px 胶囊上叠加 `inset` 边线或下划线。** 直边装饰遇到大圆角会退化成弧：v1.7.0 侧栏 active 的 `box-shadow:inset 2px 0 0 var(--fz3-lime)` 在胶囊左端被切成青柠月牙。选中态只用底色（纸白 / 青柠 12%），左划线只留给 **6px 圆角的列表行**（会话行 `.wnFoaW_sessionRow` 是正确用法）。
+2. **宿主自带的选中指示要显式关掉。** 顶栏 tab 的选中不只靠底色，宿主还有 `.an3WzG_tabActive::after` 的 2px 商业色下划线；皮肤把商业色映射成青柠后，下划线从纸白胶囊下缘露出一截。只给胶囊加底色不够，必须同时 `::after{display:none}`。
+3. 与官网对齐的结论：官网顶栏 active tab 就是 **一颗纯纸白胶囊**（无竖线、无下划线），这是本皮肤选中态唯一正确的语法。
+
 ### 验证快照（v1.7.1，深色，1624×1042）
 
 - 欢迎页：![v171 home](img/skin-v171-dark-home.jpg)
 - 附件缩略图焦点（内嵌环，右侧为移除按钮）：![v171 thumb focus](img/skin-v171-dark-thumb.jpg)
-- 插件页关闭再启用后（无覆盖层重播、侧栏选中行为纸白胶囊 + 左端青柠弧）：![v171 plugin on](img/skin-v171-dark-plugin-on.jpg)
+- 插件页关闭再启用后（无覆盖层重播、侧栏选中行为纯纸白胶囊，v1.7.1 截图里的左端青柠弧已在 v1.7.2 移除）：![v171 plugin on](img/skin-v171-dark-plugin-on.jpg)
 
 ## 16. 截图索引
 
@@ -554,4 +562,5 @@ v1.7.0 上线后按用户截图修了 6 类回归，其中 4 条改的是「设�
 - 官网表达层参考：[ref-zzz-main-00](img/ref-zzz-main-00.jpg) 至 [ref-zzz-main-06](img/ref-zzz-main-06.jpg)（1440×900 七屏，取青柠、白胶囊、斜切、幽灵字、Impact 编号）。
 - wiki 工作层参考：[ref-wiki-home-00](img/ref-wiki-home-00.jpg) 至 [ref-wiki-home-04](img/ref-wiki-home-04.jpg)（1440×900 五屏，取三层黑面板、1px 描边、// 小标、黄色选中胶囊）。
 - v1.7.1 修整快照：[深色欢迎页](img/skin-v171-dark-home.jpg) / [缩略图焦点环](img/skin-v171-dark-thumb.jpg) / [插件页重启用](img/skin-v171-dark-plugin-on.jpg)（见 §15）。
+- v1.7.2 选中态快照（2560×1440 桌面实例，物理像素）：[深色会话页](img/skin-v172-dark-home.jpg) / [侧栏 active 胶囊](img/skin-v172-nav-pill.jpg) / [顶栏 active tab](img/skin-v172-tab-pill.jpg)。
 - 实现参考：皮肤样式全文见 [skin/wire-net-terminal.css](skin/wire-net-terminal.css)；宿主 DOM/类名清单见 [research/host-classes.json](research/host-classes.json)。
