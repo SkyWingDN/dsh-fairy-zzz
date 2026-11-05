@@ -1,5 +1,5 @@
 ---
-version: 1.7.0
+version: 1.7.1
 name: 绳网终端 / WIRE-NET TERMINAL
 description: >-
   《绝区零》官网的表达层语法（纸白/墨黑、荧光青柠 #d8fa00、斜切块、Impact 数字、白胶囊 active）
@@ -474,7 +474,7 @@ components:
 - **theme.overrideTokens 共 41 键 × 2 主题**（交接写 40，实测 41）：① 基础面 4（bg-base / layer-1 / layer-2 / overlay）；② 描边 4（border-l1..l4）；③ 文本 4（label-primary…quaternary）；④ 交互 2（interactive-bg-hover / -hover-solid）；⑤ 状态 6（state-error/idle/success/warn/business-primary + business-tertiary）；⑥ 按钮 3（button-elevated-fill / info-fill / info-hover）；⑦ 专属 6（specific-sidebar-fill / bubble / input-major / selector / sidebar-nav-item-active / -hover）；⑧ 滚动与代码 3（scrollbar-bg-l2 / scrollbar-hover-l2 / markdown-code-block）；⑨ 阴影 2（elevation-soft / prominent）；⑩ 圆角 6（xl / panel / lg / md / sm / xs）。**风险**：--dsw-alias-brand-primary 被改写为青柠/橄榄，会影响所有引用 brand 的宿主与第三方插件，升级时需优先核对。
 - **主题驱动**：html[data-fz3-theme="light"|"dark"] 由插件写值；两套 token 分别位于 :root 与 html[data-fz3-theme="light"]（skin L9–31）。宿主自身主题类不参与决策，避免双写冲突。
 - **浅色保留墨黑侧栏的理由**：① v17 截图像素实测侧栏 #111111；② 官网浅色子页仍有纯黑 header/footer，黑 chrome 是固定语法；③ 纸面主区 + 墨黑侧栏形成「印刷品嵌进监视器」的叙事；④ 侧栏不再出现青柠/纸白大面，长时工作更稳。
-- **焦点与滚动**：:focus-visible = 2px rgba(216,250,0,.75) 外描边 + offset 2（浅色改 #101110）；滚动条 8px、radius 999、thumb 青柠 42%（浅色墨 26%）、2px 透明 border + background-clip；::selection 深色青柠底 ink 字 / 浅色墨底青柠字；caret 颜色随青柠。
+- **焦点与滚动**：:focus-visible = 2px rgba(216,250,0,.75) 外描边 + offset 2（浅色改 #101110）；**例外**：附件缩略图（`[class*="_thumbnail"]`）在 64px 高的 overflow 横条内，外环会被上下裁成两条竖条，故改 `outline-offset:-2px` 内嵌环；缩略图本体 = 墨黑底 + 1px rgba(255,255,255,.14) 描边，hover 描边转青柠，移除按钮 = 墨黑底 + 青柠描边 + 纸白图标（浅色反相）；滚动条 8px、radius 999、thumb 青柠 42%（浅色墨 26%）、2px 透明 border + background-clip；::selection 深色青柠底 ink 字 / 浅色墨底青柠字；caret 颜色随青柠。
 - **不改布局变量**：不覆盖 --dsh-chat-content-width、--dsh-composer-card-max-width、--dsh-sidebar-inline-padding，让宿主继续负责宽度与断点。
 
 ## 13. Known gaps
@@ -485,7 +485,7 @@ components:
 - Responsive 清单未实现（无 media query）；幽灵数字隐藏、斜纹减淡目前只是约定。
 - 胶片孔母题未落地为组件，只在 boot 扫描线中暗示。
 - 深色 text-3 .40 与浅色 .42 的不一致未统一；部分控件存在 .34/.44/.50 等中间透明度，尚未收敛为 token。
-- 未验证：移动端触控（voice 26px 是否过小）、键盘全链路 focus 顺序、boot 视频滤镜在低性能机上的开销。
+- 未验证：移动端触控（voice 26px 是否过小）、boot 视频滤镜在低性能机上的开销。键盘 focus 已在 v1.7.1 专项验证：附件缩略图内嵌环完整，但尚未逐控件走完整链路。
 
 ## 14. 设计 token ↔ 宿主变量映射
 
@@ -522,7 +522,23 @@ components:
 
 > 口径：宿主变量是「机制」，本文 token 是「设计意图」。同名映射之外的场景以 §3 的面积纪律为准，不以变量名为准。
 
-## 15. 截图索引
+## 15. v1.7.1 修整（设计侧记录）
+
+v1.7.0 上线后按用户截图修了 6 类回归，其中 4 条改的是「设计纪律」而不是单纯 bug，后续改皮肤必须遵守：
+
+1. **覆盖要最小化。** 设置弹窗 v1.7.0 覆写了 width / height / padding / border / font-size，结果按钮位置错位。现在只换 background + box-shadow，导航分栏线用 `box-shadow: inset -1px 0` 代替 border，几何（800×800 / 188px nav / 40px 行高 / 54px header）全部归还宿主。→ 皮肤只负责「颜色、描边、圆角、字体、装饰」，布局尺寸与断点归宿主。
+2. **外扩焦点环有边界条件。** 全局 `:focus-visible` 的 offset 2 在 overflow 容器边缘会被裁剪（表现为两条竖条）。凡是 64px 级小控件（缩略图、徽章）一律用内嵌环 `outline-offset:-2px`。
+3. **覆盖层必须是一次性的。** 开机 / 问候覆盖层是整屏半透明层，只要在用户已经进入工作态后重播，就会给整屏染色（用户看到的是「UI 颜色错误」）。`bootPlayed` 必须存到 window（模块级变量在插件 disable→enable 后会重置）。
+4. **token 覆盖要能撤销。** `theme.overrideTokens` 返回 disposer；静态客户端插件不会自动清理，必须自己 `ctx.effect` 释放，否则禁用插件后宿主仍被 44 个 `--dsw-*` 变量染色。
+5. 装饰层（boot 左上角小标、kicker 染色）不比原生信息重要：用户嫌「突兀」就删，不要为了「像 ZZZ」加戏。
+
+### 验证快照（v1.7.1，深色，1624×1042）
+
+- 欢迎页：![v171 home](img/skin-v171-dark-home.jpg)
+- 附件缩略图焦点（内嵌环，右侧为移除按钮）：![v171 thumb focus](img/skin-v171-dark-thumb.jpg)
+- 插件页关闭再启用后（无覆盖层重播、侧栏选中行为纸白胶囊 + 左端青柠弧）：![v171 plugin on](img/skin-v171-dark-plugin-on.jpg)
+
+## 16. 截图索引
 
 - 皮肤（欢迎页）：[浅色](img/skin-v17-light-home.jpg) / [深色](img/skin-v17-dark-home.jpg)（1624×1042，含侧栏、欢迎页、composer、幽灵 05）。
 
@@ -537,4 +553,5 @@ components:
 - 皮肤（开场覆盖层）：[浅色](img/skin-v17-light-boot.jpg) / [深色](img/skin-v17-dark-boot.jpg)。
 - 官网表达层参考：[ref-zzz-main-00](img/ref-zzz-main-00.jpg) 至 [ref-zzz-main-06](img/ref-zzz-main-06.jpg)（1440×900 七屏，取青柠、白胶囊、斜切、幽灵字、Impact 编号）。
 - wiki 工作层参考：[ref-wiki-home-00](img/ref-wiki-home-00.jpg) 至 [ref-wiki-home-04](img/ref-wiki-home-04.jpg)（1440×900 五屏，取三层黑面板、1px 描边、// 小标、黄色选中胶囊）。
+- v1.7.1 修整快照：[深色欢迎页](img/skin-v171-dark-home.jpg) / [缩略图焦点环](img/skin-v171-dark-thumb.jpg) / [插件页重启用](img/skin-v171-dark-plugin-on.jpg)（见 §15）。
 - 实现参考：皮肤样式全文见 [skin/wire-net-terminal.css](skin/wire-net-terminal.css)；宿主 DOM/类名清单见 [research/host-classes.json](research/host-classes.json)。

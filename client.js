@@ -1221,6 +1221,10 @@ a{color:var(--fz3-cyan)!important;text-underline-offset:3px}
 pre,code,kbd,samp{font-family:var(--fz3-mono)!important}
 :focus-visible{outline:2px solid rgba(216,250,0,.75)!important;outline-offset:2px}
 html[data-fz3-theme="light"] :focus-visible{outline-color:#101110!important}
+/* 附件缩略图在宿主的 64px 高度 rail（overflow:hidden）里：外扩焦点环会被上下裁掉，只剩左右两条竖条。
+   缩略图改用内嵌焦点环（负 offset），环形仍完整可见且不撑开任何布局。 */
+[class*="_thumbnail"]:focus-visible{outline:2px solid rgba(216,250,0,.85)!important;outline-offset:-2px!important}
+html[data-fz3-theme="light"] [class*="_thumbnail"]:focus-visible{outline-color:#101110!important}
 
 /* ---------- B. 侧栏：墨黑底 + 纸白胶囊 ---------- */
 .wtg9ga_root{
@@ -1310,6 +1314,19 @@ html[data-fz3-theme="light"] .an3WzG_tabActive{background:#101110!important;colo
   color:rgba(242,242,238,.72)!important;
 }
 .GRgSLq_add:hover:not(:disabled){border-color:var(--fz3-lime)!important;color:var(--fz3-lime)!important;background:transparent!important}
+/* 附件缩略图：宿主默认的白圆 X 在墨卡里太跳，改成墨底青柠描边、悬停反色；缩略图描边统一成皮肤灰线 */
+.yTDIAG_thumbnail{border:1px solid rgba(255,255,255,.14)!important;background:#101210!important}
+.yTDIAG_thumbnail:hover{border-color:rgba(216,250,0,.55)!important}
+.yTDIAG_remove{
+  width:18px!important;height:18px!important;top:5px!important;right:5px!important;
+  background:#0b0c0a!important;color:#f2f2ee!important;
+  border:1px solid rgba(216,250,0,.60)!important;box-shadow:0 1px 4px rgba(0,0,0,.55)!important;
+}
+.yTDIAG_remove:hover,.yTDIAG_remove:focus-visible{background:var(--fz3-lime)!important;color:#0a0b08!important;border-color:var(--fz3-lime)!important}
+.yTDIAG_remove svg{color:inherit!important}
+html[data-fz3-theme="light"] .yTDIAG_thumbnail{border-color:rgba(16,17,16,.18)!important;background:#e8e8e2!important}
+html[data-fz3-theme="light"] .yTDIAG_remove{background:#f7f7f3!important;color:#101110!important;border-color:rgba(16,17,16,.55)!important}
+html[data-fz3-theme="light"] .yTDIAG_remove:hover,html[data-fz3-theme="light"] .yTDIAG_remove:focus-visible{background:#101110!important;color:#f7f7f3!important;border-color:#101110!important}
 /* 工具 chips：等宽小胶囊 */
 .WOwLGG_workspace,.m2hUqa_seat,._86kJGG_trigger,._9r0rkG_trigger{
   border-radius:999px!important;font-family:var(--fz3-mono)!important;font-size:11px!important;letter-spacing:.03em;
@@ -1368,24 +1385,22 @@ html[data-fz3-theme="light"] .LOmM4q_bubble *{color:#f5f5f0!important}
 html[data-fz3-theme="light"] [data-slot="main.conversation"]{color:#101110}
 
 /* ---------- G. 设置弹窗：wiki 监控台面板 ---------- */
+/* 只换色，不动宿主的 800×800 网格、188px 导航列、54px 标题行与 40px 导航项几何：
+   分隔线用 inset box-shadow 画，避免 border 把宿主尺寸顶开 1px。 */
 .AnXs9G_panel{
-  width:min(880px,92vw)!important;height:auto!important;max-height:min(780px,86vh)!important;
-  border-radius:20px!important;border:1px solid rgba(255,255,255,.10)!important;
   background:#1b1d1b!important;box-shadow:0 0 0 1px rgba(0,0,0,.55),0 40px 90px -44px rgba(0,0,0,.95)!important;
-  overflow:hidden;
 }
-.AnXs9G_nav{border-right:1px solid rgba(255,255,255,.08)!important;padding:18px 12px!important}
-.AnXs9G_navTitle{font-family:var(--fz3-mono)!important;font-size:12px!important;letter-spacing:.18em!important;color:rgba(242,242,238,.50)!important;padding-left:12px}
-.AnXs9G_navCell{border-radius:6px!important;color:rgba(242,242,238,.62)!important;font-size:13px!important}
+.AnXs9G_nav{box-shadow:inset -1px 0 0 rgba(255,255,255,.08)!important}
+.AnXs9G_navTitle{font-family:var(--fz3-mono)!important;letter-spacing:.18em!important;color:rgba(242,242,238,.50)!important}
+.AnXs9G_navCell{color:rgba(242,242,238,.62)!important}
 .AnXs9G_navCell:hover{background:rgba(255,255,255,.06)!important}
 .AnXs9G_navCell.AnXs9G_active{background:var(--fz3-lime)!important;color:#0a0b08!important;font-weight:700!important}
 .AnXs9G_navCell.AnXs9G_active *{color:#0a0b08!important}
-.AnXs9G_header{height:58px!important;border-bottom:1px solid rgba(255,255,255,.08)!important;padding:0 20px!important}
-.AnXs9G_content{padding:20px 24px!important}
-.AnXs9G_close{border-radius:6px!important;color:rgba(242,242,238,.6)!important}
+.AnXs9G_header{box-shadow:inset 0 -1px 0 rgba(255,255,255,.08)!important}
+.AnXs9G_close{color:rgba(242,242,238,.6)!important}
 .AnXs9G_close:hover{background:rgba(255,255,255,.08)!important;color:#fff!important}
-html[data-fz3-theme="light"] .AnXs9G_panel{background:#fff!important;border-color:rgba(16,17,16,.18)!important;box-shadow:14px 14px 0 rgba(16,17,16,.10)!important}
-html[data-fz3-theme="light"] .AnXs9G_nav{border-right-color:rgba(16,17,16,.12)!important}
+html[data-fz3-theme="light"] .AnXs9G_panel{background:#fff!important;box-shadow:14px 14px 0 rgba(16,17,16,.10)!important}
+html[data-fz3-theme="light"] .AnXs9G_nav{box-shadow:inset -1px 0 0 rgba(16,17,16,.12)!important}
 html[data-fz3-theme="light"] .AnXs9G_navTitle{color:rgba(16,17,16,.50)!important}
 html[data-fz3-theme="light"] .AnXs9G_navCell{color:rgba(16,17,16,.62)!important}
 html[data-fz3-theme="light"] .AnXs9G_navCell.AnXs9G_active,html[data-fz3-theme="light"] .AnXs9G_navCell.AnXs9G_active *{color:#0a0b08!important}
@@ -1394,7 +1409,7 @@ html[data-fz3-theme="light"] .AnXs9G_navCell.AnXs9G_active,html[data-fz3-theme="
 ._6qcDqa_linkButton._6qcDqa_primary{background:var(--fz3-lime)!important;color:#0a0b08!important;font-weight:700!important;border-radius:999px!important}
 ._6qcDqa_linkButton._6qcDqa_primary:hover{background:#e6ff52!important;color:#0a0b08!important}
 html[data-fz3-theme="light"] .AnXs9G_navCell:hover{background:rgba(16,17,16,.05)!important}
-html[data-fz3-theme="light"] .AnXs9G_header{border-bottom-color:rgba(16,17,16,.12)!important}
+html[data-fz3-theme="light"] .AnXs9G_header{box-shadow:inset 0 -1px 0 rgba(16,17,16,.12)!important}
 html[data-fz3-theme="light"] .AnXs9G_close{color:rgba(16,17,16,.6)!important}
 html[data-fz3-theme="light"] .AnXs9G_close:hover{background:rgba(16,17,16,.06)!important;color:#101110!important}
 ._button_1rv3m_2,._button_1rv3m_2:is(:hover,:focus-visible){border-radius:999px!important}
@@ -1461,19 +1476,7 @@ html[data-fz3-theme="light"] .fz3-bubble-sub{color:rgba(16,17,16,.44)!important}
     repeating-linear-gradient(0deg,rgba(0,0,0,.30) 0 1px,transparent 1px 3px),
     radial-gradient(120% 96% at 50% 50%,transparent 46%,rgba(0,0,0,.72) 100%)!important;
 }
-.fz3-boot::before{
-  content:"// H.D.D. NORTH SEEK DATA SYSTEM";position:absolute;left:26px;top:22px;z-index:3;
-  font-family:var(--fz3-mono);font-size:10px;font-weight:600;letter-spacing:.30em;
-  color:rgba(216,250,0,.62);pointer-events:none;
-}
 .fz3-boot-sound{color:rgba(216,250,0,.78)!important;font-family:var(--fz3-mono)!important;letter-spacing:.24em!important}
-.fz3-copy-kicker{
-  color:rgba(216,250,0,.90)!important;font-family:var(--fz3-mono)!important;letter-spacing:.38em!important;
-  text-shadow:0 1px 2px rgba(0,0,0,.72)!important;
-}
-.fz3-copy-title{color:#f4f4ef!important;text-shadow:0 0 30px rgba(216,250,0,.22),0 2px 0 rgba(0,0,0,.42)!important}
-.fz3-copy-title::after{opacity:.16!important}
-.fz3-copy-title-zh{color:rgba(216,250,0,.85)!important;font-family:var(--fz3-mono)!important;text-shadow:none!important;letter-spacing:.30em!important}
 .fz3-copy-lines{color:#efefec!important;text-shadow:0 2px 16px rgba(0,0,0,.65)!important}
 .fz3-copy-sub{color:rgba(242,242,238,.42)!important;font-family:var(--fz3-mono)!important}
 .fz3-skip2{color:rgba(216,250,0,.62)!important;font-family:var(--fz3-mono)!important;letter-spacing:.22em!important}
@@ -2050,8 +2053,14 @@ button,a,[role="button"],[role="treeitem"]{transition-duration:.14s!important}
 
     /* 待机小动作全部移入上面的单相位运行时；这里只负责把舞台 DOM 交给它。 */
     const bootHooks = new Set()
-    /* shell.overlay 重挂载（路由切换/设置页刷新）不应该再播一遍开机 + 问候 */
-    let bootPlayed = false
+    /* shell.overlay 重挂载（路由切换/设置页刷新）不应该再播一遍开机 + 问候；
+       插件被禁用后再启用会重新求值本模块，所以标记必须挂在 window 上（整页刷新即清除）。 */
+    const BOOT_FLAG = '__fz3BootPlayed'
+    let bootPlayed = (() => { try { return Boolean(window[BOOT_FLAG]) } catch (e) { return false } })()
+    const markBootPlayed = (v) => {
+      bootPlayed = v
+      try { window[BOOT_FLAG] = v } catch (e) {}
+    }
 
     /* memo：FairySkin 会因为阶段/情绪/语音状态重渲染，眼睛本身（4 份分层 SVG + 5 份花屏克隆 + 脉冲环）不需要跟着重渲染。 */
     const CoreGlyph = React.memo(function CoreGlyph({ mood }) {
@@ -3197,12 +3206,12 @@ function BubbleCard({ data, onMeasure, onFlip }) {
 
       const toGreet = useCallback(() => {
         stopSpeech()
-        bootPlayed = true
+        markBootPlayed(true)
         setPhase('greet')
       }, [])
 
       const toDock = useCallback(() => {
-        bootPlayed = true
+        markBootPlayed(true)
         setPhase('dock')
         setNeedTap(false)
         autoArmAt = Date.now() + 2600
@@ -3480,7 +3489,7 @@ function BubbleCard({ data, onMeasure, onFlip }) {
       useEffect(() => {
         const fn = () => {
           stopSpeech()
-          bootPlayed = false
+          markBootPlayed(false)
           setPhase('boot')
         }
         bootHooks.add(fn)
@@ -3635,7 +3644,17 @@ function BubbleCard({ data, onMeasure, onFlip }) {
 
         guard('tokens', () => {
           const theme = ctx.get && ctx.get('theme')
-          if (theme && typeof theme.overrideTokens === 'function') theme.overrideTokens(PKG, TOKENS)
+          if (!theme || typeof theme.overrideTokens !== 'function') return
+          const dispose = theme.overrideTokens(PKG, TOKENS)
+          /* 静态客户端插件不在宿主 dynamicCordisPackageRunner 的 guardedTheme 自动清理范围内：
+             宿主只对动态加载的包把 overrideTokens 的 disposer 挂到 ctx.effect。这里必须自己
+             登记释放，否则插件被禁用 / 热重载卸载后，--dsw-* token 会永久残留在 document.body
+             上（宿主按钮、开关、文件夹图标继续发青柠光）。 */
+          if (typeof dispose === 'function' && ctx && typeof ctx.effect === 'function') {
+            ctx.effect(() => () => {
+              try { dispose() } catch {}
+            })
+          }
         })
 
         guard('theme-watch', () => {
