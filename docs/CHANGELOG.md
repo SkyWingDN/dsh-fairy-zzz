@@ -13,6 +13,7 @@
 
 ### 变更
 
+- **可以 npm 安装**：发布为 `@sky_wing_dn/dsh-fairy-zzz`（npm 上原 `dsh-fairy-zzz` 属于上游作者），一条 `dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz` 就能装。
 - **外观暂时固定深色**：浅色版还没做完，本版起不再跟随宿主主题切换（浅色覆盖保留，恢复时改一处判断即可）。
 - 设置页语音引擎两张卡合并成一张；未保存时行内提示当前生效的目录。
 - 眼徽复位改为双击右键；开机收拢与拖动 / 复位共用同一条 1.35s 曲线。

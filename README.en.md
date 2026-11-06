@@ -9,6 +9,7 @@ Boot animation → greeting → docked eye badge, plus a "Wire-Net Terminal" hos
 [中文](README.md) · [Changelog](docs/CHANGELOG.md) · [Technical notes](docs/TECHNICAL.md) · [Performance report](docs/PERFORMANCE.md)
 
 ![version](https://img.shields.io/badge/version-1.7.5-D8FA00?style=flat-square&labelColor=101110)
+![npm](https://img.shields.io/npm/v/@sky_wing_dn%2Fdsh-fairy-zzz?style=flat-square&labelColor=101110&color=D8FA00)
 ![license](https://img.shields.io/badge/license-MIT-101110?style=flat-square)
 ![platform](https://img.shields.io/badge/DSH-Desktop%20%26%20Web-101110?style=flat-square)
 ![deps](https://img.shields.io/badge/runtime%20deps-0-101110?style=flat-square)
