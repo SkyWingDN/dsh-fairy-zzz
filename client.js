@@ -1073,7 +1073,7 @@ html[data-fz3-phase="dock"] .fz3-atmos{mix-blend-mode:normal}
  * 其余新增规则全部是静态声明，没有常驻动画。
  * ================================================================== */
 
-/* ---------- 浅色主题：宿主切浅色时 <html data-fz3-theme="light"> ---------- */
+/* ---------- 浅色主题（v1.7.5 起未启用：theme-watch 固定写 dark，这份覆盖暂时走不到） ---------- */
 :root[data-fz3-theme="light"]{--fz3-cyan:#2f62e0;--fz3-text:#151b2f;color-scheme:light}
 html[data-fz3-theme="light"],html[data-fz3-theme="light"] body{background:#eef3fc!important;color-scheme:light;color:var(--fz3-text)}
 html[data-fz3-theme="light"] body::before{
@@ -3678,37 +3678,14 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
         })
 
         guard('theme-watch', () => {
-          /* 外观不再提供设置项：始终跟随 DSH 的深色 / 浅色设置。
-             probeLight 先问 theme.getTheme()，取不到就量 --dsw-alias-bg-base 亮度，再退回系统偏好；
-             只切 <html data-fz3-theme>，CSS 侧全部是静态覆盖；观察 html 属性时做 260ms 去抖，
-             宿主频繁改 style 也不会把回调打成风暴。 */
+          /* v1.7.5 起外观固定深色：浅色版还没做完，先不跟随宿主切换。
+             只把 <html data-fz3-theme> 钉在 dark —— 浅色覆盖全靠这个属性，不写就是深色；
+             宿主切主题会改 html 属性，所以留 260ms 去抖的观察兜底，把属性重新钉回去。
+             要恢复跟随：把 apply 换回按 theme.getTheme() 判深浅的版本即可，CSS 侧不用动。 */
           if (typeof document === 'undefined') return
           const root = document.documentElement
-          const probeLight = () => {
-            try {
-              const theme = ctx.get && ctx.get('theme')
-              const active = theme && typeof theme.getTheme === 'function' ? theme.getTheme() : null
-              const id = active && active.active ? String(active.active.id || '') : ''
-              if (id) {
-                if (/light|snow|day/i.test(id)) return true
-                if (/dark|night|midnight/i.test(id)) return false
-              }
-            } catch (e) {}
-            try {
-              /* 兜底：量一下宿主实际刷上的 --dsw-alias-bg-base 亮度 */
-              const probe = document.createElement('div')
-              probe.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;pointer-events:none;background:var(--dsw-alias-bg-base)'
-              document.body.appendChild(probe)
-              const value = getComputedStyle(probe).backgroundColor || ''
-              probe.remove()
-              const m = value.match(/rgba?\((\d+)[,\s]+(\d+)[,\s]+(\d+)/)
-              if (m) return (Number(m[1]) * 299 + Number(m[2]) * 587 + Number(m[3]) * 114) / 1000 > 140
-            } catch (e) {}
-            try { return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) } catch (e) { return false }
-          }
           const apply = () => {
-            const pick = probeLight() ? 'light' : 'dark'
-            if (root.dataset.fz3Theme !== pick) root.dataset.fz3Theme = pick
+            if (root.dataset.fz3Theme !== 'dark') root.dataset.fz3Theme = 'dark'
           }
           apply()
           let timer = null
@@ -3719,24 +3696,11 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
               apply()
             }, 260)
           }
-          const media = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null
-          if (media) {
-            if (typeof media.addEventListener === 'function') media.addEventListener('change', soon)
-            else if (typeof media.addListener === 'function') media.addListener(soon)
-          }
-          /* 宿主切主题会改 html 属性并触发 theme/change，两条路都重新探一次 */
           const observer = new MutationObserver(soon)
-          observer.observe(root, { attributes: true, attributeFilter: ['style', 'class', 'data-theme', 'data-color-scheme'] })
-          if (ctx && typeof ctx.on === 'function') {
-            try { ctx.on('theme/change', soon) } catch (e) {}
-          }
+          observer.observe(root, { attributes: true, attributeFilter: ['style', 'class', 'data-theme', 'data-color-scheme', 'data-fz3-theme'] })
           if (ctx && typeof ctx.effect === 'function') {
             ctx.effect(() => () => {
               if (timer) clearTimeout(timer)
-              if (media) {
-                if (typeof media.removeEventListener === 'function') media.removeEventListener('change', soon)
-                else if (typeof media.removeListener === 'function') media.removeListener(soon)
-              }
               observer.disconnect()
             })
           }
