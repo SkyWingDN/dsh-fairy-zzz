@@ -165,7 +165,7 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
 | GET | `/fairy-zzz/health` | `{ ok, engine, voice, speed, home }` |
 | GET | `/fairy-zzz/mood` | `idle` / `thinking` / `working` / `done`（以宿主 Agent 注册表为准） |
 | GET/POST | `/fairy-zzz/voice-home` | 读取 / 保存 / 校验引擎目录 |
-| GET/POST | `/fairy-zzz/engine` | 引擎进程状态；`{ action: "start" }\|{ action: "stop" }` |
+| GET/POST | `/fairy-zzz/engine` | 引擎进程状态；`{ action: "start" }` / `{ action: "stop" }` |
 | GET | `/fairy-zzz/usage` | 电费余额 / 今日电费 / 倍率倒计时 |
 
 静态资源带强 ETag 与 304 协商缓存，`cache/` 下的合成音频为一年 immutable；`/mood`、`/engine`、`/voice-home`、`/usage` 有 300–3000ms 记忆化（`?diag=1` 绕过）。
