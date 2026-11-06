@@ -106,6 +106,10 @@ Requires DeepSeek Harness (desktop app or `dsh web`). The plugin only uses host-
 dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
 ```
 
+That is the npm route: DSH forwards it to pnpm inside the profile directory, so the package is pulled from `registry.npmjs.org` into `~/.dsh/profiles/<profile>/node_modules` and its name is registered in `dsh.profile.bundles`.
+
+DSH only looks at dependencies inside the profile — **do not** use `npm install` or `npm i -g`, which would land in the current directory or globally where the host never looks.
+
 Fully quit and reopen DSH afterwards (tray icon included) — the host half only reloads on restart. After that, skin changes just need a page refresh.
 
 ### 2. Install from source

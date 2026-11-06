@@ -106,6 +106,10 @@ dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
 dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
 ```
 
+这条命令就是「从 npm 装」：DSH 把它转交给 pnpm，在 profile 目录里执行 `pnpm add`，包体从 `registry.npmjs.org` 下载，装进 `~/.dsh/profiles/<profile>/node_modules`，同时把包名登记进 `dsh.profile.bundles`。
+
+DSH 只认 profile 里的依赖，所以**不要**用 `npm install` / `npm i -g`——那会装到当前目录或全局，宿主看不到。
+
 装完**完全退出并重开 DSH**（托盘图标也要退）——宿主插件要重新加载；之后改皮肤只需刷新页面。
 
 ### 方式二：从源码装
