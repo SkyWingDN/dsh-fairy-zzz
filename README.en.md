@@ -51,7 +51,7 @@ Since v1.1.0 the rendering, placement, voice and skin paths have largely been re
 
 Full third-party license texts live in [licenses/](licenses/); per-item attribution in [NOTICE-fairy-dsh.md](NOTICE-fairy-dsh.md).
 
-> **Status**: a solo hobby project, still rough around the edges. Beyond living on GitHub and npm, it has not been announced anywhere. The plugin itself was built with DSH — code, verification, docs and releases all happened inside DSH sessions, so it is a tool patching the tool it was made with. Issues are welcome, but replies come as time allows.
+> **Status**: a solo hobby project, built with DSH itself and still unfinished. Beyond living on GitHub and npm, it has not been announced anywhere; issues are welcome, but replies come as time allows.
 
 ## Screenshots
 
