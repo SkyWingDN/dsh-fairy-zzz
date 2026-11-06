@@ -25,15 +25,32 @@ It is not a pure theme pack. The plugin ships a small host half too: static asse
 
 **Zero runtime dependencies.** The host half only uses Node built-ins; the client half is a single hand-written ESM file with no bundler and no `node_modules`.
 
+## Credits
+
+This plugin started from [AssassinVIX/fairy-zzz-plugin](https://github.com/AssassinVIX/fairy-zzz-plugin) (MIT, video [BV1d4HK6eE3g](https://www.bilibili.com/video/BV1d4HK6eE3g)). Thanks to the original author for packaging the H.D.D skin, the boot video and the greeting recordings into a plugin that ran out of the box — without that starting point none of the later work would have had anywhere to land.
+
+Since v1.1.0 the rendering, placement, voice and skin paths have largely been rewritten; what still comes straight from upstream is the plugin skeleton, the H.D.D skin concept, the boot video with its audio, and 5 base greeting recordings. The eye glyph artwork and its motion geometry come from [Chengzhibense/Fairy-DSH](https://github.com/Chengzhibense/Fairy-DSH) (Apache-2.0, reference video BV1SD4C63EZz) — thanks there too. Where the rest comes from:
+
+| Part | Origin |
+| --- | --- |
+| Plugin skeleton, H.D.D skin concept, boot video and its audio, 5 base greeting recordings | AssassinVIX/fairy-zzz-plugin (MIT) |
+| Eye glyph artwork, motion geometry and timings | Chengzhibense/Fairy-DSH (Apache-2.0) |
+| Performance layer (rAF → CSS timelines, static eyelid, no per-frame filters, asset compression, ETag/304) | This repo, v1.1 – v1.6 |
+| Greeting library expansion (4 extra lines per slot, 20 in total) and the voice pipeline | This repo, v1.4 |
+| Eye runtime (single SVG + 15 fps vector redraw, gaze drift, dock placement and dragging) | This repo, v1.5 – v1.6 |
+| "Wire-Net Terminal" host skin | This repo, v1.7.0 |
+| Fee readout, letter wall, badge gestures, one-shot completion animation | This repo, v1.7.5 |
+| `scripts/build-client.mjs` (single-source skin CSS inlining) | This repo, v1.7.1 |
+
+Full third-party license texts live in [licenses/](licenses/); per-item attribution in [NOTICE-fairy-dsh.md](NOTICE-fairy-dsh.md).
+
 ## Screenshots
 
 | Greeting | Eye states |
 | --- | --- |
 | ![Greeting](screenshots/02-greet.png) | ![Eye states](screenshots/03-eye-states.png) |
 
-| Dark conversation | Light theme |
-| --- | --- |
-| ![Dark conversation](docs/img/skin-v17-dark-chat.jpg) | ![Light theme](docs/img/skin-v17-light-chat.jpg) |
+> Screenshots come from an earlier build; details differ slightly from the current skin. The current Wire-Net Terminal look is specified in [docs/UI-DESIGN.md](docs/UI-DESIGN.md) and [docs/skin/](docs/skin/).
 
 ## Features
 
@@ -54,7 +71,7 @@ It is not a pure theme pack. The plugin ships a small host half too: static asse
 **Wire-Net Terminal skin (since v1.7.0)**
 
 - The host shell redrawn in the Zenless Zone Zero site language: paper white / ink black, fluorescent lime, cut corners, Impact numerals, white pills.
-- Dark and light variants; it **always follows the DSH theme** and has no separate switch.
+- Dark only for now: the light variant is unfinished, so since v1.7.5 the appearance is pinned to dark and no longer follows the host theme.
 - Pure static CSS plus token overrides — no new React components, no new animation layers. Spec: [docs/UI-DESIGN.md](docs/UI-DESIGN.md).
 - Since v1.7.5 the `body` paints `assets/zzz-pattern.webp` as a letter wall with corner vignettes; intensity is `--fz3-wall-veil`.
 
@@ -63,7 +80,6 @@ It is not a pure theme pack. The plugin ships a small host half too: static asse
 - Three rows pinned above the sidebar footer: balance, today's spend, and the countdown to the next rate change; the last line spells out the billing windows.
 - Data comes from the host's `GET /fairy-zzz/usage`, which incrementally parses session logs: 20 s polling, one extra fetch 2.5 s before a rate switch, local per-second countdown.
 
-![Fee readout](docs/img/usage-readout.jpg)
 
 **Voice (optional)**
 
@@ -105,7 +121,7 @@ Copy the `insert` block from `cordis.patch.yml` into your profile's `cordis.patc
 powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
 ```
 
-`-Uninstall` removes it. The script also forces the dark theme; skip it if you want the skin to follow the system theme.
+`-Uninstall` removes it. The script also switches the DSH theme to dark; the skin is pinned to dark either way, so this only affects the rest of the host UI.
 
 > **Fully restart DSH** (not just refresh) to load the host half. After that, `client.js`-only changes need a page refresh; skin CSS changes go through method 2 plus a refresh.
 > `presets/fairy-mode.patch.yml` is an **optional** "Fairy mode" agent preset that depends on several `@deepseek-ai/dsh-*` plugins and is disabled by default.
@@ -238,23 +254,6 @@ The script locates the skin block through two markers and leaves every other han
 ## Changelog
 
 User-visible changes per release live in [docs/CHANGELOG.md](docs/CHANGELOG.md); implementation notes and trade-offs in [docs/TECHNICAL.md](docs/TECHNICAL.md).
-
-## Credits
-
-This repository started from [AssassinVIX/fairy-zzz-plugin](https://github.com/AssassinVIX/fairy-zzz-plugin) (MIT, video [BV1d4HK6eE3g](https://www.bilibili.com/video/BV1d4HK6eE3g)). Since v1.1.0 nearly every subsystem has been rewritten; what still comes straight from upstream is the plugin skeleton and a handful of assets.
-
-| Part | Origin |
-| --- | --- |
-| Plugin skeleton, H.D.D skin concept, boot video and its audio, 5 base greeting recordings | AssassinVIX/fairy-zzz-plugin (MIT) |
-| Eye glyph artwork, motion geometry and timings | [Chengzhibense/Fairy-DSH](https://github.com/Chengzhibense/Fairy-DSH) (Apache-2.0), reference video BV1SD4C63EZz |
-| Performance layer (rAF → CSS timelines, static eyelid, no per-frame filters, asset compression, ETag/304) | This repo, v1.1 – v1.6 |
-| Greeting library expansion (4 extra lines per slot, 20 in total) and the voice pipeline | This repo, v1.4 |
-| Eye runtime (single SVG + 15 fps vector redraw, gaze drift, dock placement and dragging) | This repo, v1.5 – v1.6 |
-| "Wire-Net Terminal" host skin | This repo, v1.7.0 |
-| Fee readout, letter wall, badge gestures, one-shot completion animation | This repo, v1.7.5 |
-| `scripts/build-client.mjs` (single-source skin CSS inlining) | This repo, v1.7.1 |
-
-Full third-party license texts live in [licenses/](licenses/); per-item attribution in [NOTICE-fairy-dsh.md](NOTICE-fairy-dsh.md).
 
 ## License
 

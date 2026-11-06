@@ -477,12 +477,16 @@ v1.6.0 的取舍：**单份 SVG，每 66.7ms 改写 `#corners` / `#fz3-lens` / `
 | `assets/poster.jpg` | 77,642 | 开机静态 poster（`boot-fill` 模糊铺底） |
 | `assets/hero.webp` | 23,014 | 1600×1017 q82 背景图 |
 | `assets/icon-180.png` | 32,158 | 插件图标 |
-| `assets/zzz-pattern.webp` | 30,356 | 1600×1746 字墙底纹（v1.7.5）：深色画布的背景层，浅色主题复用同一张、靠混合与蒙版压成纸灰 |
+| `assets/zzz-pattern.webp` | 30,356 | 1600×1746 字墙底纹（v1.7.5）：深色画布的背景层 |
 | `assets/voice/greet-*.mp3` | 合计 2,708,325（25 段：原 5 段 404,577 + 新增 20 段 2,303,748；v1.5.1 按原草稿重录后） | 预录问候：每个时段 5 条，按时段随机播放且不连续重复；`text` 是屏幕简洁版、音频是富文本台词，二者允许不一致 |
 | `screenshots/*.png` | 4 张 | README 用截图 |
-| `docs/img/*` | 39 个（基础对照 9 + 官网 / wiki 参考 12 + 皮肤期快照 17 + 电费读数 1） | 文档配图（见下）；`usage-bubble.jpg` 随点击气泡在 v1.7.5 删除，换成 `usage-readout.jpg` |
+| `docs/img/*` | 19 个（自绘对照 7 + 官网 / wiki 参考 12） | 文档配图（见下）。皮肤期快照、电费读数、GPU 前后对照共 20 张窗口截图在 v1.7.5 全部移除——它们都带着侧栏工作区名与会话标题（见 13.3） |
 
-`docs/img/` 实测大小：`before-after-dock-eye.png` 234,947；`gpu-attribution.png` 63,363；`gpu-before-after-dock.jpg` 169,122；`hero-brand-mark.png` 52,357；`theme-light.jpg` 38,464；`usage-readout.jpg` 18,801（v1.7.5 侧栏常驻电费读数）；`lid-edge-fix.png` 412,667（半闭眼白边修复前后对照，本版新增）；**`eye-lively-before-after.png`（眼球动效前后对比）与 `eye-layers.png`（眼球渲染管线示意）在 v1.6.0 按「单 SVG + 15fps 向量重绘」重绘**。
+`docs/img/` 实测大小：`before-after-dock-eye.png` 234,947；`eye-layers.png` 158,469；`eye-lively-before-after.png` 233,082；`gpu-attribution.png` 63,363（自绘柱状图）；`greet-lift-before-after.png` 619,931；`hero-brand-mark.png` 52,357；`lid-edge-fix.png` 412,667（半闭眼白边修复前后对照）；`ref-*.jpg` 12 张为官网 / wiki 截图。**`eye-lively-before-after.png`（眼球动效前后对比）与 `eye-layers.png`（眼球渲染管线示意）在 v1.6.0 按「单 SVG + 15fps 向量重绘」重绘**。
+
+### 13.3 截图规矩
+
+仓库里不放"整窗截图"：侧栏会带出工作区名、会话标题、电费余额这类私人信息。需要配图时只截三样：眼球本身、字标、自绘图表；确需整窗时用无账号的空白 profile 现拍，不拿日常窗口。
 
 ### 13.2 不发布的东西
 
@@ -672,10 +676,10 @@ getComputedStyle(document.querySelectorAll('#fz3-lid-rim')[0]).display  // 'none
 4. `fetch('/fairy-zzz/usage')` 断言 `status 200、ok:true`、keys 含 `now/peak/today/turn`、`peak.label` 有值。
 5. 读侧栏底部 `.fz3-bill` 的文本：应含「Fairyの电费」「电费余额」「今日电费」与倍率行；确认 `.fz3-bubble` 不存在（点击气泡已删除）；截图。
 6. 拖拽 6 步（x−40·i, y+14·i）→ 读 `--fz3-dock-x/y` 与 `localStorage['fairy.zzz.dock-pos']`、确认气泡关闭。
-7. 点两次「试听问候」→ 读 `.fz3-set-note` 里「刚刚试听：…」两行应不同（同一会话也不复用）；切换 DSH 深浅色 → 断言 `html.dataset.fz3Theme` 跟着变；设置页不应再有 `.fz3-set-seg`。
+7. 点两次「试听问候」→ 读 `.fz3-set-note` 里「刚刚试听：…」两行应不同（同一会话也不复用）；切换 DSH 深浅色 → 断言 `html.dataset.fz3Theme` 始终是 `dark`（v1.7.5 起固定深色，浅色覆盖暂时走不到）；设置页不应再有 `.fz3-set-seg`。
 8. 检查欢迎页标题 / 预览徽章文案（v1.3.0 改写）与 console 里 error / exception / warning 为零。
 
-产物截图：`docs/img/theme-light.jpg`（电费读数常驻侧栏底部，截窗口即可；点击气泡已删除，不再有气泡截图；拖动位置截图未入库）。
+产物截图：无。v1.7.5 起不再把整窗截图入库（见 13.3），文档配图只留眼球 / 字标 / 自绘图表。
 
 ### 16.3 host 自检
 

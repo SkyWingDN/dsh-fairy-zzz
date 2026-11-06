@@ -25,15 +25,32 @@
 
 **运行时零依赖**：宿主半边只用 Node 内置模块，客户端半边是一份手写 ESM，不经过打包器，也不需要 `node_modules`。
 
+## 来源与致谢
+
+这个插件的起点是 [AssassinVIX/fairy-zzz-plugin](https://github.com/AssassinVIX/fairy-zzz-plugin)（MIT 许可，B 站 [BV1d4HK6eE3g](https://www.bilibili.com/video/BV1d4HK6eE3g)）。感谢原作者把 H.D.D 皮肤、开机视频和问候语音整理成一套能直接跑起来的插件——有这个起手式，后面这些改动才有地方落脚。
+
+从 v1.1.0 起，渲染、定位、语音、皮肤几块基本都重写过，今天仍直接沿用上游的是插件骨架、H.D.D 皮肤概念、开机视频与开场音效、5 条基础问候录音。眼徽的美术与动效几何来自 [Chengzhibense/Fairy-DSH](https://github.com/Chengzhibense/Fairy-DSH)（Apache-2.0，参考视频 BV1SD4C63EZz），一并致谢。其余部分的来历：
+
+| 部分 | 来源 |
+| --- | --- |
+| 插件骨架、H.D.D 皮肤概念、开机视频与开场音效、5 条基础问候录音 | AssassinVIX/fairy-zzz-plugin（MIT） |
+| 眼徽 SVG 美术、动效几何与时长参数 | Chengzhibense/Fairy-DSH（Apache-2.0） |
+| 性能层（rAF → CSS 时间线、静态眼睑、去掉逐帧滤镜、资源压缩与 ETag/304） | 本仓库 v1.1 – v1.6 |
+| 问候语音扩充（每时段 4 条，共 20 条）与语音管线 | 本仓库 v1.4 |
+| 眼徽运行时（单 SVG + 15fps 矢量重绘、目光微动、dock 定位与拖拽） | 本仓库 v1.5 – v1.6 |
+| 「绳网终端 / WIRE-NET TERMINAL」宿主皮肤 | 本仓库 v1.7.0 |
+| 电费读数、画布字墙、眼徽手势与一次性完成动效 | 本仓库 v1.7.5 |
+| `scripts/build-client.mjs`（皮肤 CSS 单源内联） | 本仓库 v1.7.1 |
+
+第三方许可全文在 [licenses/](licenses/)，逐项署名见 [NOTICE-fairy-dsh.md](NOTICE-fairy-dsh.md)。
+
 ## 截图
 
 | 居中问好 | 眼徽状态 |
 | --- | --- |
 | ![居中问好](screenshots/02-greet.png) | ![眼徽状态](screenshots/03-eye-states.png) |
 
-| 深色会话页 | 浅色主题 |
-| --- | --- |
-| ![深色会话页](docs/img/skin-v17-dark-chat.jpg) | ![浅色主题](docs/img/skin-v17-light-chat.jpg) |
+> 截图采自早期版本，界面细节与当前皮肤略有出入；当前的绳网终端样式见 [docs/UI-DESIGN.md](docs/UI-DESIGN.md) 与 [docs/skin/](docs/skin/)。
 
 ## 特性
 
@@ -54,7 +71,7 @@
 **绳网终端皮肤（v1.7.0 起）**
 
 - 按《绝区零》官网的语言重绘宿主外壳：纸白 / 墨黑、荧光青柠、斜切块、Impact 编号、白胶囊。
-- 深浅两套，**始终跟随 DSH 主题**，不单独设置。
+- 目前只做深色一套：浅色版还没弄完，v1.7.5 起暂时固定深色、不跟随宿主主题切换。
 - 纯静态 CSS + token 覆盖，无新增 React 组件、无新增动画层。设计规范见 [docs/UI-DESIGN.md](docs/UI-DESIGN.md)。
 - v1.7.5 起 `body` 背景铺上 `assets/zzz-pattern.webp` 字墙（`--fz3-wall-veil` 控制浓淡），四角与上下有暗角收边。
 
@@ -63,7 +80,6 @@
 - 侧栏左下角常驻三行读数：电费余额、今日电费、当前倍率倒计时；底部一行写明计费时段（工作日 09–12、14–18 十倍，其余五倍）。
 - 数据由宿主 `GET /fairy-zzz/usage` 增量解析会话日志得到：20s 轮询，倍率切换前 2.5s 补拉一次，倒计时本地每秒走字。
 
-![电费读数](docs/img/usage-readout.jpg)
 
 **语音（可选）**
 
@@ -105,7 +121,7 @@ dsh plugin --profile <profile> add <克隆下来的目录>
 powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
 ```
 
-`-Uninstall` 卸载。脚本会顺手把浅色主题改成深色，想让皮肤跟随系统主题就别用这条路径。
+`-Uninstall` 卸载。脚本会顺手把 DSH 主题改成深色；皮肤本身已固定深色，这条只影响宿主其它界面。
 
 > 装完**完全重启 DSH**（不是刷新页面）才会加载宿主半边；之后只改 `client.js` 只需整页刷新，改皮肤 CSS 时改用方式二并刷新。
 > `presets/fairy-mode.patch.yml` 是**可选**的「Fairy 模式」agent 预设，依赖较多 `@deepseek-ai/dsh-*` 插件，默认不启用。
@@ -238,23 +254,6 @@ node --check client.js                 # 语法检查
 ## 变更记录
 
 按版本的用户可见改动见 [docs/CHANGELOG.md](docs/CHANGELOG.md)；实现细节与设计取舍在 [docs/TECHNICAL.md](docs/TECHNICAL.md)。
-
-## 来源与归属
-
-本仓库的起点是 [AssassinVIX/fairy-zzz-plugin](https://github.com/AssassinVIX/fairy-zzz-plugin)（MIT，B 站 [BV1d4HK6eE3g](https://www.bilibili.com/video/BV1d4HK6eE3g)「我把Fairy接入了DeepseekHarness？」）。从 v1.1.0 起几乎每一条链路都被重写过，今天仍直接沿用上游的只剩插件骨架与几个素材。
-
-| 部分 | 来源 |
-| --- | --- |
-| 插件骨架、H.D.D 皮肤概念、开机视频与开场音效、5 条基础问候录音 | AssassinVIX/fairy-zzz-plugin（MIT） |
-| 眼徽 SVG 美术、动效几何与时长参数 | [Chengzhibense/Fairy-DSH](https://github.com/Chengzhibense/Fairy-DSH)（Apache-2.0），对照视频 BV1SD4C63EZz |
-| 性能层（rAF → CSS 时间线、静态眼睑、去掉逐帧滤镜、资源压缩与 ETag/304） | 本仓库 v1.1 – v1.6 |
-| 问候语音扩充（每时段 4 条，共 20 条）与语音管线 | 本仓库 v1.4 |
-| 眼徽运行时（单 SVG + 15fps 矢量重绘、目光微动、dock 定位与拖拽） | 本仓库 v1.5 – v1.6 |
-| 「绳网终端 / WIRE-NET TERMINAL」宿主皮肤 | 本仓库 v1.7.0 |
-| 电费读数、画布字墙、眼徽手势与一次性完成动效 | 本仓库 v1.7.5 |
-| `scripts/build-client.mjs`（皮肤 CSS 单源内联） | 本仓库 v1.7.1 |
-
-第三方许可全文在 [licenses/](licenses/)，逐项署名见 [NOTICE-fairy-dsh.md](NOTICE-fairy-dsh.md)。
 
 ## 许可
 
