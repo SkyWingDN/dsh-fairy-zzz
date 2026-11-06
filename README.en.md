@@ -110,6 +110,8 @@ That is the npm route: DSH forwards it to pnpm inside the profile directory, so 
 
 DSH only looks at dependencies inside the profile — **do not** use `npm install` or `npm i -g`, which would land in the current directory or globally where the host never looks.
 
+In the GUI, the "add plugin" box wants the **package name** (`@sky_wing_dn/dsh-fairy-zzz`), a GitHub URL or a local path — pasting the whole `dsh plugin ...` command there fails with "not a package name the registry accepts".
+
 Fully quit and reopen DSH afterwards (tray icon included) — the host half only reloads on restart. After that, skin changes just need a page refresh.
 
 ### 2. Install from source

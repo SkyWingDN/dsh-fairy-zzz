@@ -110,6 +110,8 @@ dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
 
 DSH 只认 profile 里的依赖，所以**不要**用 `npm install` / `npm i -g`——那会装到当前目录或全局，宿主看不到。
 
+图形界面里「插件 → 添加插件」那个输入框收的是**包名本身**（`@sky_wing_dn/dsh-fairy-zzz`），或者 GitHub 地址、本地目录；别把整条 `dsh plugin ...` 命令粘进去，它会报 “not a package name the registry accepts”。
+
 装完**完全退出并重开 DSH**（托盘图标也要退）——宿主插件要重新加载；之后改皮肤只需刷新页面。
 
 ### 方式二：从源码装
