@@ -18,7 +18,8 @@ param(
 $ErrorActionPreference = 'Stop'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $srcDir = $here
-$pkgName = 'dsh-fairy-zzz'
+$pkgName = '@sky_wing_dn/dsh-fairy-zzz'
+$pkgRel = 'node_modules\@sky_wing_dn\dsh-fairy-zzz'
 
 function Write-Step($msg) { Write-Host "  $msg" -ForegroundColor Cyan }
 function Write-Ok($msg) { Write-Host "  [OK] $msg" -ForegroundColor Green }
@@ -34,7 +35,7 @@ $base = Join-Path $env:USERPROFILE '.dsh\profiles'
 if (Test-Path $base) { $profileList = @(Get-ChildItem $base -Directory | ForEach-Object { $_.FullName }) }
 
 if (-not $ProfilePath) {
-  $already = @($profileList | Where-Object { Test-Path (Join-Path $_ 'node_modules\dsh-fairy-zzz') })
+  $already = @($profileList | Where-Object { Test-Path (Join-Path $_ $pkgRel) })
   $withPatch = @($profileList | Where-Object { Test-Path (Join-Path $_ 'cordis.patch.yml') })
   if ($already.Count -ge 1) {
     $ProfilePath = $already[0]
@@ -60,7 +61,7 @@ if (-not (Test-Path $patchFile)) {
 
 Write-Step "profile : $ProfilePath"
 
-$destDir = Join-Path $ProfilePath ('node_modules\dsh-fairy-zzz')
+$destDir = Join-Path $ProfilePath $pkgRel
 
 # ---------- 2. 卸载 ----------
 if ($Uninstall) {

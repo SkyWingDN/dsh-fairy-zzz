@@ -91,7 +91,15 @@ Full third-party license texts live in [licenses/](licenses/); per-item attribut
 
 Requires DeepSeek Harness (desktop app or `dsh web`). The plugin only uses host-provided slots and webServer; it never imports `@deepseek-ai/*` directly.
 
-### 1. Let the agent install it (recommended)
+### 1. Install from npm (recommended)
+
+```powershell
+dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
+```
+
+Fully quit and reopen DSH afterwards (tray icon included) — the host half only reloads on restart. After that, skin changes just need a page refresh.
+
+### 2. Install from source
 
 Clone the repo, then in a DSH session:
 
@@ -99,23 +107,23 @@ Clone the repo, then in a DSH session:
 plugin_manager install_bundle  target=<cloned directory>
 ```
 
-That runs `pnpm add` against the current profile and appends `dsh-fairy-zzz` to `dsh.profile.bundles`. The CLI does the same:
+That runs `pnpm add` against the current profile and appends `@sky_wing_dn/dsh-fairy-zzz` to `dsh.profile.bundles`. The CLI does the same:
 
 ```powershell
 dsh plugin --profile <profile> add <cloned directory>
 ```
 
-### 2. Merge into the profile by hand
+### 3. Merge into the profile by hand
 
 Copy the `insert` block from `cordis.patch.yml` into your profile's `cordis.patch.yml`:
 
 ```yaml
 - insert:
     - id: fairy-zzz-skin
-      name: 'dsh-fairy-zzz'
+      name: '@sky_wing_dn/dsh-fairy-zzz'
 ```
 
-### 3. Windows one-liner
+### 4. Windows one-liner
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\install-windows.ps1

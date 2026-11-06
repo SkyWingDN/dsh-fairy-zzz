@@ -1,12 +1,12 @@
 window.__ModuleLoader__.load({
-  id: 'dsh-fairy-zzz',
+  id: '@sky_wing_dn/dsh-fairy-zzz',
   factory(require) {
     const React = require('react')
     const h = React.createElement
     const { useCallback, useEffect, useLayoutEffect, useRef, useState } = React
 
     const NS = 'fairy-zzz'
-    const PKG = 'dsh-fairy-zzz'
+    const PKG = '@sky_wing_dn/dsh-fairy-zzz'
     const VOICE_KEY = 'fairy.zzz.voice'
     const SEEN_KEY = 'fairy.zzz.seen'
     const greetSlot = () => {

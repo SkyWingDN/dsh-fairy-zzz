@@ -8,7 +8,7 @@
 
 ## 0. 一分钟速览
 
-- 插件名 / 包名：`dsh-fairy-zzz`（目录名同样是这个）。
+- npm 包名：`@sky_wing_dn/dsh-fairy-zzz`；本地目录仍叫 `dsh-fairy-zzz`（`~/.dsh/plugins/dsh-fairy-zzz`）。
 - 它做什么：把 DeepSeek Harness 的 Web UI 换成《绝区零》Fairy 的 H.D.D 终端 —— 整屏开机视频 → 居中问好（按时段从 5 条预录语音里随机播一条）→ 收缩成聊天区左缘的常驻眼标；同时提供可选的本地 GPT-SoVITS 朗读（仓库不含模型 / 引擎）。
 - v1.7.5 起电费是**侧栏底部常驻读数**（`BillDock`）：电费余额 / 今日电费 / 五倍或十倍电费 + 换档倒计时 + 计费时段说明，20s 轮询一次、换档前 2.5s 补一次；点开气泡那套交互（`BubbleCard`、每轮自动结算、点外 / Esc 关闭）已整条删除。眼标只做状态指示与拖动（按住右键拖），设置里可隐藏眼标，电费读数不受它影响；外观始终跟随宿主深浅色。v1.3.1 起拖拽只写眼标自身的 `transform`（rAF 合并，165 Hz 下无长任务），松手会吸附到视口四边（距边 64px 内，角落两轴同时吸），落点被更高 `z-index` 的悬浮组件盖住时沿边让位；气泡点外任意位置或 Esc 即可关闭，dock 后 700ms 预取用量，点开 65–166ms 出数。v1.3.2 再把拖拽 / 吸附限制在会话内容区（不越过左侧栏和标题栏），边界在按下时实时测量，打开会话导致标题栏变高也会自动适配。v1.3.3 把气泡文案统一成「电费」口径（谷时「五倍电费」、峰时「十倍电费」），客户端兼容旧宿主的「高峰 / 空闲」字样。v1.6.2 删掉设置页的外观三档开关（外观始终跟随宿主）并把「试听问候」改成每次点击都随机抽本时段一条。
 - 代码在哪（三处，同步关系见第 2 节）：
@@ -69,10 +69,10 @@ DSH 插件 = host（Node 进程）+ client（浏览器页）。本插件两边�
 ```yaml
 - insert:
     - id: fairy-zzz-skin
-      name: 'dsh-fairy-zzz'
+      name: '@sky_wing_dn/dsh-fairy-zzz'
 ```
 
-这个 patch 由 `package.json` 的 `dsh.bundle.patch` 声明，安装时合并进 profile 的 `cordis.patch.yml`。它负责让 DSH 在启动时把 `dsh-fairy-zzz` 这个包加载成插件（host + client 各加载一次）。
+`name` 必须与安装后的包名逐字一致（npm 上原 `dsh-fairy-zzz` 属于上游作者，本仓库发布在 `@sky_wing_dn/dsh-fairy-zzz`）。这个 patch 由 `package.json` 的 `dsh.bundle.patch` 声明，安装时合并进 profile 的 `cordis.patch.yml`。它负责让 DSH 在启动时把这个包加载成插件（host + client 各加载一次）。
 
 ### 3.3 host 契约（index.js）
 
@@ -91,7 +91,7 @@ export function apply(ctx) { /* 注册路由 ... */ }
 
 ```js
 window.__ModuleLoader__.load({
-  id: 'dsh-fairy-zzz',
+  id: '@sky_wing_dn/dsh-fairy-zzz',
   factory(require) {
     const React = require('react')
     return {

@@ -4,4 +4,4 @@
 # 不同 DSH 版本的工具集不同，默认不启用）——需要的话见 presets/fairy-mode.patch.yml。
 - insert:
     - id: fairy-zzz-skin
-      name: 'dsh-fairy-zzz'
+      name: '@sky_wing_dn/dsh-fairy-zzz'

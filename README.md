@@ -91,7 +91,15 @@
 
 前置：DeepSeek Harness（桌面版或 `dsh web`）。插件只调用宿主提供的槽位与 webServer，不直接 `import @deepseek-ai/*`。
 
-### 方式一：让 agent 装（推荐）
+### 方式一：从 npm 装（推荐）
+
+```powershell
+dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
+```
+
+装完**完全退出并重开 DSH**（托盘图标也要退）——宿主插件要重新加载；之后改皮肤只需刷新页面。
+
+### 方式二：从源码装
 
 先 clone 到本地，然后在 DSH 会话里说一句：
 
@@ -99,23 +107,23 @@
 plugin_manager install_bundle  target=<克隆下来的目录>
 ```
 
-它会把目录 `pnpm add` 进当前 profile 并把 `dsh-fairy-zzz` 加进 `dsh.profile.bundles`。也可以直接用 CLI：
+它会把目录 `pnpm add` 进当前 profile 并把 `@sky_wing_dn/dsh-fairy-zzz` 加进 `dsh.profile.bundles`。也可以直接用 CLI：
 
 ```powershell
 dsh plugin --profile <profile> add <克隆下来的目录>
 ```
 
-### 方式二：手动并入 profile
+### 方式三：手动并入 profile
 
 把 `cordis.patch.yml` 里的 `insert` 段并进 profile 的 `cordis.patch.yml`：
 
 ```yaml
 - insert:
     - id: fairy-zzz-skin
-      name: 'dsh-fairy-zzz'
+      name: '@sky_wing_dn/dsh-fairy-zzz'
 ```
 
-### 方式三：Windows 一键脚本
+### 方式四：Windows 一键脚本
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
