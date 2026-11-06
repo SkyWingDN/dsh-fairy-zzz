@@ -32,8 +32,6 @@ dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
 
 **运行时零依赖**：宿主半边只用 Node 内置模块，客户端半边是一份手写 ESM，不经过打包器，也不需要 `node_modules`。
 
-> **项目状态**：一个人自娱自乐写着玩的，功能还不完善。除了把代码放在 GitHub 上、发到 npm 上，没在别的地方提过；用出问题欢迎开 issue，但不保证随叫随到。
-
 ## 来源与致谢
 
 这个插件的起点是 [AssassinVIX/fairy-zzz-plugin](https://github.com/AssassinVIX/fairy-zzz-plugin)（MIT 许可，B 站 [BV1d4HK6eE3g](https://www.bilibili.com/video/BV1d4HK6eE3g)）。感谢原作者把 H.D.D 皮肤、开机视频和问候语音整理成一套能直接跑起来的插件——有这个起手式，后面这些改动才有地方落脚。
@@ -52,6 +50,8 @@ dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
 | `scripts/build-client.mjs`（皮肤 CSS 单源内联） | 本仓库 v1.7.1 |
 
 第三方许可全文在 [licenses/](licenses/)，逐项署名见 [NOTICE-fairy-dsh.md](NOTICE-fairy-dsh.md)。
+
+> **项目状态**：一个人自娱自乐写着玩的，功能还不完善。除了把代码放在 GitHub 上、发到 npm 上，没在别的地方提过；用出问题欢迎开 issue，但不保证随叫随到。
 
 ## 截图
 
