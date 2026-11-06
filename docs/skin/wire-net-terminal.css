@@ -6,28 +6,20 @@
  * 约定：强调色青柠 #d8fa00 只给选中/主行动，整屏 <5%；不新增 @keyframes、不用毛玻璃；
  *      浅色 = 纸面，深色 = 墨黑面板；Fairy 蓝眼保留为唯一签名色。
  * ================================================================== */
+/* 令牌只留真正被 var() 消费的这几个。v1.7.5 清理掉的一批
+ * （lime-dim / ink / paper / panel / panel-2 / hair / mute）从来没有任何规则引用，
+ * 留着只会让人以为改它们有效。 */
 :root{
   --fz3-lime:#d8fa00;
-  --fz3-lime-dim:#b6d400;
   --fz3-amber:#ffde00;
-  --fz3-ink:#0a0b08;
-  --fz3-paper:#efefed;
-  --fz3-panel:#141614;
-  --fz3-panel-2:#1b1d1b;
-  --fz3-hair:rgba(255,255,255,.10);
   --fz3-mono:"Cascadia Mono","Cascadia Code","SF Mono",Consolas,"Microsoft YaHei UI",monospace;
   --fz3-cyan:#d8fa00;
   --fz3-text:#f2f2ee;
-  --fz3-mute:#9a9c96;
 }
 :root[data-fz3-theme="light"],html[data-fz3-theme="light"]{
   --fz3-lime:#d8fa00;
   --fz3-cyan:#6f8700;
   --fz3-text:#101110;
-  --fz3-mute:#5a5c56;
-  --fz3-panel:#ffffff;
-  --fz3-panel-2:#f7f7f3;
-  --fz3-hair:rgba(16,17,16,.14);
 }
 
 /* ---------- A. 画布：纸面 / 墨黑 + 斜纹 + 网点 ----------
@@ -37,23 +29,48 @@
 html{background:#0a0a0a!important}
 body{
   background-color:#0a0a0a!important;
+  /* v1.7.5（观感）：把绝区零那张「ZERO 字墙」铺成画布底纹，不再是纯网点。
+     层序（上 → 下）：暗角收边 → 上下收边（中段遮罩浓淡由 --fz3-wall-veil 一个数控）
+     → 左下青柠底光 → 字墙图 → 网点 → 斜纹。
+     原图是两色调（#010101 底 / #191919 字形），在 assets/zzz-pattern.webp 里已做过
+     色调映射压到 #0a0a0a 画布附近，所以直接铺也不会盖过正文；
+     范围取 cover + 居中：窗口怎么变都铺满、不变形、不出现拼缝。 */
   background-image:
-    radial-gradient(44% 36% at 88% -8%,rgba(216,250,0,.10),transparent 70%),
-    radial-gradient(30% 26% at 0% 100%,rgba(216,250,0,.045),transparent 72%),
+    radial-gradient(120% 106% at 50% 46%,rgba(10,10,10,0) 0%,rgba(10,10,10,0) 40%,rgba(10,10,10,.52) 78%,rgba(10,10,10,.95) 100%),
+    linear-gradient(180deg,rgba(10,10,10,.94) 0px,rgba(10,10,10,.30) 104px,rgba(10,10,10,var(--fz3-wall-veil,.06)) 30%,rgba(10,10,10,var(--fz3-wall-veil,.06)) 58%,rgba(10,10,10,.62) 82%,rgba(10,10,10,.96) 100%),
+    radial-gradient(30% 26% at 0% 100%,rgba(216,250,0,.055),transparent 72%),
+    url('/fairy-zzz/assets/zzz-pattern.webp'),
     radial-gradient(rgba(255,255,255,.05) 1px,transparent 1.4px),
     repeating-linear-gradient(-45deg,rgba(255,255,255,.028) 0 1px,transparent 1px 11px)!important;
-  background-size:auto,auto,18px 18px,auto!important;
+  background-size:auto,auto,auto,cover,18px 18px,auto!important;
+  background-position:center center,center center,center center,center center,0 0,0 0!important;
+  background-repeat:no-repeat,no-repeat,no-repeat,no-repeat,repeat,repeat!important;
   background-attachment:scroll!important;
 }
 :root[data-fz3-theme="light"] body,html[data-fz3-theme="light"] body{
   background-color:#efefed!important;
+  /* 浅色：同一张字墙，用纸色薄纱压成「印在纸上」的浅灰，四边收回纯纸色。 */
   background-image:
-    radial-gradient(44% 36% at 88% -8%,rgba(216,250,0,.20),transparent 70%),
+    radial-gradient(120% 106% at 50% 46%,rgba(239,239,237,.58) 0%,rgba(239,239,237,.66) 44%,rgba(239,239,237,.92) 82%,#efefed 100%),
+    linear-gradient(180deg,rgba(239,239,237,.98) 0px,rgba(239,239,237,.86) 104px,rgba(239,239,237,.72) 30%,rgba(239,239,237,.72) 58%,rgba(239,239,237,.93) 82%,rgba(239,239,237,.99) 100%),
+    radial-gradient(44% 36% at 88% -8%,rgba(216,250,0,.16),transparent 70%),
     radial-gradient(30% 26% at 0% 100%,rgba(216,250,0,.10),transparent 72%),
+    url('/fairy-zzz/assets/zzz-pattern.webp'),
     radial-gradient(rgba(16,17,16,.09) 1px,transparent 1.4px),
     repeating-linear-gradient(-45deg,rgba(16,17,16,.035) 0 1px,transparent 1px 11px)!important;
-  background-size:auto,auto,18px 18px,auto!important;
+  background-size:auto,auto,auto,auto,cover,18px 18px,auto!important;
+  background-position:center center,center center,center center,center center,center center,0 0,0 0!important;
+  background-repeat:no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,repeat,repeat!important;
+  background-attachment:scroll!important;
 }
+/* ---------- A2. 画布穿透：让外壳自己的底色让开 ----------
+ * 桌面端外壳在 body 之上又铺了三层底：整窗 .mP3x-q_frame（#101110），
+ * 会话列 .mP3x-q_centerCol 与会话根 .an3WzG_root 再各压一层 rgba(10,10,10,.9)。
+ * 画布被盖了两遍：0.9×10 + 0.1×16 = 10.6，字墙 26 级的字压完只剩 11 级，
+ * 和纯黑没区别 —— v1.7.5 之前「桌面端看不到底纹」就是这一层造成的。
+ * 这里只让开颜色、不动布局：侧栏 .wtg9ga_root 仍是 #101110，弹层仍是自己的面，
+ * 字墙和暗角全部回到 body 那一份（深/浅两套）上，全窗连续、不出接缝。 */
+.mP3x-q_frame,.mP3x-q_centerCol,[class$="_centerCol"],.an3WzG_root{background-color:transparent!important}
 ::selection{background:var(--fz3-lime)!important;color:#0a0b08!important}
 html[data-fz3-theme="light"] ::selection{background:#101110!important;color:#d8fa00!important}
 *::-webkit-scrollbar{width:8px;height:8px}
@@ -109,13 +126,15 @@ html[data-fz3-theme="light"] .wtg9ga_root{border-right-color:rgba(255,255,255,.1
   background:#f2f2ee!important;color:#0a0b08!important;box-shadow:none!important;
 }
 .wtg9ga_panelRow[aria-current="page"] *,.wtg9ga_panelRow[data-active="true"] *{color:#0a0b08!important}
-/* 分区小标：// 等宽大写（官网 VIDEO / BACKGROUND kicker + wiki /// 模块标题的合并） */
+/* 分区小标：// 等宽大写（官网 VIDEO / BACKGROUND kicker + wiki /// 模块标题的合并）。
+   v1.7.5：原来 10px / 34% 白，比下面的会话行还小还淡，标题反而缩在内容后面；
+   现在放大到 13px、提亮到 82%，让「工作区」先被看见，// 仍然是青柠。 */
 .GAkraW_sectionLabel{
-  font-family:var(--fz3-mono)!important;font-size:10px!important;font-weight:700!important;
-  letter-spacing:.20em!important;text-transform:uppercase;color:rgba(242,242,238,.34)!important;
+  font-family:var(--fz3-mono)!important;font-size:13px!important;font-weight:700!important;
+  letter-spacing:.12em!important;text-transform:uppercase;color:rgba(242,242,238,.82)!important;
 }
 .GAkraW_sectionLabel::before{content:"// ";color:var(--fz3-lime);font-weight:700}
-.GAkraW_sectionLabel svg{color:rgba(242,242,238,.34)}
+.GAkraW_sectionLabel svg{color:rgba(242,242,238,.55)}
 /* 会话行：选中 = 青柠左划线 + 青柠 8% 底 */
 .wnFoaW_sessionRow{height:32px!important;border-radius:6px!important;color:rgba(242,242,238,.58)!important}
 .wnFoaW_sessionRow:hover{background:rgba(255,255,255,.06)!important;color:#fff!important}
@@ -223,15 +242,12 @@ html[data-fz3-theme="light"] ._86kJGG_trigger,html[data-fz3-theme="light"] ._9r0
   font-weight:700!important;letter-spacing:.12em!important;line-height:15px!important;
   padding:2px 7px!important;margin-top:2px!important;align-self:center!important;
 }
-.WOwLGG_root::before{
-  content:"05";position:absolute;right:2.5%;top:4%;z-index:0;pointer-events:none;
-  font-family:Impact,Haettenschweiler,"Arial Narrow Bold",sans-serif;font-size:clamp(120px,14vw,200px);
-  line-height:.8;letter-spacing:.02em;color:rgba(255,255,255,.075);
-}
+/* v1.7.5：欢迎页右侧本来印着一个 200px 的「05」大号水印（网端终端的分区编号），
+   纯装饰、没有功能，还会被 composer 边缘切掉一截，看着像没对齐的污渍——去掉。
+   标题上方的「// NETWORK TERMINAL 05」保留，那是同一套编号里能读的那一半。 */
 .fz3-hero-brand-eye{filter:drop-shadow(0 0 8px rgba(96,148,255,.45))}
 html[data-fz3-theme="light"] .WOwLGG_headline{color:#101110!important}
 html[data-fz3-theme="light"] .WOwLGG_headline::before{color:#6f8700}
-html[data-fz3-theme="light"] .WOwLGG_root::before{color:rgba(16,17,16,.075)}
 html[data-fz3-theme="light"] .WOwLGG_previewBadge{border-color:#101110!important}
 
 /* ---------- F. 消息：墨块用户气泡 / 无气泡回答 ---------- */
@@ -305,29 +321,12 @@ html[data-fz3-theme="light"] .AnXs9G_close:hover{background:rgba(16,17,16,.06)!i
 .fz3-sb-text b{font-family:"Palatino Linotype","Book Antiqua",Palatino,serif!important;font-style:italic!important;font-size:19px!important;letter-spacing:.03em!important;color:#f2f2ee!important;text-shadow:none!important}
 .fz3-sb-text b::before{content:"//";font-family:var(--fz3-mono);font-style:normal;font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--fz3-lime);margin-right:6px;vertical-align:2px}
 .fz3-sb-text i{font-family:var(--fz3-mono)!important;font-size:8px!important;line-height:1.4!important;letter-spacing:.16em!important;color:rgba(216,250,0,.60)!important}
-.fz3-bubble{
-  background:#141614!important;border:1px solid rgba(216,250,0,.30)!important;border-radius:10px!important;
-  box-shadow:6px 6px 0 rgba(0,0,0,.55)!important;color:#f2f2ee!important;
-}
-.fz3-bubble::after{background:#141614!important;border-left-color:rgba(216,250,0,.30)!important;border-bottom-color:rgba(216,250,0,.30)!important}
-.fz3-bubble[data-side="left"]::after{background:#141614!important;border-right-color:rgba(216,250,0,.30)!important;border-top-color:rgba(216,250,0,.30)!important}
-.fz3-bubble-head{font-family:var(--fz3-mono);color:rgba(216,250,0,.85)!important;letter-spacing:.20em}
-.fz3-bubble[data-mode="turn"] .fz3-bubble-head{color:#ffde00!important}
-.fz3-bubble-k{color:rgba(242,242,238,.46)!important}
-.fz3-bubble-v{color:#f2f2ee!important;font-family:var(--fz3-mono)}
-.fz3-bubble-sub{color:rgba(242,242,238,.42)!important}
 html[data-fz3-theme="light"] .fz3-brandname b,html[data-fz3-theme="light"] .fz3-sb-text b{color:#f2f2ee!important}
 html[data-fz3-theme="light"] .fz3-set{color:#101110}
 html[data-fz3-theme="light"] .fz3-set-row{border-color:rgba(16,17,16,.14)!important}
 html[data-fz3-theme="light"] .fz3-set-sub,html[data-fz3-theme="light"] .fz3-set-desc,html[data-fz3-theme="light"] .fz3-set-note{color:rgba(16,17,16,.52)!important}
 html[data-fz3-theme="light"] .fz3-set-btn{border-color:rgba(16,17,16,.22)!important;color:#101110!important}
 html[data-fz3-theme="light"] .fz3-set-input{background:#fff!important;border-color:rgba(16,17,16,.16)!important;color:#101110!important}
-html[data-fz3-theme="light"] .fz3-bubble{background:#fff!important;border-color:rgba(16,17,16,.24)!important;box-shadow:8px 8px 0 rgba(16,17,16,.12)!important;color:#101110!important}
-html[data-fz3-theme="light"] .fz3-bubble::after{background:#fff!important;border-color:rgba(16,17,16,.24)!important}
-html[data-fz3-theme="light"] .fz3-bubble-head{color:#6f8700!important}
-html[data-fz3-theme="light"] .fz3-bubble-k{color:rgba(16,17,16,.48)!important}
-html[data-fz3-theme="light"] .fz3-bubble-v{color:#101110!important}
-html[data-fz3-theme="light"] .fz3-bubble-sub{color:rgba(16,17,16,.44)!important}
 
 /* ---------- I. 开场覆盖层：墨黑 + 青柠 HUD 边框 ---------- */
 .fz3-screen{background:#0a0a0a!important}
@@ -344,11 +343,12 @@ html[data-fz3-theme="light"] .fz3-bubble-sub{color:rgba(16,17,16,.44)!important}
 .fz3-copy-sub{color:rgba(242,242,238,.42)!important;font-family:var(--fz3-mono)!important}
 .fz3-skip2{color:rgba(216,250,0,.62)!important;font-family:var(--fz3-mono)!important;letter-spacing:.22em!important}
 .fz3-skip2:hover{color:#eaff5a!important}
-.fz3-eye{--fz3-eye-glow:drop-shadow(0 0 24px rgba(216,250,0,.28))}
 .fz3-eye::before{background:radial-gradient(closest-side,rgba(216,250,0,.22),rgba(216,250,0,.09) 46%,transparent 78%)!important}
 .fz3-eye-halo{background:radial-gradient(closest-side,rgba(216,250,0,.17),rgba(216,250,0,.07) 46%,transparent 82%)!important}
+/* （观感）只留左上角一个角标：右下角那个的横臂会从滚动条左侧探出来，
+   和青柠色滚动条叠成一截突兀的断线，所以整条右下角标一并去掉。 */
 .fz3-atmos-frame{border-color:rgba(216,250,0,.08)!important}
-.fz3-atmos-frame::before,.fz3-atmos-frame::after{border-color:rgba(216,250,0,.34)!important}
+.fz3-atmos-frame::before{border-color:rgba(216,250,0,.34)!important}
 .fz3-atmos-glow{background:radial-gradient(circle,rgba(216,250,0,.10),rgba(216,250,0,.03) 52%,transparent 78%)!important}
 .fz3-atmos-flash{background:radial-gradient(ellipse at 60% 20%,rgba(216,250,0,.10),rgba(216,250,0,.03) 42%,transparent 72%)!important}
 .fz3-voice:hover{color:var(--fz3-lime)!important;background:rgba(216,250,0,.10)!important;border-color:rgba(216,250,0,.35)!important;box-shadow:none!important}
@@ -358,12 +358,16 @@ html[data-fz3-theme="light"] .fz3-bubble-sub{color:rgba(16,17,16,.44)!important}
 /* ---------- J. 动效纪律：只留 120–160ms 的色彩/位移 ---------- */
 button,a,[role="button"],[role="treeitem"]{transition-duration:.14s!important}
 
-/* v1.7.4（性能）：dock 相（= 用户真正在干活的相位）停掉背景氛围层的两个常驻无限动画。
- * 它们是全屏 fixed 图层上的 loop（14s 呼吸 + 11s 闪烁），在 165Hz 屏上等于喂给合成器
- * 一份永不结束的活；静止后观感几乎无差（青柠辉光本来就是极慢的呼吸）。
- * hero / greet / boot 三相保留动画——那几秒本来就在看开场。 */
+/* v1.7.4（性能）+ v1.7.5（观感）：dock 相（= 用户真正在干活的相位）把整屏氛围层里那两团
+ * 青柠辉光一起收掉。它们本来是给开机/问好那几秒做舞台光的，进了工作相位就只剩副作用：
+ * 一层 z-index:3、fixed 铺满全窗的 rgba(216,250,0,.10) 渐变直接压在字墙上，
+ * 屏幕顶部会糊出一片偏黄的透明色块（用户反馈「太不和谐」）。
+ * 顺带也停掉两个常驻 loop（14s 呼吸 + 11s 闪烁），dock 相不再喂给合成器永不结束的活。
+ * hero / greet / boot 三相保留；切相只用 .5s 淡出，不会留下跳变。 */
 html[data-fz3-phase="dock"] .fz3-atmos-glow,
-html[data-fz3-phase="dock"] .fz3-atmos-flash{animation:none!important}
+html[data-fz3-phase="dock"] .fz3-atmos-flash{
+  animation:none!important;opacity:0!important;transition:opacity .5s ease!important;
+}
 
 /* v1.7.4（性能）：.fz3-rim 原先带 blur(8px)。它是一层 560×560 的 fixed 装饰光斑，
  * 底图本身就是 radial-gradient（边缘已经自然淡出），模糊只是把同一张图再算一遍；

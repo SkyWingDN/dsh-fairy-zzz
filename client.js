@@ -76,8 +76,7 @@ window.__ModuleLoader__.load({
     const greetingUrl = (pick) => '/fairy-zzz/assets/voice/' + pick.file
     const GREETING = () => greetingUrl(currentGreeting())
 
-    /* 眼标拖拽 / 显隐的 localStorage 键（设置页写，皮肤图层读） */
-    const DRAG_KEY = 'fairy.zzz.drag'
+    /* 眼标位置 / 显隐的 localStorage 键（设置页写，皮肤图层读） */
     const POS_KEY = 'fairy.zzz.dock-pos'
     const EYE_KEY = 'fairy.zzz.eye-hidden'
     /* 欢迎页 hero 的标题与徽章没有插槽，只能改写 DOM 文本：按界面语言换成 H.D.D 字样 */
@@ -94,8 +93,6 @@ window.__ModuleLoader__.load({
     /* 五圈同心睫毛脉冲环：Fairy-DSH 的 PULSE_SVG（Apache-2.0，见 NOTICE-fairy-dsh.md）。 */
     const FAIRY_PULSE_SVG = `<svg class="fz3-pulse-svg" viewBox="-160 -160 480 480" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g class="fz3-pulse-wave" fill="none" stroke="#f4fdff"><circle cx="80" cy="80" r="52" stroke-width="20" stroke-opacity=".05"/><circle cx="80" cy="80" r="52" stroke-width="16" stroke-opacity=".06"/><circle cx="80" cy="80" r="52" stroke-width="12" stroke-opacity=".08"/><circle cx="80" cy="80" r="52" stroke-width="8" stroke-opacity=".10"/><circle cx="80" cy="80" r="52" stroke-width="4.5" stroke-opacity=".09"/></g></svg>`
 
-    /* 水平拉丝故障滤镜：feTurbulence 噪声只沿 X 轴位移（蓝通道固定 .5）。运行时挂到文档一次。 */
-    const FAIRY_THREADS_SVG = `<svg id="fz3-threads-defs" width="0" height="0" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden"><defs><filter id="fz3-interference" x="-30%" y="0%" width="160%" height="100%" filterRes="96 72" color-interpolation-filters="sRGB"><feTurbulence id="fz3-noise" type="fractalNoise" baseFrequency=".012 .72" numOctaves="1" seed="1" result="noise"/><feColorMatrix in="noise" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 0 0 .5  0 0 0 1 0" result="horizontal-noise"/><feDisplacementMap id="fz3-displace" in="SourceGraphic" in2="horizontal-noise" scale="5" xChannelSelector="R" yChannelSelector="B"/></filter></defs></svg>`
     /* FZ3_ASSETS_END */
     /* ------------------------------------------------------------------ *
      * ———————————— */
@@ -422,13 +419,6 @@ window.__ModuleLoader__.load({
       return '¥' + value.toFixed(2)
     }
 
-    function tokensText(tokens) {
-      const n = Number(tokens) || 0
-      if (n >= 1e6) return (n / 1e6).toFixed(2).replace(/\.?0+$/, '') + 'M'
-      if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'k'
-      return String(n)
-    }
-
     /* 倒计时表盘：04:09:12 */
     function clockText(ms) {
       const total = Math.max(0, Math.floor(Math.max(0, ms) / 1_000))
@@ -437,17 +427,6 @@ window.__ModuleLoader__.load({
       const seconds = String(total % 60).padStart(2, '0')
       return hours + ':' + minutes + ':' + seconds
     }
-    /* v1.3.3 文案：用量 / 花费 / 峰谷一律按「电费」口径展示。
-       宿主旧版 index.js 仍返回「高峰 / 空闲」字样，这里做一次兜底改写，旧宿主也能正确显示。 */
-    function feeText(value) {
-      return String(value == null ? '' : value)
-        .replace(/高峰时段/g, '十倍电费')
-        .replace(/空闲时段/g, '五倍电费')
-        .replace(/高峰/g, '十倍电费')
-        .replace(/空闲/g, '五倍电费')
-        .replace(/(十倍电费|五倍电费)价/g, '$1')
-    }
-
     /* ———————————————————— */
     /* 旧版回退路径：原来从按钮一路向上爬 10 层取最长文本，很容易把 thinking /
        工具输出一起念出来。现在只在「这一条消息」的局部 DOM 里取，并复用 strip 规则。 */
@@ -673,6 +652,9 @@ window.__ModuleLoader__.load({
   --fz3-dock-x:25vw;
   --fz3-dock-y:52vh;
   --fz3-dock-size:128px;
+  /* 画布字墙底纹的中间段遮罩：0 = 原图（最清楚），.2 = 几乎只剩暗部呼吸。
+     只影响画布中段，上下收边与暗角是固定值。 */
+  --fz3-wall-veil:.06;
   /* 自适应：问候页的眼睛直径 / 眼睛中心高度 / 眼睛到文案的间距，全部随视口缩放 */
   --fz3-eye:clamp(132px,min(32vmin,34vh),330px);
   --fz3-eye-cy:42vh;
@@ -786,16 +768,23 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 .fz3-layer[data-phase="dock"] .fz3-core{
   left:var(--fz3-dock-x);top:var(--fz3-dock-y);width:var(--fz3-dock-size);opacity:1;pointer-events:none;
 }
+/* 开机收拢（v1.7.5）：不再单独放慢，和眼标复位 / 拖动共用上面那条 1.35s 的曲线。
+   早先试过把这一段拉长到 2.2s、5s，结果比复位还慢，看着不像同一个动作。 */
+/* v1.7.5（修复）：刚挂载的两帧内不画过渡、也不画眼徽：
+   此时 dock 坐标还没写进 --fz3-dock-x/y，先显示会看到它停在基础 CSS 的中心位置一闪，
+   接着再补间到 dock 位，像「瞬移 + 回弹」。settled 之后恢复常规过渡（开机收拢不受影响）。 */
+.fz3-layer[data-settled="0"] .fz3-core{transition:none!important;opacity:0!important}
 .fz3-layer[data-phase="boot"] .fz3-core{opacity:0}
 .fz3-core svg{display:block;width:100%;height:100%;filter:none}
 .fz3-layer[data-phase="dock"] .fz3-core svg{filter:none;transition:transform .3s ease}
 .fz3-core::after{
   content:none;
 }
-.fz3-eye{--fz3-eye-glow:drop-shadow(0 0 26px rgba(52,96,240,.42));position:relative;width:100%;height:100%;display:grid;place-items:center}
+.fz3-eye{position:relative;width:100%;height:100%;display:grid;place-items:center}
 /* 白边辉光原本用 drop-shadow 挂在 SVG 外壳上，但眼球呼吸会让滤镜每帧重新栅格化整棵 SVG 子树。
    现在换成一圈静态 ::before 径向柔光：只画一次、随图层合成，呼吸动画因此能留在合成器线程。
-   --fz3-eye-glow 变量仍保留给随机花屏/表情转场的瞬时滤镜（那些只有几十到几百毫秒）。 */
+   v1.7.5 把这个变量也删了（原 --fz3-eye-glow）：它唯一的用途就是被滤镜引用，
+   而 drop-shadow 会被 CSS filter 的边框盒裁成圆角方形（见下方故障态规则）。 */
 .fz3-eye::before{
   content:"";position:absolute;inset:-13%;border-radius:50%;z-index:0;pointer-events:none;
   background:radial-gradient(closest-side,rgba(96,148,255,.30),rgba(64,112,255,.17) 46%,rgba(40,70,210,.05) 74%,transparent 100%);
@@ -836,6 +825,10 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 .fz3-set-dot{width:8px;height:8px;border-radius:50%;flex:none;box-shadow:0 0 10px currentColor}
 .fz3-set-dot.is-on{background:#4ee6a8;color:#4ee6a8}
 .fz3-set-row.is-stack{display:block}
+.fz3-set-engine-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.fz3-set-engine-head .fz3-set-dot{margin-top:7px}
+.fz3-set-engine .fz3-set-actions{margin-top:10px}
+.fz3-set-desc.is-hint{margin-top:7px}
 .fz3-set-path{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
 .fz3-set-input{flex:1 1 260px;min-width:0;padding:8px 11px;font-family:inherit;font-size:12.5px;font-weight:400;line-height:1.45;letter-spacing:0;color:#dbe8f6;background:rgba(9,13,22,.82);border:1px solid rgba(120,160,220,.26);border-radius:9px;outline:none;transition:border-color .18s ease,box-shadow .18s ease}
 .fz3-set-input:focus{border-color:rgba(87,232,255,.55);box-shadow:0 0 0 3px rgba(87,232,255,.12)}
@@ -854,16 +847,25 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 .fz3-set-note{font-size:11px;line-height:1.6;color:#7f92a9}
 
 /* ---------- 信号故障：threads（水平拉丝）/ blocks（5 条横切片） ---------- */
+/* 故障态的 filter 里不要再塞 drop-shadow：阴影会按元素的边框盒被裁掉四边，
+   在完成/待机切换的那一瞬间露出一圈方形的边。承载它的 --fz3-eye-glow 变量已在
+   v1.7.5 删除，别再加回来。柔和光晕改由 .fz3-eye::before 的径向渐变负责，
+   它不在被过滤的子树里，永远是圆的。 */
 .fz3-eye[data-glitch] .fz3-eye-svg,
 .fz3-eye[data-transition-glitch] .fz3-eye-svg{
-  filter:var(--fz3-eye-glow) brightness(var(--fz3-g-bright,1.03)) contrast(var(--fz3-g-contrast,1.04));
+  filter:brightness(var(--fz3-g-bright,1.03)) contrast(var(--fz3-g-contrast,1.04));
   transform:translateX(var(--fz3-g-x,0px)) skewX(var(--fz3-g-skew,0deg));
   transition:none;will-change:transform,filter;
 }
-/* 参考实现：threads 拉丝与表情切换转场期间，整只眼都叠加 feTurbulence 水平位移滤镜。 */
+/* v1.7.5：参考实现的 feTurbulence 水平位移滤镜已整套删除（滤镜定义 fz3-interference /
+   fz3-noise / fz3-displace、挂载它的 ensureFilter、以及运行时改 seed/baseFrequency/scale
+   的那段代码都不在了）。原因：GPU 合成下 url(#滤镜) 会把输出铺满整块矩形区域，区域内
+   透明像素被填成浅灰，眼盘周围那圈柔和光晕就变成圆角方形——working→idle 完成转场那 1s
+   里最明显。实测把 filter region 放大到 -100%/300%、删掉 filterRes 都是同样的方角，所以
+   故障态只保留亮度/对比抖动 + 位移 + 5 条横切片。柔光由 .fz3-eye::before 的径向渐变负责。 */
 .fz3-eye[data-glitch="threads"] .fz3-eye-svg,
 .fz3-eye[data-transition-glitch] .fz3-eye-svg{
-  filter:url(#fz3-interference) brightness(var(--fz3-g-bright,1.06)) contrast(var(--fz3-g-contrast,1.08)) var(--fz3-eye-glow);
+  filter:brightness(var(--fz3-g-bright,1.06)) contrast(var(--fz3-g-contrast,1.08));
 }
 .fz3-glitch{position:absolute;inset:0;z-index:3;pointer-events:none;display:none}
 .fz3-eye[data-glitch="blocks"] .fz3-glitch{display:block}
@@ -909,10 +911,15 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 }
 
 /* 完成：弹一下 + 光环炸开 */
-.fz3-layer[data-mood="done"] .fz3-eye{animation:fz3-celebrate 1s cubic-bezier(.3,1.5,.5,1) 1}
-.fz3-eye-flash{position:absolute;inset:-4%;z-index:0;border-radius:50%;pointer-events:none;opacity:0;
-  border:2px solid rgba(190,220,255,.85)}
-.fz3-layer[data-mood="done"] .fz3-eye-flash{animation:fz3-burst .95s ease-out 1}
+/* v1.7.5（修复）：Q 弹只缩放眼球本体（.fz3-eye-svg），不再缩放整个 .fz3-eye。
+   整块缩放会把「::before 径向柔光」一起送进合成层——柔光有 13% 溢出到 128px 盒子之外，
+   合成分层按边框盒栅格化时溢出部分被裁断，弹起的这一秒里光晕就成了圆角方形。
+   现在柔光留在不动的父层里始终是正圆，弹的只有眼睛本身，观感几乎一样。 */
+.fz3-layer[data-celebrate="1"] .fz3-eye-svg{animation:fz3-celebrate 1s cubic-bezier(.3,1.5,.5,1) 1}
+/* v1.7.5（修复）：扩散环整条删掉了。这圈是 2px 的 border 圆环（rgba(190,220,255,.85)），
+   在真实窗口里被 GPU 合成画成了圆角方形——像素量出来半边 130、圆角半径 89，四边平直四角打圆，
+   border-radius:50% 没起效；用同一份 CSS 做静态渲染却永远是正圆，静态复现这条线查不出根因。
+   它已经没有任何用处，直接把元素和动画一起去掉，完成时只留眼球那一下 Q 弹。 */
 
 /* 页面隐藏：冻结全部 CSS 时间线（光晕呼吸 / 脉冲环都在这一个属性上停下；
    叶片旋转 / 眼球呼吸 / 目光微动是运行时 15fps 时间线，由 suspend() 停表）。 */
@@ -941,7 +948,6 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
   72%{opacity:var(--fz3-flicker-2,.03)}
 }
 @keyframes fz3-celebrate{0%{transform:scale(1)}30%{transform:scale(1.14)}62%{transform:scale(.97)}100%{transform:scale(1)}}
-@keyframes fz3-burst{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.5);opacity:0}}
 
 /* ———————————————————— */
 .fz3-copy{
@@ -1016,10 +1022,12 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 .fz3-bay{position:fixed;left:50%;bottom:-190px;width:980px;height:400px;transform:translateX(-50%);pointer-events:none;
   background:radial-gradient(closest-side,rgba(74,96,255,.16),rgba(60,50,200,.05) 60%,transparent 78%)}
 .fz3-atmos{position:fixed;inset:0;z-index:3;pointer-events:none;overflow:hidden;mix-blend-mode:screen;opacity:.75}
-.fz3-atmos-frame{position:absolute;inset:9px;border:1px solid rgba(87,232,255,.06)}
-.fz3-atmos-frame::before,.fz3-atmos-frame::after{content:"";position:absolute;width:16px;height:16px;border:1px solid rgba(87,232,255,.22)}
-.fz3-atmos-frame::before{left:-1px;top:-1px;border-right:0;border-bottom:0}
-.fz3-atmos-frame::after{right:-1px;bottom:-1px;border-left:0;border-top:0}
+/* （观感）取景框只画左边和上边，角标也只留左上角一个。
+   原来右下角也有一个同样的角标，它的横臂正好从滚动条左边探出来，
+   和青柠色滚动条叠成一截突兀的断线；右下角本来就被滚动条 + 输入区占满，
+   在那里放任何装饰都会撞车。 */
+.fz3-atmos-frame{position:absolute;inset:9px;border-top:1px solid rgba(87,232,255,.06);border-left:1px solid rgba(87,232,255,.06)}
+.fz3-atmos-frame::before{content:"";position:absolute;left:-1px;top:-1px;width:16px;height:16px;border:1px solid rgba(87,232,255,.22);border-right:0;border-bottom:0}
 /* 两团氛围光原本各带一层大半径滤镜（blur 34px / 20px），在整块屏幕尺寸上常驻栅格化；
    径向渐变本身已经是软过渡，去掉滤镜后观感几乎不变，但这块不再需要离屏滤镜。 */
 .fz3-atmos-glow{position:absolute;left:-12%;top:-26%;width:64%;height:70%;background:radial-gradient(circle,rgba(70,52,255,.16),rgba(60,46,240,.05) 52%,transparent 78%);opacity:.55;transform:scale(1);animation:fz3-atmos-breathe 14s steps(14,end) infinite alternate}
@@ -1064,10 +1072,9 @@ html[data-fz3-phase="dock"] .fz3-atmos{mix-blend-mode:normal}
  * backdrop-filter:blur()（整块区域模糊在高刷屏上每帧重算背景）改纯渐变；
  * 其余新增规则全部是静态声明，没有常驻动画。
  * ================================================================== */
-:root{--fz3-mute:#9aa4d6}
 
 /* ---------- 浅色主题：宿主切浅色时 <html data-fz3-theme="light"> ---------- */
-:root[data-fz3-theme="light"]{--fz3-cyan:#2f62e0;--fz3-text:#151b2f;--fz3-mute:#5c6684;color-scheme:light}
+:root[data-fz3-theme="light"]{--fz3-cyan:#2f62e0;--fz3-text:#151b2f;color-scheme:light}
 html[data-fz3-theme="light"],html[data-fz3-theme="light"] body{background:#eef3fc!important;color-scheme:light;color:var(--fz3-text)}
 html[data-fz3-theme="light"] body::before{
   background:
@@ -1100,9 +1107,8 @@ html[data-fz3-theme="light"] .fz3-set-switch{background:rgba(120,150,200,.25);bo
 html[data-fz3-theme="light"] .fz3-set-switch::after{background:#fff;box-shadow:0 1px 3px rgba(20,40,90,.28)}
 html[data-fz3-theme="light"] .fz3-set-switch[data-on="1"]::after{background:#04121f;box-shadow:none}
 
-/* ---------- 眼徽交互：点一下弹用量气泡，按住可以拖到任意位置 ---------- */
-.fz3-layer[data-phase="dock"] .fz3-core{pointer-events:auto;cursor:pointer}
-.fz3-layer[data-drag="1"][data-phase="dock"] .fz3-core{cursor:grab;touch-action:none}
+/* ---------- 眼徽交互：只做状态指示；按住右键拖动，左键不作用（v1.7.5） ---------- */
+.fz3-layer[data-phase="dock"] .fz3-core{pointer-events:auto;cursor:default;touch-action:none}
 .fz3-layer[data-dragging="1"][data-phase="dock"] .fz3-core{transition:none;cursor:grabbing;will-change:transform}
 .fz3-layer[data-dragging="1"][data-phase="dock"] .fz3-core svg{transition:none;transform:none}
 /* 拖动期临时关掉最贵的两处合成：300% 的脉冲环与全屏 mix-blend 氛围层（松手即恢复） */
@@ -1110,52 +1116,43 @@ html[data-fz3-theme="light"] .fz3-set-switch[data-on="1"]::after{background:#041
 .fz3-layer[data-dragging="1"] .fz3-atmos{mix-blend-mode:normal}
 .fz3-layer[data-phase="dock"] .fz3-core:hover .fz3-eye-svg{transform:scale(1.07)}
 
-/* ---------- 用量气泡 ---------- */
-.fz3-bubble{
-  position:fixed;z-index:9002;pointer-events:auto;width:236px;padding:12px 14px 11px;border-radius:14px;
-  background:linear-gradient(160deg,rgba(12,26,70,.97),rgba(5,12,34,.97));
-  border:1px solid rgba(120,170,255,.3);
-  box-shadow:0 18px 44px -18px rgba(0,0,0,.85),inset 0 0 0 1px rgba(120,170,255,.06),0 0 32px -12px rgba(90,140,255,.55);
-  color:var(--fz3-text);font-family:var(--fz3-font);font-size:12px;line-height:1.55;
-  transform:translateY(-50%);animation:fz3-bubble-in .18s ease-out both;
+/* ---------- 眼徽的焦点框（v1.7.5） ---------- */
+/* 眼徽是 role="button" 的 div：Chromium 在鼠标点过之后也会判成 :focus-visible，
+   于是皮肤那条全局青柠描边（2px + 2px offset）会在眼徽外面套一个大方框 —— 看着像 bug，
+   其实是焦点环。这里把边框去掉，键盘可达性改成和 hover 一样的「放大 7%」，不再画框。 */
+.fz3-core,.fz3-core:focus,.fz3-core:focus-visible{outline:none!important}
+.fz3-layer[data-phase="dock"] .fz3-core:focus-visible .fz3-eye-svg{transform:scale(1.07)}
+
+/* ---------- 常驻电费读数（v1.7.5） ---------- */
+/* 不做成卡片：没有底色、描边和阴影，就是侧栏页脚上方的几行字 + 一行计费说明，
+   和侧栏自己在同一个平面上，不会在窗口里再「套一个窗口」抢视线。
+   位置仍在页脚胶囊正上方（同一条左边界、向上生长），不会盖住胶囊或「默认工作区」行。
+   这里就是电费唯一的出口：不再有气泡，也没有点击；眼徽退回纯状态指示。
+   数据走 usageCache 的 30s / 60s TTL，20s 轮询基本都命中缓存，不会反复解压会话日志。 */
+.fz3-bill{
+  position:fixed;left:12px;bottom:86px;width:255px;z-index:2;box-sizing:border-box;
+  display:grid;gap:1px;padding:8px 10px 9px;border-radius:8px;
+  pointer-events:auto;background:transparent;
+  font-family:var(--fz3-font);font-size:14px;line-height:1.45;color:rgba(242,242,238,.72);
 }
-.fz3-bubble::after{
-  content:"";position:absolute;left:-5px;top:50%;width:10px;height:10px;margin-top:-5px;transform:rotate(45deg);
-  background:linear-gradient(160deg,rgba(12,26,70,.97),rgba(5,12,34,.97));
-  border-left:1px solid rgba(120,170,255,.3);border-bottom:1px solid rgba(120,170,255,.3);
-}
-.fz3-bubble[data-side="left"]{animation-name:fz3-bubble-in-left}
-.fz3-bubble[data-side="left"]::after{left:auto;right:-5px;border-left:0;border-bottom:0;border-right:1px solid rgba(120,170,255,.3);border-top:1px solid rgba(120,170,255,.3)}
-.fz3-bubble-head{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8fb4ff;margin-bottom:7px}
-.fz3-bubble[data-mode="turn"] .fz3-bubble-head{color:#ffd98a}
-.fz3-bubble-row{display:flex;align-items:baseline;justify-content:space-between;gap:18px}
-.fz3-bubble-row + .fz3-bubble-row{margin-top:3px}
-.fz3-bubble-k{color:var(--fz3-mute)}
-.fz3-bubble-v{font-variant-numeric:tabular-nums;color:#eaf4ff}
-.fz3-bubble-v b{font-weight:600}
-.fz3-bubble-sub{margin-top:7px;font-size:10px;line-height:1.5;color:rgba(154,164,214,.85)}
-.fz3-bubble[data-loading="1"] .fz3-bubble-v{opacity:.35}
-.fz3-peak{display:inline-flex;align-items:center;gap:7px}
-.fz3-peak-badge{width:19px;height:19px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;line-height:1;color:#fff;background:#2ec25f;box-shadow:0 0 12px rgba(46,194,95,.45)}
-.fz3-peak-badge[data-tone="peak"]{background:#f0a13a;box-shadow:0 0 12px rgba(240,161,58,.45)}
-.fz3-peak-clock{font-family:"Cascadia Code","JetBrains Mono",Consolas,monospace;font-size:12.5px;font-weight:700;letter-spacing:.06em;color:#3ed873;border-bottom:1px solid rgba(62,216,115,.35)}
-.fz3-peak-clock[data-tone="peak"]{color:#ffb45c;border-bottom-color:rgba(255,180,92,.35)}
-@keyframes fz3-bubble-in{from{opacity:0;transform:translateY(-50%) translateX(-6px)}to{opacity:1;transform:translateY(-50%) translateX(0)}}
-@keyframes fz3-bubble-in-left{from{opacity:0;transform:translateY(-50%) translateX(6px)}to{opacity:1;transform:translateY(-50%) translateX(0)}}
-html[data-fz3-theme="light"] .fz3-bubble{
-  background:linear-gradient(160deg,rgba(255,255,255,.99),rgba(240,246,255,.99));
-  border-color:rgba(60,90,220,.24);
-  box-shadow:0 18px 44px -20px rgba(30,60,140,.55),inset 0 0 0 1px rgba(255,255,255,.8);
-  color:#141a2e;
-}
-html[data-fz3-theme="light"] .fz3-bubble::after{background:linear-gradient(160deg,rgba(255,255,255,.99),rgba(240,246,255,.99));border-color:rgba(60,90,220,.24)}
-html[data-fz3-theme="light"] .fz3-bubble-head{color:#2f5fe0}
-html[data-fz3-theme="light"] .fz3-bubble[data-mode="turn"] .fz3-bubble-head{color:#a76a06}
-html[data-fz3-theme="light"] .fz3-bubble-v{color:#111a33}
-html[data-fz3-theme="light"] .fz3-bubble-sub{color:rgba(72,86,130,.9)}
-html[data-fz3-theme="light"] .fz3-peak-badge{box-shadow:none}
-html[data-fz3-theme="light"] .fz3-peak-clock{color:#128a4a;border-bottom-color:rgba(18,138,74,.3)}
-html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;border-bottom-color:rgba(181,106,0,.3)}
+.fz3-bill-head{margin-bottom:6px;font-family:var(--fz3-mono);font-size:15px;font-weight:700;letter-spacing:.06em;color:rgba(216,250,0,.86)}
+.fz3-bill-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.fz3-bill-k{color:rgba(242,242,238,.72);white-space:nowrap}
+.fz3-bill-v{font-family:var(--fz3-mono);font-size:13px;font-weight:500;font-variant-numeric:tabular-nums;color:rgba(242,242,238,.95);white-space:nowrap}
+.fz3-bill-vwrap{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+/* 谷 / 峰：和旧气泡同一套色（谷绿、峰橙），只是缩小到 16px 塞进读数行 */
+.fz3-bill-tag{width:16px;height:16px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-family:var(--fz3-font);font-size:10.5px;font-weight:700;line-height:1;color:#fff;background:#2ec25f}
+.fz3-bill[data-tone="peak"] .fz3-bill-tag{background:#f0a13a}
+.fz3-bill-clock{font-family:var(--fz3-mono);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:#63bf8c;white-space:nowrap}
+.fz3-bill[data-tone="peak"] .fz3-bill-clock{color:#d8a86a}
+.fz3-bill[data-loading="1"]{opacity:.55}
+.fz3-bill-note{margin-top:5px;padding-top:6px;border-top:1px solid rgba(242,242,238,.07);font-size:11px;line-height:1.5;letter-spacing:.01em;color:rgba(242,242,238,.34)}
+html[data-fz3-theme="light"] .fz3-bill-head{color:rgba(96,122,0,.9)}
+html[data-fz3-theme="light"] .fz3-bill-k{color:rgba(16,17,16,.72)}
+html[data-fz3-theme="light"] .fz3-bill-v{color:rgba(16,17,16,.92)}
+html[data-fz3-theme="light"] .fz3-bill-clock{color:#2f8757}
+html[data-fz3-theme="light"] .fz3-bill-note{color:rgba(16,17,16,.44);border-top-color:rgba(16,17,16,.09)}
+html[data-fz3-theme="light"] .fz3-bill[data-tone="peak"] .fz3-bill-clock{color:#a06718}
 
 /* ==================================================================
  * v1.7.0 — 「绳网终端 / WIRE-NET TERMINAL」宿主皮肤层
@@ -1164,28 +1161,20 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
  * 约定：强调色青柠 #d8fa00 只给选中/主行动，整屏 <5%；不新增 @keyframes、不用毛玻璃；
  *      浅色 = 纸面，深色 = 墨黑面板；Fairy 蓝眼保留为唯一签名色。
  * ================================================================== */
+/* 令牌只留真正被 var() 消费的这几个。v1.7.5 清理掉的一批
+ * （lime-dim / ink / paper / panel / panel-2 / hair / mute）从来没有任何规则引用，
+ * 留着只会让人以为改它们有效。 */
 :root{
   --fz3-lime:#d8fa00;
-  --fz3-lime-dim:#b6d400;
   --fz3-amber:#ffde00;
-  --fz3-ink:#0a0b08;
-  --fz3-paper:#efefed;
-  --fz3-panel:#141614;
-  --fz3-panel-2:#1b1d1b;
-  --fz3-hair:rgba(255,255,255,.10);
   --fz3-mono:"Cascadia Mono","Cascadia Code","SF Mono",Consolas,"Microsoft YaHei UI",monospace;
   --fz3-cyan:#d8fa00;
   --fz3-text:#f2f2ee;
-  --fz3-mute:#9a9c96;
 }
 :root[data-fz3-theme="light"],html[data-fz3-theme="light"]{
   --fz3-lime:#d8fa00;
   --fz3-cyan:#6f8700;
   --fz3-text:#101110;
-  --fz3-mute:#5a5c56;
-  --fz3-panel:#ffffff;
-  --fz3-panel-2:#f7f7f3;
-  --fz3-hair:rgba(16,17,16,.14);
 }
 
 /* ---------- A. 画布：纸面 / 墨黑 + 斜纹 + 网点 ----------
@@ -1195,23 +1184,48 @@ html[data-fz3-theme="light"] .fz3-peak-clock[data-tone="peak"]{color:#b56a00;bor
 html{background:#0a0a0a!important}
 body{
   background-color:#0a0a0a!important;
+  /* v1.7.5（观感）：把绝区零那张「ZERO 字墙」铺成画布底纹，不再是纯网点。
+     层序（上 → 下）：暗角收边 → 上下收边（中段遮罩浓淡由 --fz3-wall-veil 一个数控）
+     → 左下青柠底光 → 字墙图 → 网点 → 斜纹。
+     原图是两色调（#010101 底 / #191919 字形），在 assets/zzz-pattern.webp 里已做过
+     色调映射压到 #0a0a0a 画布附近，所以直接铺也不会盖过正文；
+     范围取 cover + 居中：窗口怎么变都铺满、不变形、不出现拼缝。 */
   background-image:
-    radial-gradient(44% 36% at 88% -8%,rgba(216,250,0,.10),transparent 70%),
-    radial-gradient(30% 26% at 0% 100%,rgba(216,250,0,.045),transparent 72%),
+    radial-gradient(120% 106% at 50% 46%,rgba(10,10,10,0) 0%,rgba(10,10,10,0) 40%,rgba(10,10,10,.52) 78%,rgba(10,10,10,.95) 100%),
+    linear-gradient(180deg,rgba(10,10,10,.94) 0px,rgba(10,10,10,.30) 104px,rgba(10,10,10,var(--fz3-wall-veil,.06)) 30%,rgba(10,10,10,var(--fz3-wall-veil,.06)) 58%,rgba(10,10,10,.62) 82%,rgba(10,10,10,.96) 100%),
+    radial-gradient(30% 26% at 0% 100%,rgba(216,250,0,.055),transparent 72%),
+    url('/fairy-zzz/assets/zzz-pattern.webp'),
     radial-gradient(rgba(255,255,255,.05) 1px,transparent 1.4px),
     repeating-linear-gradient(-45deg,rgba(255,255,255,.028) 0 1px,transparent 1px 11px)!important;
-  background-size:auto,auto,18px 18px,auto!important;
+  background-size:auto,auto,auto,cover,18px 18px,auto!important;
+  background-position:center center,center center,center center,center center,0 0,0 0!important;
+  background-repeat:no-repeat,no-repeat,no-repeat,no-repeat,repeat,repeat!important;
   background-attachment:scroll!important;
 }
 :root[data-fz3-theme="light"] body,html[data-fz3-theme="light"] body{
   background-color:#efefed!important;
+  /* 浅色：同一张字墙，用纸色薄纱压成「印在纸上」的浅灰，四边收回纯纸色。 */
   background-image:
-    radial-gradient(44% 36% at 88% -8%,rgba(216,250,0,.20),transparent 70%),
+    radial-gradient(120% 106% at 50% 46%,rgba(239,239,237,.58) 0%,rgba(239,239,237,.66) 44%,rgba(239,239,237,.92) 82%,#efefed 100%),
+    linear-gradient(180deg,rgba(239,239,237,.98) 0px,rgba(239,239,237,.86) 104px,rgba(239,239,237,.72) 30%,rgba(239,239,237,.72) 58%,rgba(239,239,237,.93) 82%,rgba(239,239,237,.99) 100%),
+    radial-gradient(44% 36% at 88% -8%,rgba(216,250,0,.16),transparent 70%),
     radial-gradient(30% 26% at 0% 100%,rgba(216,250,0,.10),transparent 72%),
+    url('/fairy-zzz/assets/zzz-pattern.webp'),
     radial-gradient(rgba(16,17,16,.09) 1px,transparent 1.4px),
     repeating-linear-gradient(-45deg,rgba(16,17,16,.035) 0 1px,transparent 1px 11px)!important;
-  background-size:auto,auto,18px 18px,auto!important;
+  background-size:auto,auto,auto,auto,cover,18px 18px,auto!important;
+  background-position:center center,center center,center center,center center,center center,0 0,0 0!important;
+  background-repeat:no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,repeat,repeat!important;
+  background-attachment:scroll!important;
 }
+/* ---------- A2. 画布穿透：让外壳自己的底色让开 ----------
+ * 桌面端外壳在 body 之上又铺了三层底：整窗 .mP3x-q_frame（#101110），
+ * 会话列 .mP3x-q_centerCol 与会话根 .an3WzG_root 再各压一层 rgba(10,10,10,.9)。
+ * 画布被盖了两遍：0.9×10 + 0.1×16 = 10.6，字墙 26 级的字压完只剩 11 级，
+ * 和纯黑没区别 —— v1.7.5 之前「桌面端看不到底纹」就是这一层造成的。
+ * 这里只让开颜色、不动布局：侧栏 .wtg9ga_root 仍是 #101110，弹层仍是自己的面，
+ * 字墙和暗角全部回到 body 那一份（深/浅两套）上，全窗连续、不出接缝。 */
+.mP3x-q_frame,.mP3x-q_centerCol,[class$="_centerCol"],.an3WzG_root{background-color:transparent!important}
 ::selection{background:var(--fz3-lime)!important;color:#0a0b08!important}
 html[data-fz3-theme="light"] ::selection{background:#101110!important;color:#d8fa00!important}
 *::-webkit-scrollbar{width:8px;height:8px}
@@ -1267,13 +1281,15 @@ html[data-fz3-theme="light"] .wtg9ga_root{border-right-color:rgba(255,255,255,.1
   background:#f2f2ee!important;color:#0a0b08!important;box-shadow:none!important;
 }
 .wtg9ga_panelRow[aria-current="page"] *,.wtg9ga_panelRow[data-active="true"] *{color:#0a0b08!important}
-/* 分区小标：// 等宽大写（官网 VIDEO / BACKGROUND kicker + wiki /// 模块标题的合并） */
+/* 分区小标：// 等宽大写（官网 VIDEO / BACKGROUND kicker + wiki /// 模块标题的合并）。
+   v1.7.5：原来 10px / 34% 白，比下面的会话行还小还淡，标题反而缩在内容后面；
+   现在放大到 13px、提亮到 82%，让「工作区」先被看见，// 仍然是青柠。 */
 .GAkraW_sectionLabel{
-  font-family:var(--fz3-mono)!important;font-size:10px!important;font-weight:700!important;
-  letter-spacing:.20em!important;text-transform:uppercase;color:rgba(242,242,238,.34)!important;
+  font-family:var(--fz3-mono)!important;font-size:13px!important;font-weight:700!important;
+  letter-spacing:.12em!important;text-transform:uppercase;color:rgba(242,242,238,.82)!important;
 }
 .GAkraW_sectionLabel::before{content:"// ";color:var(--fz3-lime);font-weight:700}
-.GAkraW_sectionLabel svg{color:rgba(242,242,238,.34)}
+.GAkraW_sectionLabel svg{color:rgba(242,242,238,.55)}
 /* 会话行：选中 = 青柠左划线 + 青柠 8% 底 */
 .wnFoaW_sessionRow{height:32px!important;border-radius:6px!important;color:rgba(242,242,238,.58)!important}
 .wnFoaW_sessionRow:hover{background:rgba(255,255,255,.06)!important;color:#fff!important}
@@ -1381,15 +1397,12 @@ html[data-fz3-theme="light"] ._86kJGG_trigger,html[data-fz3-theme="light"] ._9r0
   font-weight:700!important;letter-spacing:.12em!important;line-height:15px!important;
   padding:2px 7px!important;margin-top:2px!important;align-self:center!important;
 }
-.WOwLGG_root::before{
-  content:"05";position:absolute;right:2.5%;top:4%;z-index:0;pointer-events:none;
-  font-family:Impact,Haettenschweiler,"Arial Narrow Bold",sans-serif;font-size:clamp(120px,14vw,200px);
-  line-height:.8;letter-spacing:.02em;color:rgba(255,255,255,.075);
-}
+/* v1.7.5：欢迎页右侧本来印着一个 200px 的「05」大号水印（网端终端的分区编号），
+   纯装饰、没有功能，还会被 composer 边缘切掉一截，看着像没对齐的污渍——去掉。
+   标题上方的「// NETWORK TERMINAL 05」保留，那是同一套编号里能读的那一半。 */
 .fz3-hero-brand-eye{filter:drop-shadow(0 0 8px rgba(96,148,255,.45))}
 html[data-fz3-theme="light"] .WOwLGG_headline{color:#101110!important}
 html[data-fz3-theme="light"] .WOwLGG_headline::before{color:#6f8700}
-html[data-fz3-theme="light"] .WOwLGG_root::before{color:rgba(16,17,16,.075)}
 html[data-fz3-theme="light"] .WOwLGG_previewBadge{border-color:#101110!important}
 
 /* ---------- F. 消息：墨块用户气泡 / 无气泡回答 ---------- */
@@ -1463,29 +1476,12 @@ html[data-fz3-theme="light"] .AnXs9G_close:hover{background:rgba(16,17,16,.06)!i
 .fz3-sb-text b{font-family:"Palatino Linotype","Book Antiqua",Palatino,serif!important;font-style:italic!important;font-size:19px!important;letter-spacing:.03em!important;color:#f2f2ee!important;text-shadow:none!important}
 .fz3-sb-text b::before{content:"//";font-family:var(--fz3-mono);font-style:normal;font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--fz3-lime);margin-right:6px;vertical-align:2px}
 .fz3-sb-text i{font-family:var(--fz3-mono)!important;font-size:8px!important;line-height:1.4!important;letter-spacing:.16em!important;color:rgba(216,250,0,.60)!important}
-.fz3-bubble{
-  background:#141614!important;border:1px solid rgba(216,250,0,.30)!important;border-radius:10px!important;
-  box-shadow:6px 6px 0 rgba(0,0,0,.55)!important;color:#f2f2ee!important;
-}
-.fz3-bubble::after{background:#141614!important;border-left-color:rgba(216,250,0,.30)!important;border-bottom-color:rgba(216,250,0,.30)!important}
-.fz3-bubble[data-side="left"]::after{background:#141614!important;border-right-color:rgba(216,250,0,.30)!important;border-top-color:rgba(216,250,0,.30)!important}
-.fz3-bubble-head{font-family:var(--fz3-mono);color:rgba(216,250,0,.85)!important;letter-spacing:.20em}
-.fz3-bubble[data-mode="turn"] .fz3-bubble-head{color:#ffde00!important}
-.fz3-bubble-k{color:rgba(242,242,238,.46)!important}
-.fz3-bubble-v{color:#f2f2ee!important;font-family:var(--fz3-mono)}
-.fz3-bubble-sub{color:rgba(242,242,238,.42)!important}
 html[data-fz3-theme="light"] .fz3-brandname b,html[data-fz3-theme="light"] .fz3-sb-text b{color:#f2f2ee!important}
 html[data-fz3-theme="light"] .fz3-set{color:#101110}
 html[data-fz3-theme="light"] .fz3-set-row{border-color:rgba(16,17,16,.14)!important}
 html[data-fz3-theme="light"] .fz3-set-sub,html[data-fz3-theme="light"] .fz3-set-desc,html[data-fz3-theme="light"] .fz3-set-note{color:rgba(16,17,16,.52)!important}
 html[data-fz3-theme="light"] .fz3-set-btn{border-color:rgba(16,17,16,.22)!important;color:#101110!important}
 html[data-fz3-theme="light"] .fz3-set-input{background:#fff!important;border-color:rgba(16,17,16,.16)!important;color:#101110!important}
-html[data-fz3-theme="light"] .fz3-bubble{background:#fff!important;border-color:rgba(16,17,16,.24)!important;box-shadow:8px 8px 0 rgba(16,17,16,.12)!important;color:#101110!important}
-html[data-fz3-theme="light"] .fz3-bubble::after{background:#fff!important;border-color:rgba(16,17,16,.24)!important}
-html[data-fz3-theme="light"] .fz3-bubble-head{color:#6f8700!important}
-html[data-fz3-theme="light"] .fz3-bubble-k{color:rgba(16,17,16,.48)!important}
-html[data-fz3-theme="light"] .fz3-bubble-v{color:#101110!important}
-html[data-fz3-theme="light"] .fz3-bubble-sub{color:rgba(16,17,16,.44)!important}
 
 /* ---------- I. 开场覆盖层：墨黑 + 青柠 HUD 边框 ---------- */
 .fz3-screen{background:#0a0a0a!important}
@@ -1502,11 +1498,12 @@ html[data-fz3-theme="light"] .fz3-bubble-sub{color:rgba(16,17,16,.44)!important}
 .fz3-copy-sub{color:rgba(242,242,238,.42)!important;font-family:var(--fz3-mono)!important}
 .fz3-skip2{color:rgba(216,250,0,.62)!important;font-family:var(--fz3-mono)!important;letter-spacing:.22em!important}
 .fz3-skip2:hover{color:#eaff5a!important}
-.fz3-eye{--fz3-eye-glow:drop-shadow(0 0 24px rgba(216,250,0,.28))}
 .fz3-eye::before{background:radial-gradient(closest-side,rgba(216,250,0,.22),rgba(216,250,0,.09) 46%,transparent 78%)!important}
 .fz3-eye-halo{background:radial-gradient(closest-side,rgba(216,250,0,.17),rgba(216,250,0,.07) 46%,transparent 82%)!important}
+/* （观感）只留左上角一个角标：右下角那个的横臂会从滚动条左侧探出来，
+   和青柠色滚动条叠成一截突兀的断线，所以整条右下角标一并去掉。 */
 .fz3-atmos-frame{border-color:rgba(216,250,0,.08)!important}
-.fz3-atmos-frame::before,.fz3-atmos-frame::after{border-color:rgba(216,250,0,.34)!important}
+.fz3-atmos-frame::before{border-color:rgba(216,250,0,.34)!important}
 .fz3-atmos-glow{background:radial-gradient(circle,rgba(216,250,0,.10),rgba(216,250,0,.03) 52%,transparent 78%)!important}
 .fz3-atmos-flash{background:radial-gradient(ellipse at 60% 20%,rgba(216,250,0,.10),rgba(216,250,0,.03) 42%,transparent 72%)!important}
 .fz3-voice:hover{color:var(--fz3-lime)!important;background:rgba(216,250,0,.10)!important;border-color:rgba(216,250,0,.35)!important;box-shadow:none!important}
@@ -1516,12 +1513,16 @@ html[data-fz3-theme="light"] .fz3-bubble-sub{color:rgba(16,17,16,.44)!important}
 /* ---------- J. 动效纪律：只留 120–160ms 的色彩/位移 ---------- */
 button,a,[role="button"],[role="treeitem"]{transition-duration:.14s!important}
 
-/* v1.7.4（性能）：dock 相（= 用户真正在干活的相位）停掉背景氛围层的两个常驻无限动画。
- * 它们是全屏 fixed 图层上的 loop（14s 呼吸 + 11s 闪烁），在 165Hz 屏上等于喂给合成器
- * 一份永不结束的活；静止后观感几乎无差（青柠辉光本来就是极慢的呼吸）。
- * hero / greet / boot 三相保留动画——那几秒本来就在看开场。 */
+/* v1.7.4（性能）+ v1.7.5（观感）：dock 相（= 用户真正在干活的相位）把整屏氛围层里那两团
+ * 青柠辉光一起收掉。它们本来是给开机/问好那几秒做舞台光的，进了工作相位就只剩副作用：
+ * 一层 z-index:3、fixed 铺满全窗的 rgba(216,250,0,.10) 渐变直接压在字墙上，
+ * 屏幕顶部会糊出一片偏黄的透明色块（用户反馈「太不和谐」）。
+ * 顺带也停掉两个常驻 loop（14s 呼吸 + 11s 闪烁），dock 相不再喂给合成器永不结束的活。
+ * hero / greet / boot 三相保留；切相只用 .5s 淡出，不会留下跳变。 */
 html[data-fz3-phase="dock"] .fz3-atmos-glow,
-html[data-fz3-phase="dock"] .fz3-atmos-flash{animation:none!important}
+html[data-fz3-phase="dock"] .fz3-atmos-flash{
+  animation:none!important;opacity:0!important;transition:opacity .5s ease!important;
+}
 
 /* v1.7.4（性能）：.fz3-rim 原先带 blur(8px)。它是一层 560×560 的 fixed 装饰光斑，
  * 底图本身就是 radial-gradient（边缘已经自然淡出），模糊只是把同一张图再算一遍；
@@ -1605,8 +1606,6 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
       const SVG_NS = 'http://www.w3.org/2000/svg'
       let root = null
       let bands = []
-      let noise = null
-      let displace = null
       let glitchToken = 0
       let flickerToken = 0
       let transitionToken = 0
@@ -1630,18 +1629,6 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
 
       const elementUnit = () => ((root && root.clientWidth) || 200) / 162
 
-      const ensureFilter = () => {
-        if (typeof document === 'undefined') return
-        if (!document.getElementById('fz3-threads-defs')) {
-          const holder = document.createElement('div')
-          holder.setAttribute('aria-hidden', 'true')
-          holder.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none'
-          holder.innerHTML = FAIRY_THREADS_SVG
-          document.body.appendChild(holder)
-        }
-        noise = document.getElementById('fz3-noise')
-        displace = document.getElementById('fz3-displace')
-      }
 
       const cache = (el) => {
         root = el
@@ -1681,7 +1668,6 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
           }
           writeDrift()
         }
-        ensureFilter()
       }
 
       /* —— 15fps 眼球时钟（v1.6.0）——
@@ -1797,17 +1783,7 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
         style.setProperty('--fz3-g-skew', fz3Random(strong ? -0.32 : -0.24, strong ? 0.32 : 0.24).toFixed(2) + 'deg')
         style.setProperty('--fz3-g-bright', fz3Random(strong ? 1.06 : 1.02, strong ? 1.18 : 1.14).toFixed(2))
         style.setProperty('--fz3-g-contrast', fz3Random(strong ? 1.08 : 1.02, strong ? 1.22 : 1.16).toFixed(2))
-        if (mode === 'threads') {
-          const begins = root.getAttribute('data-glitch') !== 'threads'
-          if (begins && noise) {
-            noise.setAttribute('seed', String(Math.floor(fz3Random(1, 999))))
-            noise.setAttribute('baseFrequency',
-              (fz3Random(0.004, 0.011) / unit).toFixed(4) + ' ' + (fz3Random(strong ? 0.78 : 0.65, strong ? 1.18 : 1) / unit).toFixed(3))
-          }
-          if (begins && displace) {
-            displace.setAttribute('scale', (fz3Random(strong ? 30 : 17, strong ? 46 : 29) * unit).toFixed(1))
-          }
-        } else {
+        if (mode === 'blocks') {
           const polarity = Math.random() < 0.5 ? -1 : 1
           const strength = fz3Random(strong ? 4.2 : 1.4, strong ? 6.8 : 3) * unit
           for (let i = 1; i <= 5; i += 1) {
@@ -2136,7 +2112,6 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
           )),
         ),
         h('span', { className: 'fz3-eye-flicker', 'aria-hidden': 'true' }),
-        h('span', { className: 'fz3-eye-flash', 'aria-hidden': 'true' }),
       )
     })
 
@@ -2162,29 +2137,14 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
           engineTimer.current = []
         }
       }, [])
-      /* 眼徽：拖动 / 显隐。两项都写 localStorage，再广播自定义事件让皮肤图层立刻响应 */
-      const [dragPref, setDragPref] = useState(() => readBool(DRAG_KEY, true))
+      /* 眼徽显隐：写 localStorage，再广播自定义事件让皮肤图层立刻响应。
+         能不能拖不再有开关——眼标一律「按住右键拖动，左键不作用」。 */
       const [eyeHidden, setEyeHidden] = useState(() => readBool(EYE_KEY, false))
-      const [hasCustomPos, setHasCustomPos] = useState(() => {
-        const saved = readStored(POS_KEY, null)
-        return !!(saved && Number.isFinite(saved.x) && Number.isFinite(saved.y))
-      })
-      const toggleDrag = () => {
-        const next = !dragPref
-        setDragPref(next)
-        writeStored(DRAG_KEY, next)
-        try { window.dispatchEvent(new Event('fz3:drag-pref')) } catch (e) {}
-      }
       const toggleEye = () => {
         const next = !eyeHidden
         setEyeHidden(next)
         writeStored(EYE_KEY, next)
         try { window.dispatchEvent(new Event('fz3:eye-pref')) } catch (e) {}
-      }
-      const resetDockPos = () => {
-        try { localStorage.removeItem(POS_KEY) } catch (e) {}
-        setHasCustomPos(false)
-        try { window.dispatchEvent(new Event('fz3:dock-reset')) } catch (e) {}
       }
       /* 试听问候：本时段 5 条随机语音里抽一条，把台词显示出来，方便确认新语音都在 */
       const [previewLine, setPreviewLine] = useState('')
@@ -2315,7 +2275,7 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
               : enginePhase === 'error'
                 ? '引擎报错：' + String((engine && engine.engineError) || '未知错误').slice(0, 80)
                 : engineHome
-                  ? '未运行（引擎在 ' + engineHome + '）'
+                  ? '未运行 · 已找到引擎目录'
                   : '未运行：没找到语音引擎'
       const setVoice = (enabled) => {
         patchVoice({ enabled: enabled })
@@ -2336,6 +2296,26 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
       }
       const replayBoot = () => { greetPick = null; bootHooks.forEach((fn) => { try { fn() } catch (e) {} }) }
       const testVoice = () => { speakText('测试中。主人，我的声音听起来还满意吗？不满意也请忍着，本系统就这一副嗓子。', { force: true }) }
+      /* 状态、目录、启动/停止合并成一张卡：把「当前生效」的来路单独算一次 */
+      const homeSourceLabel =
+        voiceInfo && voiceInfo.ok
+          ? voiceInfo.source === 'settings'
+            ? '设置项'
+            : voiceInfo.source === 'env'
+              ? '环境变量'
+              : voiceInfo.source === 'portable'
+                ? '便携包自带'
+                : voiceInfo.source === 'legacy'
+                  ? '旧变量 FAIRY_TTS_DIR'
+                  : ''
+          : ''
+      const homeHint = voiceInfo
+        ? voiceInfo.ok
+          ? voiceHome && voiceInfo.home && voiceHome !== voiceInfo.home
+            ? '未保存 · 当前生效：' + voiceInfo.home + (homeSourceLabel ? '（' + homeSourceLabel + '）' : '')
+            : '来源：' + (homeSourceLabel || '自动检测')
+          : voiceInfo.reason || ''
+        : ''
       return h(
         'div',
         { className: 'fz3-set' },
@@ -2365,19 +2345,7 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
         h(
           'div',
           { className: 'fz3-set-row' },
-          h('div', null, h('div', { className: 'fz3-set-label' }, '拖动眼徽'), h('div', { className: 'fz3-set-desc' }, '按住左下角的眼标可以拖到任意位置，点一下展开电费气泡')),
-          h('button', {
-            type: 'button',
-            className: 'fz3-set-switch',
-            'data-on': dragPref ? '1' : '0',
-            'aria-pressed': !!dragPref,
-            onClick: toggleDrag,
-          }),
-        ),
-        h(
-          'div',
-          { className: 'fz3-set-row' },
-          h('div', null, h('div', { className: 'fz3-set-label' }, '显示眼徽'), h('div', { className: 'fz3-set-desc' }, '关掉之后对话界面只留 Fairy 字标，不再显示状态眼标')),
+          h('div', null, h('div', { className: 'fz3-set-label' }, '显示眼徽')),
           h('button', {
             type: 'button',
             className: 'fz3-set-switch',
@@ -2388,24 +2356,17 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
         ),
         h(
           'div',
-          { className: 'fz3-set-row' },
-          h('div', null, h('div', { className: 'fz3-set-label' }, '语音引擎'), h('div', { className: 'fz3-set-desc' }, engineText)),
-          h('span', { className: 'fz3-set-dot' + (ready ? ' is-on' : enginePhase === 'loading' ? ' is-wait' : ' is-off') }),
-        ),
-        h(
-          'div',
-          { className: 'fz3-set-row is-stack' },
+          { className: 'fz3-set-row is-stack fz3-set-engine' },
           h(
             'div',
-            null,
-            h('div', { className: 'fz3-set-label' }, '语音引擎目录'),
+            { className: 'fz3-set-engine-head' },
             h(
               'div',
-              { className: 'fz3-set-desc' },
-              voiceInfo && voiceInfo.ok
-                ? (voiceInfo.source === 'settings' ? '已指定：' : voiceInfo.source === 'env' ? '来自环境变量：' : voiceInfo.source === 'portable' ? '便携包自带：' : '旧变量：') + (voiceInfo.home || '')
-                : (voiceInfo && voiceInfo.reason) || '选一个装好 GPT-SoVITS 的目录，整个目录搬去哪都行',
+              null,
+              h('div', { className: 'fz3-set-label' }, '语音引擎'),
+              h('div', { className: 'fz3-set-desc' }, engineText),
             ),
+            h('span', { className: 'fz3-set-dot' + (ready ? ' is-on' : enginePhase === 'loading' ? ' is-wait' : ' is-off') }),
           ),
           h(
             'div',
@@ -2437,25 +2398,25 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
               '清除',
             ),
           ),
-        ),
-        h(
-          'div',
-          { className: 'fz3-set-actions' },
-          h('button', { type: 'button', className: 'fz3-set-btn', onClick: () => controlEngine('start'), disabled: engineBusy === 'start' || ready }, engineBusy === 'start' ? '启动中…' : '启动引擎'),
-          h('button', { type: 'button', className: 'fz3-set-btn is-ghost', onClick: () => controlEngine('stop'), disabled: engineBusy === 'stop' || !ready }, '停止引擎'),
-          h('button', { type: 'button', className: 'fz3-set-btn is-ghost', onClick: ping }, '刷新状态'),
+          homeHint ? h('div', { className: 'fz3-set-desc is-hint' }, homeHint) : null,
+          h(
+            'div',
+            { className: 'fz3-set-actions' },
+            h('button', { type: 'button', className: 'fz3-set-btn', onClick: () => controlEngine('start'), disabled: engineBusy === 'start' || ready }, engineBusy === 'start' ? '启动中…' : '启动引擎'),
+            h('button', { type: 'button', className: 'fz3-set-btn is-ghost', onClick: () => controlEngine('stop'), disabled: engineBusy === 'stop' || !ready }, '停止引擎'),
+            h('button', { type: 'button', className: 'fz3-set-btn is-ghost', onClick: ping }, '刷新状态'),
+          ),
         ),
         h(
           'div',
           { className: 'fz3-set-actions' },
           h('button', { type: 'button', className: 'fz3-set-btn', onClick: playGreet, title: '随机试听本时段的 5 条问候之一' }, '试听问候'),
           h('button', { type: 'button', className: 'fz3-set-btn', onClick: replayBoot }, '重播开机动画'),
-          h('button', { type: 'button', className: 'fz3-set-btn', onClick: resetDockPos, disabled: !hasCustomPos }, '眼标复位'),
           h('button', { type: 'button', className: 'fz3-set-btn', onClick: testVoice, disabled: busy }, '测试语音'),
           h('button', { type: 'button', className: 'fz3-set-btn is-ghost', onClick: stopSpeech, disabled: !busy }, '停止'),
         ),
         previewLine ? h('div', { className: 'fz3-set-note' }, '刚刚试听：' + previewLine) : null,
-        h('div', { className: 'fz3-set-note' }, 'Fairy 皮肤 · 待机随机眨眼与花屏、思考态眼睑呼吸；点一下左下的眼标展开电费气泡（电费余额 / 今日电费 / 电费倍率倒计时），按住可拖动。开关都在这里。'),
+        h('div', { className: 'fz3-set-note' }, 'Fairy 皮肤 · 待机随机眨眼与花屏、思考态眼睑呼吸；电费余额 / 今日电费 / 倍率倒计时常驻左下角实时刷新。眼标只做状态指示：按住右键可以拖到任意位置，左键不作用。'),
       )
     }
 
@@ -2649,112 +2610,85 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
       return currentGreeting().text
     }
 
-/* 气泡（v1.3.3 文案按电费口径）：usage 态给「电费余额 / 今日电费 / 电费倍率」，turn 态只给「本轮电费 / 电费倍率」。
-   只在展开期间挂载；倒计时每秒 tick 一次（1s 定时器，单实例）。 */
-function BubbleCard({ data, onMeasure, onFlip }) {
-  const { mode, x, y, side, loading, usage, balance } = data
-  const peak = usage && usage.peak
-  const bucket = usage ? (mode === 'turn' ? usage.turn : usage.today) : null
-  const rows = []
+    /* ------------------------------------------------------------------ *
+     * 常驻电费读数（v1.7.5）：左下角实时显示
+     * ------------------------------------------------------------------ */
+    function BillDock() {
+      const [data, setData] = useState(() => ({ usage: usageCache.usage, balance: usageCache.balance }))
+      const [nowTick, setNowTick] = useState(() => Date.now())
+      const alive = useRef(true)
+      const flipRef = useRef(0)
 
-  /* 把真实尺寸交回父层，翻面/夹边都按实际宽高算，不会盖到眼徽 */
-  const boxRef = useRef(null)
-  const lastSize = useRef({ w: 0, h: 0 })
-  useLayoutEffect(() => {
-    const el = boxRef.current
-    if (!el || typeof onMeasure !== 'function') return
-    const w = el.offsetWidth
-    const h = el.offsetHeight
-    if (w === lastSize.current.w && h === lastSize.current.h) return
-    lastSize.current = { w: w, h: h }
-    onMeasure({ w: w, h: h })
-  })
+      const refresh = useCallback(async (force) => {
+        const [usage, balance] = await Promise.all([loadUsage(!!force), loadBalance(!!force)])
+        if (!alive.current) return
+        setData((prev) => (usage || balance ? { usage: usage || prev.usage, balance: balance || prev.balance } : prev))
+      }, [])
 
-  /* 峰谷剩余时间：每秒走一格，换价瞬间归零 */
-  const [nowTick, setNowTick] = useState(() => Date.now())
-  const nextAt = peak && peak.nextAt ? peak.nextAt : 0
-  useEffect(() => {
-    if (!nextAt) return undefined
-    setNowTick(Date.now())
-    const timer = setInterval(() => setNowTick(Date.now()), 1000)
-    return () => clearInterval(timer)
-  }, [nextAt])
+      useEffect(() => {
+        alive.current = true
+        refresh(false)
+        const poll = setInterval(() => refresh(false), 20_000)
+        const tick = setInterval(() => setNowTick(Date.now()), 1_000)
+        return () => {
+          alive.current = false
+          clearInterval(poll)
+          clearInterval(tick)
+        }
+      }, [refresh])
 
-  const left = nextAt ? nextAt - nowTick : 0
+      const usage = data.usage
+      const balance = data.balance
+      const peak = usage && usage.peak
+      const today = usage ? usage.today : null
+      const nextAt = peak && peak.nextAt ? peak.nextAt : 0
+      const left = nextAt ? nextAt - nowTick : 0
+      const tone = peak && peak.offPeak ? 'valley' : 'peak'
 
-  /* 倒计时归零 = 刚换了价：让父层重新拉一次，峰谷标签与花费跟着翻面 */
-  const flipFired = useRef(0)
-  useEffect(() => {
-    if (!nextAt || left > 0 || flipFired.current === nextAt) return
-    flipFired.current = nextAt
-    if (typeof onFlip === 'function') onFlip(mode)
-  }, [left, nextAt, mode, onFlip])
+      /* 倒计时归零 = 刚换价：宿主的 bucket 要下一次请求才翻面，这里补一次强制刷新 */
+      useEffect(() => {
+        if (!nextAt || left > 0 || flipRef.current === nextAt) return undefined
+        flipRef.current = nextAt
+        const timer = setTimeout(() => refresh(true), 2_500)
+        return () => clearTimeout(timer)
+      }, [left, nextAt, refresh])
 
-  if (mode === 'usage') {
-    rows.push(['电费余额', loading ? '…' : balance && balance.ok ? yuan(balance.amount) : '读取失败'])
-    rows.push(['今日电费', loading ? '…' : bucket ? yuan(bucket.cost) : '—'])
-  } else {
-    rows.push(['本轮电费', loading ? '…' : bucket ? yuan(bucket.cost) : '—'])
-  }
-  const tone = peak && peak.offPeak ? 'valley' : 'peak'
-  /* 峰谷时段改叫电费倍率：谷时 5 倍、峰时 10 倍 */
-  const peakTerm = peak ? (peak.offPeak ? '五倍电费' : '十倍电费') : '电费时段'
-  rows.push([
-    peakTerm,
-    loading
-      ? '…'
-      : peak
-        ? nextAt && left > 0
-          ? h(
-              'span',
-              { className: 'fz3-peak' },
-              h('span', { className: 'fz3-peak-badge', 'data-tone': tone }, peak.offPeak ? '谷' : '峰'),
-              h('span', { className: 'fz3-peak-clock', 'data-tone': tone }, clockText(left)),
-            )
-          : feeText(peak.label)
-        : '—',
-  ])
+      /* 第三行用「当前是哪一档」当标签，值放倒计时：五倍电费 56:49:06 = 现在按五倍计，还有这么久换档 */
+      const rateLabel = peak ? (peak.offPeak ? '五倍电费' : '十倍电费') : '电费倍率'
+      const rateValue = peak ? (nextAt ? (left > 0 ? clockText(left) : '切换中') : peak.offPeak ? '五倍' : '十倍') : '—'
 
-  const detail = []
-  if (bucket && bucket.calls) {
-    detail.push(
-      bucket.calls + ' 次请求 · ' + tokensText(bucket.hit) + ' 命中 / ' + tokensText(bucket.miss) + ' 未命中 / ' + tokensText(bucket.out) + ' 输出',
-    )
-  }
-  if (peak) {
-    /* 规则行：把「峰 / 谷」全说清楚（工作日 09–12、14–18 十倍，其余五倍）。
-       旧宿主只返回「…十倍电费」，这里补上「其余时段五倍电费」，避免升级后文案缺一半。
-       下一档倍率不再写成「· 后转十倍电费」——那会变成没有主语的半句话（倒计时在上面的行里）。 */
-    const rule = feeText(peak.window)
-    const ruleFull = rule.indexOf('五倍') >= 0 ? rule : rule + '，其余时段五倍电费'
-    detail.push(
-      nextAt
-        ? left > 0
-          ? ruleFull
-          : ruleFull + ' · 倍率切换中，正在刷新'
-        : ruleFull + ' · ' + feeText(peak.next),
-    )
-  }
-  if (mode === 'usage' && !loading && balance && !balance.ok && balance.reason) detail.push(balance.reason)
-
-  return h(
-    'div',
-    {
-      ref: boxRef,
-      className: 'fz3-bubble',
-      'data-mode': mode,
-      'data-side': side || 'right',
-      'data-loading': loading ? '1' : '0',
-      style: { left: x + 'px', top: y + 'px' },
-    },
-    h('div', { className: 'fz3-bubble-head' }, mode === 'turn' ? 'Fairy · 本轮结算' : 'Fairy · 电费'),
-    rows.map(([k, v]) =>
-      h('div', { className: 'fz3-bubble-row', key: k }, h('span', { className: 'fz3-bubble-k' }, k), h('span', { className: 'fz3-bubble-v' }, h('b', null, v))),
-    ),
-    detail.length ? h('div', { className: 'fz3-bubble-sub' }, detail.map((line, i) => h('div', { key: i }, line))) : null,
-  )
-}
-
+      return h(
+        'div',
+        { className: 'fz3-bill', 'data-tone': tone, 'data-loading': usage || balance ? '0' : '1' },
+        h('div', { className: 'fz3-bill-head' }, 'Fairyの电费'),
+        h(
+          'div',
+          { className: 'fz3-bill-row' },
+          h('span', { className: 'fz3-bill-k' }, '电费余额'),
+          h('span', { className: 'fz3-bill-v' }, balance ? (balance.ok ? yuan(balance.amount) : '—') : '…'),
+        ),
+        h(
+          'div',
+          { className: 'fz3-bill-row' },
+          h('span', { className: 'fz3-bill-k' }, '今日电费'),
+          h('span', { className: 'fz3-bill-v' }, today ? yuan(today.cost) : '…'),
+        ),
+        h(
+          'div',
+          { className: 'fz3-bill-row' },
+          h('span', { className: 'fz3-bill-k' }, rateLabel),
+          h(
+            'span',
+            { className: 'fz3-bill-vwrap' },
+            peak ? h('span', { className: 'fz3-bill-tag', 'data-tone': tone }, peak.offPeak ? '谷' : '峰') : null,
+            nextAt && left > 0
+              ? h('span', { className: 'fz3-bill-clock', 'data-tone': tone }, rateValue)
+              : h('span', { className: 'fz3-bill-v' }, rateValue),
+          ),
+        ),
+        h('div', { className: 'fz3-bill-note' }, '工作日 09–12、14–18 十倍电费，其余时段五倍'),
+      )
+    }
 
     function FairySkin() {
       /* 已经完整播过一次开机 → 重挂载直接从 dock 开始；设置页「重播开机动画」会清标记 */
@@ -2772,19 +2706,60 @@ function BubbleCard({ data, onMeasure, onFlip }) {
         }
       }, [])
 
-      /* 运行态情绪：宿主 /fairy-zzz/mood 轮询（idle / thinking / working / done） */
-      const [mood, setMood] = useState('idle')
+      /* 运行态情绪：宿主 /fairy-zzz/mood 轮询（idle / thinking / working / done）。
+         v1.7.5（修复）：客户端热更新 / 宿主重挂载时，state 会回到初值 idle，眼徽会闪一下
+         「正常待机」。把上一拍情绪缓存在 window 上，重挂载后第一帧就还是工作态，等轮询回来再校正。 */
+      const [mood, setMood] = useState(() => {
+        try { return window.__fz3mood || 'idle' } catch (e) { return 'idle' }
+      })
+      /* v1.7.5：完成的 Q 弹与扩散环改成一次性动作，只在情绪真正跨进 done 的那一下播。
+         mood 在宿主窗口里维持约 2.4s，外部代码（例如调试定时器）直接改 data-mood 也不会
+         再触发动画；data-celebrate 只由这里置位，1.1s 后自己收回，所以每完成一轮只弹一次。 */
+      const [celebrate, setCelebrate] = useState(false)
+      const celebrateTimer = useRef(null)
+      useEffect(() => {
+        if (mood !== 'done') return undefined
+        setCelebrate(true)
+        if (celebrateTimer.current) clearTimeout(celebrateTimer.current)
+        celebrateTimer.current = setTimeout(() => {
+          celebrateTimer.current = null
+          setCelebrate(false)
+        }, 1100)
+        return undefined
+      }, [mood])
+      useEffect(() => () => {
+        if (celebrateTimer.current) {
+          clearTimeout(celebrateTimer.current)
+          celebrateTimer.current = null
+        }
+      }, [])
 
-      /* 眼徽拖拽：开关与坐标都放 localStorage，设置页改开关时靠事件通知这里 */
-      const [dragOn, setDragOn] = useState(() => readBool(DRAG_KEY, true))
+      /* 眼徽坐标放 localStorage；拖拽统一走「按住右键」，不再有开关 */
       const [eyeHidden, setEyeHidden] = useState(() => readBool(EYE_KEY, false))
       const [dragging, setDragging] = useState(false)
       const [customPos, setCustomPos] = useState(() => {
         const saved = readStored(POS_KEY, null)
         return saved && Number.isFinite(saved.x) && Number.isFinite(saved.y) ? saved : null
       })
+      /* v1.7.5（修复）：挂载（包括客户端热更新导致的重新挂载）后，先别把眼徽画出来。
+         否则 .fz3-core 会先按基础 CSS 的中心坐标画一帧，再由 dock 位置补间过去，
+         肉眼就是「眼徽飞到别处、变成待机脸，再被拉回原位」——定位本身没错，是过渡起点错了。
+         现在等落位把 --fz3-dock-x/y 写完再显形；兜底计时器防止测量卡住时眼徽一直不出现，
+         也不用 requestAnimationFrame —— 窗口被挡住时 rAF 会停，那样眼徽会彻底消失。 */
+      const [settled, setSettled] = useState(false)
+      useEffect(() => {
+        const t = setTimeout(() => setSettled(true), 700)
+        return () => clearTimeout(t)
+      }, [])
+      /* v1.7.5：复位按钮在「本来就没有自定义坐标」时也要能起作用（把眼标重新量一次），
+         所以用一个自增标记当作测量 effect 的额外触发源。 */
+      const [resetTick, setResetTick] = useState(0)
       const dragRef = useRef(null)
       const coreRef = useRef(null)
+      /* 刚结束一次右键拖动的时间戳：用来吞掉 mouseup 之后补发的那一个 contextmenu */
+      const ctxGuardRef = useRef(0)
+      /* 上一次「右键按下但没有拖动」的时间戳：两次靠得够近就当成双击，用来复位眼标 */
+      const lastRightTapRef = useRef(0)
       /* 可拖拽 / 吸附的范围（v1.3.2）：不再是整个视口，而是「会话内容区」——
          左边界 = 左侧栏右缘，上边界 = 顶部标题栏底缘，右 / 下到窗口边缘。
          由 dock 测量 effect 写入；还没测到就退回整个视口。 */
@@ -2802,13 +2777,27 @@ function BubbleCard({ data, onMeasure, onFlip }) {
           /* v1.7.3：宿主顶栏不一定是 <header> 标签（Web 端是带哈希类名的 div），
              把 [class*="_header"] 也纳入；高度/位置过滤保证只命中真正的顶栏。 */
           const headers = document.querySelectorAll('header,[class*="_header"]')
+          /* v1.7.5（修复）：消息流里的 [class*="_header"] 会随内容滚到视口上方，
+             旧条件 r.top <= 12 对「负数 top」同样成立，于是 top 被算成 -1500 这种值，
+             默认落位的 y 变成负数 —— 眼标被放到屏幕上方，表现就是「眼标莫名其妙消失」。
+             现在只认真正贴在顶边、且完整可见的顶栏，并挑最靠上的那一个。 */
+          let bestTop = null
+          let bestBottom = null
           for (const hr of headers) {
             const r = hr.getBoundingClientRect()
-            if (r.height > 0 && r.height < 120 && r.top <= 12 && r.width > vw * 0.3 && r.left > left - 8) {
-              top = Math.round(r.bottom)
-              break
+            if (!(r.height > 0 && r.height < 120)) continue
+            if (!(r.top > -6 && r.top <= 12 && r.bottom >= 8 && r.bottom <= vh * 0.18)) continue
+            /* 顶栏有两种：贴着会话列左缘的（left ≈ 侧栏右缘），和横跨整个窗口的
+               标题栏（left ≈ 0，包含菜单栏）。后者以前被 left 过滤掉，导致顶栏永远
+               命不中，只能退回 top = 0。 */
+            const fullWidthBar = r.left <= 6 && r.width > vw * 0.85
+            if (!(r.width > vw * 0.3 && (r.left > left - 8 || fullWidthBar))) continue
+            if (bestTop === null || r.top < bestTop) {
+              bestTop = r.top
+              bestBottom = r.bottom
             }
           }
+          if (bestBottom !== null) top = Math.round(Math.min(Math.max(bestBottom, 0), vh * 0.2))
           return { left, top, right: vw, bottom: vh }
         } catch (err) {
           return { left: 0, top: 0, right: vw, bottom: vh }
@@ -2828,65 +2817,6 @@ function BubbleCard({ data, onMeasure, onFlip }) {
         }
         return { left: 0, top: 0, right: vw, bottom: vh }
       }
-
-      /* 电费气泡：null = 收起；mode = 'usage'（电费余额·今日电费·电费倍率）| 'turn'（本轮电费·电费倍率） */
-      const [bubble, setBubble] = useState(null)
-      const bubbleTimer = useRef(null)
-      const bubbleSize = useRef({ w: 236, h: 162 })
-
-      const closeBubble = useCallback(() => {
-        if (bubbleTimer.current) {
-          clearTimeout(bubbleTimer.current)
-          bubbleTimer.current = null
-        }
-        setBubble(null)
-      }, [])
-
-      /* 气泡挂点：右侧放不下（会越出右边界）就翻到眼徽左侧，垂直始终跟着眼徽中心 */
-      const bubblePlace = useCallback((rect) => {
-        const W = bubbleSize.current.w || 236
-        const H = bubbleSize.current.h || 162
-        const gap = 16
-        const margin = 12
-        const flip = rect.right + gap + W > window.innerWidth - margin
-        const raw = flip ? rect.left - gap - W : rect.right + gap
-        return {
-          x: Math.round(Math.min(Math.max(raw, margin), Math.max(margin, window.innerWidth - W - margin))),
-          y: Math.round(
-            Math.min(Math.max(rect.top + rect.height / 2, H / 2 + 8), Math.max(H / 2 + 8, window.innerHeight - H / 2 - 8)),
-          ),
-          side: flip ? 'left' : 'right',
-        }
-      }, [])
-
-      const openBubble = useCallback(async (mode) => {
-        const el = coreRef.current
-        if (!el) return
-        const pos = bubblePlace(el.getBoundingClientRect())
-        /* 有缓存就立刻显示（loading=false），后台再刷新一次；没有缓存才走骨架占位 */
-        const cachedUsage = usageCache.usage && Date.now() - usageCache.usageAt < USAGE_TTL ? usageCache.usage : null
-        const cachedBalance =
-          mode === 'usage' && usageCache.balance && Date.now() - usageCache.balanceAt < BALANCE_TTL ? usageCache.balance : null
-        setBubble({ mode, ...pos, loading: !cachedUsage, usage: cachedUsage, balance: cachedBalance })
-        if (bubbleTimer.current) {
-          clearTimeout(bubbleTimer.current)
-          bubbleTimer.current = null
-        }
-        const [usage, balance] = await Promise.all([
-          loadUsage(!cachedUsage),
-          mode === 'usage' ? loadBalance(!cachedBalance) : Promise.resolve(null),
-        ])
-        /* 请求回来时图层可能已经卸载，别再 setState / 挂 18s 定时器 */
-        if (!aliveRef.current) return
-        setBubble((prev) => (prev && prev.mode === mode ? { ...prev, ...pos, loading: false, usage, balance } : prev))
-        if (mode === 'turn') {
-          bubbleTimer.current = setTimeout(() => {
-            bubbleTimer.current = null
-            if (!aliveRef.current) return
-            setBubble((prev) => (prev && prev.mode === 'turn' ? null : prev))
-          }, 18_000)
-        }
-      }, [bubblePlace])
 
       const clampPos = useCallback((x, y) => {
         const root = document.documentElement
@@ -3063,13 +2993,24 @@ function BubbleCard({ data, onMeasure, onFlip }) {
           } else {
             const size = parseFloat(getComputedStyle(root).getPropertyValue('--fz3-dock-size')) || 128
             const half = size / 2 + 4
-            let cx = Math.round(region.left + half + 10)
-            let cy = Math.round(region.top + (region.bottom - region.top) * 0.5)
-            cx = Math.min(Math.max(cx, region.left + half), region.right - half)
-            cy = Math.min(Math.max(cy, region.top + half), region.bottom - half)
+            const vw = window.innerWidth
+            const vh = window.innerHeight
+            /* v1.7.5（修复）：默认落位不再直接用区域原始 top（可能来自视口上方的元素），
+               先用夹进视口后的边界，最后再兜一次「必须完整待在视口里」。
+               竖排位置贴会话区中线，横向贴左边界，和以前观感一致。 */
+            const safe = regionBounds()
+            const leftEdge = Math.max(0, Math.min(region.left, vw - 240))
+            let cx = Math.round(leftEdge + half + 10)
+            let cy = Math.round(safe.top + (safe.bottom - safe.top) * 0.5)
+            cx = Math.min(Math.max(cx, leftEdge + half), Math.max(leftEdge + half, vw - half))
+            cy = Math.min(Math.max(cy, safe.top + half), Math.max(safe.top + half, safe.bottom - half))
+            cx = Math.min(Math.max(cx, half), Math.max(half, vw - half))
+            cy = Math.min(Math.max(cy, half), Math.max(half, vh - half))
             setLayerVar('--fz3-dock-x', cx + 'px')
             setLayerVar('--fz3-dock-y', cy + 'px')
           }
+          /* 坐标已经写进 layer，这才让眼徽显形：热重载重挂载时既不会闪到画面中心，也不会闪待机脸。 */
+          setSettled(true)
           watchAnchors()
           return true
         }
@@ -3105,7 +3046,7 @@ function BubbleCard({ data, onMeasure, onFlip }) {
           if (ro) ro.disconnect()
           window.removeEventListener('resize', onResize)
         }
-      }, [phase, customPos, eyeHidden, applyPos, clampPos, setLayerVar])
+      }, [phase, customPos, eyeHidden, resetTick, applyPos, clampPos, setLayerVar])
 
       /* 记住的位置也要跟着窗口缩放夹一下，别把眼标留在屏幕外 */
       useEffect(() => {
@@ -3115,25 +3056,21 @@ function BubbleCard({ data, onMeasure, onFlip }) {
         return () => window.removeEventListener('resize', onResize)
       }, [customPos, applyPos, clampPos])
 
-      /* 设置页里的开关与「眼标复位」通过自定义事件同步到这个图层 */
+      /* 设置页里的开关、眼标的「双击右键复位」都通过自定义事件同步到这个图层 */
       useEffect(() => {
-        const syncDrag = () => setDragOn(readBool(DRAG_KEY, true))
         const syncEye = () => setEyeHidden(readBool(EYE_KEY, false))
         const onReset = () => {
           try { localStorage.removeItem(POS_KEY) } catch {}
           setCustomPos(null)
           setDragging(false)
+          setResetTick((n) => n + 1)
         }
-        window.addEventListener('fz3:drag-pref', syncDrag)
         window.addEventListener('fz3:eye-pref', syncEye)
         window.addEventListener('fz3:dock-reset', onReset)
-        window.addEventListener('storage', syncDrag)
         window.addEventListener('storage', syncEye)
         return () => {
-          window.removeEventListener('fz3:drag-pref', syncDrag)
           window.removeEventListener('fz3:eye-pref', syncEye)
           window.removeEventListener('fz3:dock-reset', onReset)
-          window.removeEventListener('storage', syncDrag)
           window.removeEventListener('storage', syncEye)
         }
       }, [])
@@ -3224,37 +3161,9 @@ function BubbleCard({ data, onMeasure, onFlip }) {
         }
       }, [])
 
-      /* 一轮跑完 → 自动弹一次「本轮电费」，18 秒后自己消失。
-         用「上一轮情绪」判迁移而不是时间戳分桶：同一分钟内连跑两轮也能各弹一次。 */
-      const prevMood = useRef('')
+      /* 到坞后空闲预取用量与余额：左下角读数第一帧就有数（与眼标显隐无关） */
       useEffect(() => {
-        const before = prevMood.current
-        prevMood.current = mood
-        if (phase !== 'dock' || mood !== 'done' || before === 'done') return
-        openBubble('turn')
-      }, [mood, phase, openBubble])
-      useEffect(() => closeBubble, [closeBubble])
-      /* 气泡打开后：点页面任意其他地方 / 按 Esc 收起（点眼徽或气泡内部不算，避免刚开就关） */
-      useEffect(() => {
-        if (!bubble) return undefined
-        const onDown = (e) => {
-          const t = e.target
-          if (t && typeof t.closest === 'function' && (t.closest('.fz3-bubble') || t.closest('.fz3-core'))) return
-          closeBubble()
-        }
-        const onKey = (e) => {
-          if (e.key === 'Escape') closeBubble()
-        }
-        document.addEventListener('pointerdown', onDown, true)
-        document.addEventListener('keydown', onKey, true)
-        return () => {
-          document.removeEventListener('pointerdown', onDown, true)
-          document.removeEventListener('keydown', onKey, true)
-        }
-      }, [bubble, closeBubble])
-      /* 到坞后空闲预取用量与余额：点眼徽时直接用缓存秒开 */
-      useEffect(() => {
-        if (phase !== 'dock' || eyeHidden) return undefined
+        if (phase !== 'dock') return undefined
         let alive = true
         const timer = setTimeout(() => {
           if (alive) prefetchUsage()
@@ -3268,7 +3177,7 @@ function BubbleCard({ data, onMeasure, onFlip }) {
           clearTimeout(timer)
           document.removeEventListener('visibilitychange', onVis)
         }
-      }, [phase, eyeHidden])
+      }, [phase])
 
       useEffect(() => {
         let alive = true
@@ -3285,6 +3194,7 @@ function BubbleCard({ data, onMeasure, onFlip }) {
               // running 以宿主权威快照为准：宿主说没在跑，就不接受 thinking/working
               //（宿主如果没这个字段，保持旧行为）
               if (d.running === false && (d.mood === 'thinking' || d.mood === 'working')) return
+              try { window.__fz3mood = d.mood } catch (e) {}
               setMood(d.mood)
             })
             .catch(() => {})
@@ -3336,16 +3246,8 @@ function BubbleCard({ data, onMeasure, onFlip }) {
         autoArmAt = Date.now() + 2600
       }, [])
 
-      /* ———————————————————— 眼徽拖拽 + 用量气泡 ———————————————————— */
-      const toggleBubble = useCallback(() => {
-        if (phase !== 'dock') return
-        if (bubble) {
-          closeBubble()
-          return
-        }
-        openBubble('usage')
-      }, [bubble, phase, openBubble, closeBubble])
-
+      /* ———————————————————— 眼徽拖拽 ————————————————————
+         v1.7.5：电费读数常驻左下角之后，眼徽只做状态指示与拖动，点它不再展开气泡。 */
       /* ——— 拖拽（v1.3.1）———
          旧实现每个 pointermove 都改 :root 的 --fz3-dock-x/y，会让整页样式失效并触发布局 + 重绘，
          165Hz 屏上很卡。现在拖动期间只写核心元素自己的 transform（合成器线程），rAF 合并事件，
@@ -3424,16 +3326,22 @@ function BubbleCard({ data, onMeasure, onFlip }) {
         return pos
       }
       const onCoreDown = (e) => {
-        if (!dragOn || phase !== 'dock') return
-        if (typeof e.button === 'number' && e.button !== 0) return
+        if (phase !== 'dock') return
+        /* 只认右键：按住右键拖动眼标；左键不作用，也不再弹任何菜单 */
+        if (e.button !== 2) return
+        ctxGuardRef.current = Date.now()
+        /* 双击右键（两下都没有拖动）＝ 眼标复位，走和 fz3:dock-reset 同一条事件 */
+        if (Date.now() - lastRightTapRef.current < 420) {
+          lastRightTapRef.current = 0
+          try { window.dispatchEvent(new Event('fz3:dock-reset')) } catch (err) {}
+          return
+        }
         /* 拖拽/吸附前重新量一次范围：打开会话、折叠侧栏后标题栏高度可能变，不能只信挂载时那次 */
         regionRef.current = measureRegion()
         const el = e.currentTarget
         const r = el.getBoundingClientRect()
         /* 拖动期间禁用 left/top 的 1.35s 过渡，落位由手势/吸附动画接管 */
         el.style.transition = 'none'
-        /* 拖动时先收起气泡：气泡跟随会带来每帧 React 重渲染，也是卡顿来源之一 */
-        if (bubble) closeBubble()
         dragRef.current = {
           id: e.pointerId,
           dx: e.clientX - (r.left + r.width / 2),
@@ -3467,6 +3375,18 @@ function BubbleCard({ data, onMeasure, onFlip }) {
         window.addEventListener('pointerup', drag.up, true)
         window.addEventListener('pointercancel', drag.cancel, true)
       }
+      /* 右键拖到松手时 Chromium 会在 mouseup 之后补一个 contextmenu，落点可能已经不在眼标上。
+         这里在捕获阶段把「正在拖 / 刚拖完（800ms 内）」的菜单吞掉，别处的右键照常交还宿主。 */
+      useEffect(() => {
+        const onCtx = (ev) => {
+          if (dragRef.current || Date.now() - ctxGuardRef.current < 800) {
+            ev.preventDefault()
+            ev.stopPropagation()
+          }
+        }
+        window.addEventListener('contextmenu', onCtx, true)
+        return () => window.removeEventListener('contextmenu', onCtx, true)
+      }, [])
       const detachDrag = (drag) => {
         if (drag.move) window.removeEventListener('pointermove', drag.move, true)
         if (drag.up) window.removeEventListener('pointerup', drag.up, true)
@@ -3496,7 +3416,8 @@ function BubbleCard({ data, onMeasure, onFlip }) {
         drag.cur = { x: cx, y: cy }
         if (!drag.frame) drag.frame = window.requestAnimationFrame(() => paintDrag(drag))
       }
-      const finishDrag = (drag, allowClick) => {
+      const finishDrag = (drag) => {
+        ctxGuardRef.current = Date.now()
         const el = drag.el
         if (drag.frame) {
           window.cancelAnimationFrame(drag.frame)
@@ -3507,7 +3428,8 @@ function BubbleCard({ data, onMeasure, onFlip }) {
             el.style.transform = ''
             el.style.transition = ''
           }
-          if (allowClick) toggleBubble()
+          /* 没移动的右键按下记一笔，给「双击右键复位」做判定 */
+          lastRightTapRef.current = Date.now()
           return
         }
         /* 先落位（transition 关着，不产生 1.35s 长过渡），再把 transform 从松手点补间回 0，
@@ -3545,7 +3467,7 @@ function BubbleCard({ data, onMeasure, onFlip }) {
         dragRef.current = null
         detachDrag(drag)
         setDragging(false)
-        finishDrag(drag, true)
+        finishDrag(drag)
       }
       /* 指针被系统取消（触摸滚动被外层接管等）不当成一次点击；已移动过就落位，否则复位 */
       const onCoreCancel = (e) => {
@@ -3554,7 +3476,7 @@ function BubbleCard({ data, onMeasure, onFlip }) {
         dragRef.current = null
         detachDrag(drag)
         setDragging(false)
-        finishDrag(drag, false)
+        finishDrag(drag)
       }
 
       /* ———————————————————— */
@@ -3615,11 +3537,14 @@ function BubbleCard({ data, onMeasure, onFlip }) {
         return () => { bootHooks.delete(fn) }
       }, [])
 
+
+
+
       const busy = voiceState.busy || voiceState.speaking
 
       return h(
         'div',
-        { className: 'fz3-layer', 'data-phase': phase, 'data-mood': mood, 'data-drag': dragOn ? '1' : '0', 'data-dragging': dragging ? '1' : '0' },
+        { className: 'fz3-layer', 'data-phase': phase, 'data-mood': mood, 'data-celebrate': celebrate ? '1' : '0', 'data-dragging': dragging ? '1' : '0', 'data-settled': settled ? '1' : '0' },
         h(
           'div',
           { className: 'fz3-screen', onClick: needTap ? retryVoice : undefined },
@@ -3655,43 +3580,19 @@ function BubbleCard({ data, onMeasure, onFlip }) {
                 className: 'fz3-core',
                 'data-phase': phase,
                 onPointerDown: onCoreDown,
-                onClick: dragOn ? undefined : toggleBubble,
-                onKeyDown: (e) => {
-                  if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
-                    e.preventDefault()
-                    toggleBubble()
-                  }
-                },
-                role: 'button',
-                tabIndex: 0,
-                /* 不挂 title：悬浮提示会盖住眼徽，交互由气泡自己说明 */
-                'aria-label': 'Fairy 电费气泡',
+                /* 右键按下即开始拖；这里挡掉原生菜单，配合下面的全局守卫一起用
+                   （不做 hover 提示：用法写在 README 里，眼标上不再浮字） */
+                onContextMenu: (e) => e.preventDefault(),
+                /* v1.7.5：只做状态指示 + 拖动，不再是按钮，也没有点击气泡。
+                   拖动统一走右键按住，左键不作用。 */
               },
               h(CoreGlyph, { phase, mood }),
             )
           : null,
 
-        /* ———————————————————— 用量气泡 ———————————————————— */
-        bubble && !eyeHidden
-          ? h(BubbleCard, {
-              key: bubble.mode,
-              data: bubble,
-              /* 换价瞬间：重新拉一次用量，气泡里的峰谷立刻翻面 */
-              onFlip: (mode) => {
-                openBubble(mode)
-              },
-              onMeasure: (size) => {
-                bubbleSize.current = size
-                /* 尺寸一变立刻重算一次挂点，避免首帧用旧宽高定位 */
-                const el = coreRef.current
-                if (!el) return
-                const next = bubblePlace(el.getBoundingClientRect())
-                setBubble((prev) =>
-                  prev && (prev.x !== next.x || prev.y !== next.y || prev.side !== next.side) ? { ...prev, ...next } : prev,
-                )
-              },
-            })
-          : null,
+        /* ———————————————————— 左下角电费实时读数 ———————————————————— */
+        /* v1.7.5：读数独立于眼标 —— 关掉「显示眼徽」只收起眼标，这里照常显示 */
+        phase === 'dock' ? h(BillDock) : null,
 
         /* ———————————————————— */
         phase !== 'boot'
@@ -3862,4 +3763,3 @@ function BubbleCard({ data, onMeasure, onFlip }) {
     }
   },
 })
-

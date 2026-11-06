@@ -1,7 +1,7 @@
 {
   "name": "dsh-fairy-zzz",
-  "version": "1.7.4",
-  "description": "Third-party modification (unofficial), based on AssassinVIX/fairy-zzz-plugin (MIT) and Chengzhibense/Fairy-DSH (Apache-2.0): Unofficial, performance-optimized edition of the Zenless Zone Zero Fairy H.D.D skin for the DSH Web UI: boot animation, animated eye core, time-of-day greeting, idle breathing, eye flicker and signal glitches, clip-based thinking eyelid, clickable eye badge with usage-balance bubble (today cost, peak/off-peak countdown), draggable / hideable eye badge, appearance that follows the host light/dark theme, rewritten welcome-page copy, plus optional local GPT-SoVITS voice. Modified by SkyWingDN from AssassinVIX/fairy-zzz-plugin (v1.0.3 upstream); eye art and motion adapted from Chengzhibense/Fairy-DSH. v1.7.1 fixes six skin regressions reported against v1.7.0 (boot corner label, greeting kicker tint, token leakage after disabling the plugin, boot replay after re-enabling, settings-dialog geometry, attachment-thumbnail focus ring) and moves the skin stylesheet to docs/skin/wire-net-terminal.css with scripts/build-client.mjs as the inliner. v1.7.0 adds the Wire-Net Terminal host UI skin: a ZZZ official-site x wire-net-wiki visual language (paper/ink/lime, diagonal cuts, monospace // labels, hairline panel layers) applied to the whole DSH Web GUI in light and dark, documented in docs/UI-DESIGN.md. v1.7.2 removes two selection artefacts in the v1.7.0 skin (a lime crescent from an inset left rule on the 999px active-nav pill, and a sliver of the host's 2px business-colour underline under the active top-bar tab). v1.7.3 stops conversation text from bleeding through the bottom composer status bar (the host gradient mask now ends in an opaque canvas colour) and cuts the skin's style cost when opening a large conversation by ~11% (style scoped custom-property writes, event-driven hero-title sync, anchored dock measurement, normal compositing for the dock-phase ambience layer). v1.7.4 verifies against a visible Electron window that the skin adds no measurable cost to opening a large conversation (parity with v1.6.2 on a 21k-character session) and further trims resident compositing: scroll-attached body backgrounds, the two dock-phase atmosphere animations and two off-screen fixed decoration layers stopped while docked, the rim blur removed, and the 15 fps ticker skipped while the page is hidden.",
+  "version": "1.7.5",
+  "description": "Unofficial, performance-optimized Zenless Zone Zero \"Fairy\" H.D.D skin for the DSH Web UI: boot animation, animated eye badge, hour-based greeting, Wire-Net Terminal host skin, always-on fee readout, and optional local GPT-SoVITS voice. Based on AssassinVIX/fairy-zzz-plugin (MIT) and Chengzhibense/Fairy-DSH (Apache-2.0); changelog in docs/CHANGELOG.md.",
   "type": "module",
   "license": "MIT",
   "author": "SkyWingDN (performance edition); dsh-fairy-zzz contributors / AssassinVIX (original plugin)",
@@ -61,6 +61,7 @@
     "icon.svg",
     "install-windows.ps1",
     "README.md",
+    "README.en.md",
     "LICENSE",
     "NOTICE-fairy-dsh.md",
     "licenses",
