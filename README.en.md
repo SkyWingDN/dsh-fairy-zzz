@@ -32,6 +32,8 @@ It is not a pure theme pack. The plugin ships a small host half too: static asse
 
 **Zero runtime dependencies.** The host half only uses Node built-ins; the client half is a single hand-written ESM file with no bundler and no `node_modules`.
 
+> **Status**: a solo hobby project, still rough around the edges. Beyond living on GitHub and npm, it has not been announced anywhere; issues are welcome, but replies come as time allows.
+
 ## Credits
 
 This plugin started from [AssassinVIX/fairy-zzz-plugin](https://github.com/AssassinVIX/fairy-zzz-plugin) (MIT, video [BV1d4HK6eE3g](https://www.bilibili.com/video/BV1d4HK6eE3g)). Thanks to the original author for packaging the H.D.D skin, the boot video and the greeting recordings into a plugin that ran out of the box — without that starting point none of the later work would have had anywhere to land.
