@@ -9,10 +9,16 @@
 [English](README.en.md) · [变更记录](docs/CHANGELOG.md) · [技术说明](docs/TECHNICAL.md) · [性能报告](docs/PERFORMANCE.md)
 
 ![version](https://img.shields.io/badge/version-1.7.5-D8FA00?style=flat-square&labelColor=101110)
-![npm](https://img.shields.io/npm/v/@sky_wing_dn%2Fdsh-fairy-zzz?style=flat-square&labelColor=101110&color=D8FA00)
+[![npm](https://img.shields.io/npm/v/@sky_wing_dn%2Fdsh-fairy-zzz?style=flat-square&labelColor=101110&color=D8FA00)](https://www.npmjs.com/package/@sky_wing_dn/dsh-fairy-zzz)
 ![license](https://img.shields.io/badge/license-MIT-101110?style=flat-square)
 ![platform](https://img.shields.io/badge/DSH-Desktop%20%26%20Web-101110?style=flat-square)
 ![deps](https://img.shields.io/badge/runtime%20deps-0-101110?style=flat-square)
+
+**安装（一行）**
+
+```powershell
+dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
+```
 
 </div>
 
