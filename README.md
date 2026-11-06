@@ -51,7 +51,7 @@ dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
 
 第三方许可全文在 [licenses/](licenses/)，逐项署名见 [NOTICE-fairy-dsh.md](NOTICE-fairy-dsh.md)。
 
-> **项目状态**：一个人自娱自乐写着玩的，功能还不完善。除了把代码放在 GitHub 上、发到 npm 上，没在别的地方提过；用出问题欢迎开 issue，但不保证随叫随到。
+> **项目状态**：一个人自娱自乐写着玩的，功能还不完善。除了把代码放在 GitHub 上、发到 npm 上，没在别的地方提过；整个插件也是用 DSH 自己开发的（在会话里改代码、跑验证、写文档、发版），算自己改自己。用出问题欢迎开 issue，但不保证随叫随到。
 
 ## 截图
 
