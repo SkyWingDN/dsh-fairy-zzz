@@ -87,11 +87,13 @@ window.__ModuleLoader__.load({
     const CJK_RE = /[\u3400-\u9fff]/
 
     /* Fairy 眼睛：Apache-2.0，改编自 Fairy-DSH（见 NOTICE-fairy-dsh.md） */
-    const FAIRY_EYE_SVG = `<!-- SPDX-License-Identifier: Apache-2.0 Adapted from Fairy-DSH, Copyright 2026 Chengzhibense. Source commit d639887a386b0de6fef2e61c97dc268631854591: mascot-geometry.js / mascot-eye-svg.js (see ../NOTICE). MODIFIED for pi-fairy-animation: standalone SVG, padded canvas, named offline animation anchors, white outer halo in both themes, separate contrast edge; browser effects, states, scanlines and glitch clones removed. Generated PNGs and vector previews inherit this attribution; see ../NOTICE. --> <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="-1 -1 162 162"> <desc>Transparent floating blue eye, white soft halos, rotating corners, independently breathing eye layers and a lower-right catchlight. No official bitmap.</desc> <defs> <linearGradient id="outer-gradient" x1=".2" y1="0" x2=".8" y2="1"> <stop stop-color="#3145d6"/> <stop offset=".54" stop-color="#2233b2"/> <stop offset="1" stop-color="#2b3cbc"/> </linearGradient> <!-- One static radial field replaces separate halo strokes, avoiding alpha seams. --> <radialGradient id="sclera-halo-gradient" gradientUnits="userSpaceOnUse" cx="80" cy="80" r="56" color-interpolation="linearRGB"> <stop offset=".82" stop-color="#ffffff" stop-opacity="0"/> <stop offset=".864" stop-color="#ffffff" stop-opacity=".22"/> <stop offset=".875" stop-color="#ffffff" stop-opacity=".28"/> <stop offset=".89" stop-color="#ffffff" stop-opacity=".19"/> <stop offset=".91" stop-color="#ffffff" stop-opacity=".11"/> <stop offset=".94" stop-color="#ffffff" stop-opacity=".07"/> <stop offset=".96" stop-color="#ffffff" stop-opacity=".035"/> <stop offset="1" stop-color="#ffffff" stop-opacity="0"/> </radialGradient> <radialGradient id="outer-halo-gradient" gradientUnits="userSpaceOnUse" cx="80" cy="80" r="79" color-interpolation="linearRGB"> <stop offset=".80" stop-color="#ffffff" stop-opacity="0"/> <stop offset=".84" stop-color="#ffffff" stop-opacity=".10"/> <stop offset=".868" stop-color="#ffffff" stop-opacity=".28"/> <stop offset=".90" stop-color="#ffffff" stop-opacity=".18"/> <stop offset=".95" stop-color="#ffffff" stop-opacity=".06"/> <stop offset=".99" stop-color="#ffffff" stop-opacity=".02"/> <stop offset="1" stop-color="#ffffff" stop-opacity="0"/> </radialGradient> <radialGradient id="highlight-halo-gradient" gradientUnits="userSpaceOnUse" cx="98" cy="100.5" r="18" color-interpolation="linearRGB"> <stop offset=".53" stop-color="#f5f8fd" stop-opacity="0"/> <stop offset=".56" stop-color="#f5f8fd" stop-opacity=".16"/> <stop offset=".611" stop-color="#f5f8fd" stop-opacity=".43"/> <stop offset=".72" stop-color="#f5f8fd" stop-opacity=".19"/> <stop offset=".77" stop-color="#f5f8fd" stop-opacity=".12"/> <stop offset=".83" stop-color="#f5f8fd" stop-opacity=".055"/> <stop offset=".89" stop-color="#f5f8fd" stop-opacity=".02"/> <stop offset=".96" stop-color="#f5f8fd" stop-opacity=".004"/> <stop offset="1" stop-color="#f5f8fd" stop-opacity="0"/> </radialGradient> <clipPath id="fz3-lid-clip" clipPathUnits="userSpaceOnUse"><path d="M20 60 Q80 90 140 60 V161 H20 Z"/><rect x="-1" y="108" width="162" height="54"/></clipPath> </defs> <!-- 79-unit halo within an 81-unit half-canvas: padding with near-original apparent disc size. --> <g id="fairy"> <circle id="outer-halo" cx="80" cy="80" r="79" fill="url(#outer-halo-gradient)"/> <!-- Only this supporting edge changes with theme; white rim and halo stay white. --> <circle id="contrast-edge" cx="80" cy="80" r="68" fill="none" stroke="#dceaff" stroke-width="1.8"/> <circle id="outer-disc" cx="80" cy="80" r="68" fill="url(#outer-gradient)" stroke="#f2fbff" stroke-width="1.2"/> <g id="corners" transform="rotate(0 80 80)" fill="#1f2573"> <circle cx="80" cy="80" r="51.75"/> <rect x="37" y="37" width="86" height="86" rx="2" transform="rotate(3 80 80)"/> </g> <g id="eye-anatomy" class="fz3-anatomy"><g id="sclera" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle cx="80" cy="80" r="48" fill="#eef0f5"/> <circle id="sclera-halo" cx="80" cy="80" r="56" fill="url(#sclera-halo-gradient)"/> <circle cx="80" cy="80" r="48" fill="none" stroke="#ffffff" stroke-width=".8" stroke-opacity=".16"/> </g> <g id="iris-outer" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle cx="80" cy="80" r="33" fill="#9daee0"/> </g> <g id="iris-blue" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle cx="80" cy="80" r="24.15" fill="#eef0f5"/> <circle cx="80" cy="80" r="23.5" fill="#2f74c9"/> </g> <g id="pupil" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle cx="80" cy="80" r="16.6" fill="none" stroke="#f5f8fd" stroke-width=".1"/> <circle cx="80" cy="80" r="16" fill="#2e2f78"/> </g> <!-- Same phase as blue iris, but painted last (above pupil), as in upstream. --> <g id="highlight" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle id="highlight-halo" cx="98" cy="100.5" r="18" fill="url(#highlight-halo-gradient)"/> <circle id="catchlight-lower-right" cx="98" cy="100.5" r="11" fill="#f5f8fd"/> </g> </g><path id="fz3-lid-rim" d="M31 65 Q80 85 129 65" fill="none" stroke="#1f2573" stroke-width="2.2" stroke-linecap="butt" pointer-events="none"/>  </g> </svg> `
+    const FAIRY_EYE_SVG = `<!-- SPDX-License-Identifier: Apache-2.0 Adapted from Fairy-DSH, Copyright 2026 Chengzhibense. Source commit d639887a386b0de6fef2e61c97dc268631854591: mascot-geometry.js / mascot-eye-svg.js (see ../NOTICE). MODIFIED for pi-fairy-animation: standalone SVG, padded canvas, named offline animation anchors, white outer halo in both themes, separate contrast edge; browser effects, states, scanlines and glitch clones removed. Generated PNGs and vector previews inherit this attribution; see ../NOTICE. --> <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="-1 -1 162 162"> <desc>Transparent floating blue eye, white soft halos, rotating corners, independently breathing eye layers and a lower-right catchlight. No official bitmap.</desc> <defs> <linearGradient id="outer-gradient" x1=".2" y1="0" x2=".8" y2="1"> <stop stop-color="#3145d6"/> <stop offset=".54" stop-color="#2233b2"/> <stop offset="1" stop-color="#2b3cbc"/> </linearGradient> <!-- One static radial field replaces separate halo strokes, avoiding alpha seams. --> <radialGradient id="sclera-halo-gradient" gradientUnits="userSpaceOnUse" cx="80" cy="80" r="56" color-interpolation="linearRGB"> <stop offset=".82" stop-color="#ffffff" stop-opacity="0"/> <stop offset=".864" stop-color="#ffffff" stop-opacity=".22"/> <stop offset=".875" stop-color="#ffffff" stop-opacity=".28"/> <stop offset=".89" stop-color="#ffffff" stop-opacity=".19"/> <stop offset=".91" stop-color="#ffffff" stop-opacity=".11"/> <stop offset=".94" stop-color="#ffffff" stop-opacity=".07"/> <stop offset=".96" stop-color="#ffffff" stop-opacity=".035"/> <stop offset="1" stop-color="#ffffff" stop-opacity="0"/> </radialGradient> <radialGradient id="outer-halo-gradient" gradientUnits="userSpaceOnUse" cx="80" cy="80" r="79" color-interpolation="linearRGB"> <stop offset=".80" stop-color="#ffffff" stop-opacity="0"/> <stop offset=".84" stop-color="#ffffff" stop-opacity=".10"/> <stop offset=".868" stop-color="#ffffff" stop-opacity=".28"/> <stop offset=".90" stop-color="#ffffff" stop-opacity=".18"/> <stop offset=".95" stop-color="#ffffff" stop-opacity=".06"/> <stop offset=".99" stop-color="#ffffff" stop-opacity=".02"/> <stop offset="1" stop-color="#ffffff" stop-opacity="0"/> </radialGradient> <radialGradient id="highlight-halo-gradient" gradientUnits="userSpaceOnUse" cx="98" cy="100.5" r="18" color-interpolation="linearRGB"> <stop offset=".53" stop-color="#f5f8fd" stop-opacity="0"/> <stop offset=".56" stop-color="#f5f8fd" stop-opacity=".16"/> <stop offset=".611" stop-color="#f5f8fd" stop-opacity=".43"/> <stop offset=".72" stop-color="#f5f8fd" stop-opacity=".19"/> <stop offset=".77" stop-color="#f5f8fd" stop-opacity=".12"/> <stop offset=".83" stop-color="#f5f8fd" stop-opacity=".055"/> <stop offset=".89" stop-color="#f5f8fd" stop-opacity=".02"/> <stop offset=".96" stop-color="#f5f8fd" stop-opacity=".004"/> <stop offset="1" stop-color="#f5f8fd" stop-opacity="0"/> </radialGradient> <clipPath id="fz3-lid-clip" clipPathUnits="userSpaceOnUse"><path d="M20 60 Q80 90 140 60 V161 H20 Z"/><rect x="-1" y="108" width="162" height="54"/></clipPath> </defs> <!-- 79-unit halo within an 81-unit half-canvas: padding with near-original apparent disc size. --> <g id="fairy"> <circle id="outer-halo" cx="80" cy="80" r="79" fill="url(#outer-halo-gradient)"/> <!-- Only this supporting edge changes with theme; white rim and halo stay white. --> <circle id="contrast-edge" cx="80" cy="80" r="68" fill="none" stroke="#dceaff" stroke-width="1.8"/> <circle id="outer-disc" cx="80" cy="80" r="68" fill="url(#outer-gradient)" stroke="#f2fbff" stroke-width="1.2"/> <g id="corners" transform="rotate(0 80 80)" fill="#1f2573"> <circle cx="80" cy="80" r="51.75"/> <rect x="37" y="37" width="86" height="86" rx="2" transform="rotate(3 80 80)"/> </g> <g id="eye-anatomy" class="fz3-anatomy"><g id="sclera" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle cx="80" cy="80" r="48" fill="#eef0f5"/> <circle id="sclera-halo" cx="80" cy="80" r="56" fill="url(#sclera-halo-gradient)"/> <circle cx="80" cy="80" r="48" fill="none" stroke="#ffffff" stroke-width=".8" stroke-opacity=".16"/> </g> <g id="iris-outer" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle cx="80" cy="80" r="33" fill="#9daee0"/> </g> <g id="iris-blue" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle cx="80" cy="80" r="24.15" fill="#eef0f5"/> <circle cx="80" cy="80" r="23.5" fill="#2f74c9"/> </g> <g id="pupil" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle cx="80" cy="80" r="16.6" fill="none" stroke="#f5f8fd" stroke-width=".1"/> <circle cx="80" cy="80" r="16" fill="#2e2f78"/> </g> <!-- Same phase as blue iris, but painted last (above pupil), as in upstream. --> <g id="highlight" transform="translate(80 80) scale(1) translate(-80 -80)"> <circle id="highlight-halo" cx="98" cy="100.5" r="18" fill="url(#highlight-halo-gradient)"/> <circle id="catchlight-lower-right" cx="98" cy="100.5" r="11" fill="#f5f8fd"/> </g> </g>  </g> <clipPath id="fz3-lid-edge-clip" clipPathUnits="userSpaceOnUse"><circle cx="80" cy="80" r="48"/></clipPath> <g clip-path="url(#fz3-lid-edge-clip)"><path id="fz3-lid-edge" d="M20 60 Q80 90 140 60" fill="none" stroke="#1f2573" stroke-width="1.6" stroke-linecap="butt" pointer-events="none"/> </g> </svg> `
 
     /* FZ3_ASSETS_BEGIN */
     /* 五圈同心睫毛脉冲环：Fairy-DSH 的 PULSE_SVG（Apache-2.0，见 NOTICE-fairy-dsh.md）。 */
     const FAIRY_PULSE_SVG = `<svg class="fz3-pulse-svg" viewBox="-160 -160 480 480" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g class="fz3-pulse-wave" fill="none" stroke="#f4fdff"><circle cx="80" cy="80" r="52" stroke-width="20" stroke-opacity=".05"/><circle cx="80" cy="80" r="52" stroke-width="16" stroke-opacity=".06"/><circle cx="80" cy="80" r="52" stroke-width="12" stroke-opacity=".08"/><circle cx="80" cy="80" r="52" stroke-width="8" stroke-opacity=".10"/><circle cx="80" cy="80" r="52" stroke-width="4.5" stroke-opacity=".09"/></g></svg>`
+
+
 
     /* FZ3_ASSETS_END */
     /* ------------------------------------------------------------------ *
@@ -882,26 +884,30 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 .fz3-gband[data-slice="4"]{transform:translateX(var(--fz3-g-s4-x,0px))}
 .fz3-gband[data-slice="5"]{transform:translateX(var(--fz3-g-s5-x,0px))}
 
-/* ---------- 待机小动作：眼闪 + 半闭眼（眼闪由运行时的事件定时器触发；半闭眼形状固定，不再逐帧呼吸） ---------- */
+/* ---------- 待机小动作：眼闪 + 半闭眼（眼闪由运行时的事件定时器触发；眼睑随呼吸一开一合） ---------- */
 /* 半闭眼沿用参考实现的做法：用 clipPath 裁切整只眼球（#eye-anatomy），被裁掉的上半部分会露出
    后面的旋转睫毛/暗角，而不是盖一块纯色遮罩。
-   形状不做持续呼吸：动画对象是 <clipPath> 里的形状，Chrome 每帧都要重算裁切并重绘整棵 eye 子树
-   （只走主线程，不能上合成器）。实测思考态稳吃一个核 ~28%，而且换成 steps 降帧也没用——只要动画在跑，
-   每一帧仍然要重绘；只有把动画去掉才回落到 ~1%。所以裁切只在思考态被引用，眼睑形状固定写进
-   #fz3-lid-clip 的 path；眼球四层自己的呼吸、睫毛旋转、五圈脉冲照旧在跑，整体仍然"活着"。
-   ⚠ 不要用 CSS transform 调整这份裁切的位置：页面里同时存在 8 份 #fz3-lid-clip（主眼 1 + 花屏克隆 5 +
-   字标 2），url(#fz3-lid-clip) 按文档顺序解析到最靠前的那份（侧栏字标），而字标不在 .fz3-eye 作用域内，
-   拿不到同样的 transform ——渲染出来的裁切就会和主眼自己的形状错位。眼睑几何必须直接写在 path 的 d 里，
-   保证所有副本内容一致，解析到哪份都得到同一个形状。 */
-.fz3-eye[data-lid="thinking"] .fz3-anatomy{clip-path:url(#fz3-lid-clip)}
-/* 半闭眼眼睑边界：裁切把近白巩膜压到深蓝眼睑上，AA 过渡会呈现为一条浅色毛边。
-   在 #fz3-lid-rim 里画一条与 #fz3-lid-clip 相同的曲线（同一条二次贝塞尔，只截取 x∈[31,129]
-   这一段；两端收在深蓝睫毛片内，不会在蓝色外盘上露头），用与眼睑相同的 #1f2573 描边，
-   把「白压深」的过渡反转成「深压白」的眼睑阴影。
-   几何和裁切共用同一组坐标，不需要任何 JS；即使将来裁切位置上移（rim 落到深色眼睑上）也看不见，
-   不会产生新的错位。静态绘制，零运行时开销。 */
-#fz3-lid-rim{display:none}
-.fz3-eye[data-lid="thinking"] #fz3-lid-rim{display:inline}
+   v1.7.6：眼睑跟着呼吸一开一合（stepLid 每拍写那条 path 的 transform，14.5→15.5 / .55→1，
+   15fps 网格上只写变化的帧）。裁切只在思考态被引用，静止态完全不算。
+   ⚠ 页面里 #fz3-lid-clip 有 8 份（主眼 1 + 花屏克隆 5 + 侧栏字标 2），url(#id) 按文档顺序解析到最靠前
+   的那份——给主眼这条 path 写 transform 之前必须先把它的 id 改成独占的 #fz3-lid-clip-main，并用行内
+   clip-path 指过去，否则动的是「没人引用」的那份，眼睑看起来纹丝不动。
+   同理，那 5 份花屏克隆（.fz3-gband 里内联的整份 SVG）不能各用各的拷贝：applyLidClip() 会把组件内
+   每一份 .fz3-anatomy 都指到主眼这条 path 上，否则切片里露出的是未下压的旧形状。
+   CSS 这条规则只作兜底（没跑到 applyLidClip 时仍然裁得上）。 */
+.fz3-eye[data-lid="thinking"] .fz3-anatomy,
+.fz3-layer[data-lid="thinking"] .fz3-anatomy{clip-path:url(#fz3-lid-clip)}
+
+/* 切口那条抗锯齿过渡带紧贴深蓝眼睑，在 128px 下会读成一条「白边」——用一条同色（#corners 的
+   #1f2573）描边压在切口上，把过渡带盖成深→白的硬边。它必须跟着眼皮动，所以 transform 由
+   stepLid 和裁切 path 一起写；主眼这份在 cache() 里改名 #fz3-lid-edge-main，花屏克隆里的副本
+   保持原 id 且不显示（那一份没有 transform，露出来就是一条错位的线）。
+   ⚠ 两个 id 都要默认藏：主眼那份改名成 -main 之后就不再匹配 #fz3-lid-edge 了，
+   少写一条待机态就会一直横着一条深蓝弧线。 */
+#fz3-lid-edge,
+#fz3-lid-edge-main{display:none}
+.fz3-eye[data-lid="thinking"] #fz3-lid-edge-main,
+.fz3-layer[data-lid="thinking"] #fz3-lid-edge-main{display:inline}
 
 /* 眼闪：极轻的白色亮度跳动；随机 1750-3600ms 一次，单次 155-255ms */
 .fz3-eye-flicker{position:absolute;inset:7.12%;border-radius:50%;background:#fff;opacity:0;z-index:4;pointer-events:none;mix-blend-mode:screen}
@@ -1548,7 +1554,7 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
      * 不做 reduced-motion 降级。
      *
      * 性能约定（v1.6.0）：眼球只有一份静态 SVG，运行时用 15fps 的 setInterval 改写 SVG 内部
-     * transform 属性（#corners / g#fz3-lens / g#fz3-drift），触发的是小面积向量重绘——每帧都按
+     * transform 属性（#corners / 眼球五层 / g#fz3-drift），触发的是小面积向量重绘——每帧都按
      * 设备像素重新抗锯齿，边缘不会像 v1.5.0 的 HTML 合成层那样在缩放时被重采样糊掉；
      * 光晕呼吸 / 脉冲环 / 氛围光仍在 CSS 里用 steps() 量化到 ~15fps，合成器只搬图层。
      * 没有 rAF 主循环：页面隐藏时停表，恢复时按累计时间续相位；其余都是离散事件（setTimeout）。 */
@@ -1599,9 +1605,19 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
       const FZ3_TICK_MS = 1000 / 15
       const FZ3_ORBIT_MS = 6400
       const FZ3_ORBIT_STEPS = 96
-      const FZ3_LENS_MS = 1600
-      const FZ3_LENS_STEPS = 24
-      const FZ3_LENS_SCALE = 0.095
+      /* v1.7.6 分层呼吸：参考实现 1.44s 一个来回、四层各自幅度与相位（每层都是独立可缩放的组）。
+         1.44s 落在 15fps 网格上会取到 21.6 拍，这里取整成 1.4s（正好 21 拍）。
+         幅度沿用参考实现：巩膜几乎不动，越靠里的圈缩得越多；再让内层相位提前 45/90/180ms，
+         合起来是「由内向外荡开」的涟漪，而不是整只眼同缩同放。 */
+      const FZ3_BREATH_MS = 1400
+      const FZ3_BREATH_LAYERS = [
+        ['#sclera', 0.985, 0.91, 0],
+        ['#iris-outer', 1, 0.9, 45],
+        ['#iris-blue', 1, 0.87, 90],
+        ['#pupil', 1, 0.85, 180],
+        /* catchlight 跟着虹膜蓝层走，否则亮点会从虹膜边缘滑出去。 */
+        ['#highlight', 1, 0.87, 90],
+      ]
       const FZ3_GAZE_EASE_MS = 920
       const SVG_NS = 'http://www.w3.org/2000/svg'
       let root = null
@@ -1617,55 +1633,93 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
       /* 眼球内部的三个锚点 + 15fps 时钟 */
       let svg = null
       let corners = null
-      let lens = null
+      /* v1.7.6：眼球五层各自一个节点、各自幅度与相位（不再是单一 g#fz3-lens 统一缩放）。 */
+      let layers = []
+      let lidShape = null
+      let lidEdge = null
+      /* 自愈计时：缓存的裁切 path 掉出文档时，最多每 400ms 重新 cache 一次（一次 cache 只有十几次 querySelector）。 */
+      let healAt = 0
+      let anatomies = []
+      let lidClipId = ''
+      /* 行内值读回会被序列化成 url("#id")，比较时用同一形态，避免每拍误判成「丢了」而重复写。 */
+      let lidClipCss = ''
+      let lidKey = ''
       let drift = null
       let ticker = 0
       let clockBase = 0
       let clockElapsed = 0
       let lastDeg = -1
-      let lastScale = -1
       let gaze = null
       let gazeAt = { x: 0, y: 0, r: 0 }
 
       const elementUnit = () => ((root && root.clientWidth) || 200) / 162
 
+      /* 半闭眼裁切指向主眼那条独占 clipPath（改名见 cache 里那段注释）；组件内每一份
+         .fz3-anatomy 一起改，5 份花屏切片的形状才跟眼睛本体同步。 */
+      const applyLidClip = () => {
+        const want = state === 'thinking' && lidClipId ? lidClipId : ''
+        for (let i = 0; i < anatomies.length; i += 1) anatomies[i].style.clipPath = want
+      }
 
       const cache = (el) => {
         root = el
         /* 5 条故障切片只在 blocks 花屏时可见，顺带缓存，避免每次花屏再查询。 */
         bands = Array.from(root.querySelectorAll('.fz3-gband'))
         /* v1.6.0：眼球是单份 SVG，运行时直接改内部 transform 属性。
-           为了让整只眼能被「目光」整体平移/旋转，把 #fairy 包进 g#fz3-drift；
-           为了让巩膜/虹膜/瞳仁/highlight 一起呼吸、又保留眼睑裁切，把 #eye-anatomy 的内容包进
-           g#fz3-lens（裁切挂在 #eye-anatomy 上，lens 在它内部缩放，裁切边界保持不动）。 */
+           为了让整只眼能被「目光」整体平移/旋转，把 #fairy 包进 g#fz3-drift。
+           v1.7.6：不再把 #eye-anatomy 的内容包进单一 g#fz3-lens 统一缩放——SVG 里巩膜 / 虹膜外圈 /
+           虹膜蓝 / 瞳仁 / catchlight 本来各自就是 <g transform="translate(80 80) scale(1) translate(-80 -80)">，
+           按层写各自的 scale 才有错相；一个缩放值四层永远同相，看着就是整只眼在胀缩。
+           裁切仍挂在 #eye-anatomy 上，缩放发生在它内部，眼睑边界保持不动。 */
         const host = root.querySelector('.fz3-eye-svg')
         svg = host ? host.querySelector('svg') : null
         corners = null
-        lens = null
+        layers = []
+        lidShape = null
+        lidEdge = null
+        anatomies = []
+        lidClipId = ''
+        lidClipCss = ''
+        lidKey = ''
         drift = null
         if (svg) {
           corners = svg.querySelector('#corners')
           const fairy = svg.querySelector('#fairy')
-          const anatomy = svg.querySelector('#eye-anatomy')
           if (fairy && !svg.querySelector('#fz3-drift')) {
             drift = document.createElementNS(SVG_NS, 'g')
             drift.setAttribute('id', 'fz3-drift')
             svg.insertBefore(drift, fairy)
             drift.appendChild(fairy)
           }
-          if (anatomy && !anatomy.querySelector('#fz3-lens')) {
-            lens = document.createElementNS(SVG_NS, 'g')
-            lens.setAttribute('id', 'fz3-lens')
-            anatomy.insertBefore(lens, anatomy.firstChild)
-            let node = lens.nextSibling
-            while (node) {
-              const after = node.nextSibling
-              lens.appendChild(node)
-              node = after
-            }
-          } else if (anatomy) {
-            lens = anatomy.querySelector('#fz3-lens')
+          for (let i = 0; i < FZ3_BREATH_LAYERS.length; i += 1) {
+            const spec = FZ3_BREATH_LAYERS[i]
+            const node = svg.querySelector(spec[0])
+            if (node) layers.push({ node, from: spec[1], to: spec[2], lead: spec[3], last: -1 })
           }
+          /* 思考态半闭眼的裁切形状：只改它自己的 transform，不逐帧重写 d。
+             ⚠ 页面里 #fz3-lid-clip 有 8 份（主眼 1 + 花屏克隆 5 + 侧栏字标 2），url(#id) 按文档
+             顺序解析到最靠前那份——直接给主眼这条 path 写 transform 是无效的（实测两副本里只有
+             第一个生效）。这里把主眼这份改名成独占 id，再用行内 clip-path 指过去。 */
+          const clipNode = svg.querySelector('#fz3-lid-clip') || svg.querySelector('#fz3-lid-clip-main')
+          if (clipNode) {
+            clipNode.id = 'fz3-lid-clip-main'
+            lidClipId = 'url(#fz3-lid-clip-main)'
+            lidClipCss = 'url("#fz3-lid-clip-main")'
+          }
+          lidShape = svg.querySelector('#fz3-lid-clip-main path')
+          /* 切口那条同色描边：主眼这份改名成独占 id（CSS 只显示 #fz3-lid-edge-main），
+             花屏克隆里的副本保持 #fz3-lid-edge，永远 display:none。 */
+          const edgeNode = svg.querySelector('#fz3-lid-edge')
+          if (edgeNode) {
+            edgeNode.id = 'fz3-lid-edge-main'
+            lidEdge = edgeNode
+          }
+          /* 花屏克隆（5 份 .fz3-gband）各自带一份同样的 SVG，它们的 .fz3-anatomy 只能走 CSS 的
+             url(#fz3-lid-clip)，而那会解析到别处的静态副本——工作态横向切片会切出「没下压过」
+             的旧眼睑。这里让组件内每一份 anatomy 都指向主眼那条独占 clipPath，切片形状才和
+             眼睛本体一致。 */
+          anatomies = Array.from(root.querySelectorAll('.fz3-anatomy'))
+          applyLidClip()
           writeDrift()
         }
       }
@@ -1691,6 +1745,28 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
         return 3 * mt * t * t + t * t * t
       }
 
+      /* cubic-bezier(.72,0,.28,1)：参考实现的呼吸曲线（两端顿、中间快），牛顿迭代 4 次足够。 */
+      const breathEase = (p) => {
+        if (p <= 0) return 0
+        if (p >= 1) return 1
+        let t = p
+        for (let i = 0; i < 4; i += 1) {
+          const mt = 1 - t
+          const x = 3 * mt * mt * t * 0.72 + 3 * mt * t * t * 0.28 + t * t * t
+          const dx = 3 * mt * mt * 0.72 + 6 * mt * t * -0.44 + 3 * t * t * 0.72
+          if (Math.abs(dx) < 1e-6) break
+          t = Math.min(1, Math.max(0, t - (x - p) / dx))
+        }
+        const mt = 1 - t
+        return 3 * mt * t * t + t * t * t
+      }
+
+      /* 相位 → 0..1 的往返进度：前半程缩进去、后半程弹回来，再套上面的缓动。 */
+      const breathPhase = (phase) => {
+        const q = phase - Math.floor(phase)
+        return breathEase(q <= 0.5 ? q * 2 : 2 - q * 2)
+      }
+
       const writeDrift = () => {
         if (!drift) return
         drift.setAttribute('transform',
@@ -1713,12 +1789,60 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
         }
       }
 
+      /* 思考态眼皮：和呼吸同一个相位。参考实现用 CSS 把裁切路径里的上眼皮下压 14.5–15.5 个单位、
+         竖向压 .55–1（transform-origin 80px 60px），半闭眼因此一直在「眨呀眨」。
+         这里照搬这条曲线，但按 15fps 采样、只改那条 path 的 transform，不逐帧重写 d。 */
+      const stepLid = (phase) => {
+        if (!lidShape) return
+        if (state !== 'thinking') {
+          if (lidKey) {
+            lidShape.removeAttribute('transform')
+            if (lidEdge) lidEdge.removeAttribute('transform')
+            lidKey = ''
+          }
+          return
+        }
+        const progress = breathPhase(phase)
+        const ty = Math.round((14.5 + progress) * 1000) / 1000
+        const sy = Math.round((0.55 + 0.45 * progress) * 1000) / 1000
+        const key = ty + ':' + sy
+        if (key === lidKey) return
+        lidKey = key
+        const xform = 'translate(0 ' + ty + ') translate(80 60) scale(1 ' + sy + ') translate(-80 -60)'
+        lidShape.setAttribute('transform', xform)
+        /* 切口描边跟裁切同一条曲线、同一个变换，才始终压在那条过渡带上。 */
+        if (lidEdge) lidEdge.setAttribute('transform', xform)
+      }
+
       const tick = () => {
         if (!root) return
         /* v1.7.4（性能）：窗口在后台时浏览器本来就会把 interval 节流，但桌面端
            （Electron 常驻后台）仍有实测唤醒；这里显式跳过，省掉一次不必要的 SVG 属性写。 */
         if (typeof document !== 'undefined' && document.hidden) return
+        /* 自愈：React 重渲染（或热重载换模块）会把 `dangerouslySetInnerHTML` 里那份 SVG 换成新节点，
+           缓存的裁切 path 随之脱离文档——独占 id 改名与行内 clip-path 一起丢，眼睑就停在睁眼形状、
+           只剩一条描边。这里发现节点掉了就重新 cache 一遍（只在真的掉的时候跑）。 */
+        if (!lidShape || !lidShape.isConnected) {
+          const t0 = clockNow()
+          if (t0 - healAt > 400) {
+            healAt = t0
+            cache(root)
+            if (!root) return
+          }
+        }
+        /* 兜底（v1.7.6）：React 重渲染或热重载换模块时，行内 clip-path 会连同独占 id 一起丢，
+           眼睑就停在睁眼形状、只剩一条描边。每拍核对一次（7 次字符串比较，成本可忽略），
+           不对就立刻补写，不必等上面那次重缓存（400ms 节流）。 */
+        if (state === 'thinking' && lidClipCss) {
+          for (let i = 0; i < anatomies.length; i += 1) {
+            if (anatomies[i].style.clipPath !== lidClipCss) {
+              applyLidClip()
+              break
+            }
+          }
+        }
         const now = clockNow()
+        const phase = (now % FZ3_BREATH_MS) / FZ3_BREATH_MS
         if (corners) {
           const step = Math.floor((now % FZ3_ORBIT_MS) / (FZ3_ORBIT_MS / FZ3_ORBIT_STEPS))
           const deg = Math.round(step * (360 / FZ3_ORBIT_STEPS) * 1000) / 1000
@@ -1727,14 +1851,15 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
             lastDeg = deg
           }
         }
-        if (lens) {
-          const step = Math.floor((now % FZ3_LENS_MS) / (FZ3_LENS_MS / FZ3_LENS_STEPS))
-          const scale = Math.round((1 - FZ3_LENS_SCALE * (0.5 - 0.5 * Math.cos(2 * Math.PI * step / FZ3_LENS_STEPS))) * 10000) / 10000
-          if (scale !== lastScale) {
-            lens.setAttribute('transform', 'translate(80 80) scale(' + scale + ') translate(-80 -80)')
-            lastScale = scale
-          }
+        for (let i = 0; i < layers.length; i += 1) {
+          const layer = layers[i]
+          const progress = breathPhase(phase + layer.lead / FZ3_BREATH_MS)
+          const scale = Math.round((layer.from + (layer.to - layer.from) * progress) * 10000) / 10000
+          if (scale === layer.last) continue
+          layer.node.setAttribute('transform', 'translate(80 80) scale(' + scale + ') translate(-80 -80)')
+          layer.last = scale
         }
+        stepLid(phase)
         stepGaze(now)
       }
 
@@ -1983,12 +2108,19 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
         const changed = appliedState !== null && appliedState !== normalized
         state = normalized
         appliedState = normalized
-        /* 半闭眼只由 clipPath 状态控制；形状固定，不做逐帧呼吸。 */
+        /* 半闭眼仍由 clipPath 控制；v1.7.6 起那条裁切 path 的 transform 随呼吸走（见 stepLid）。 */
         if (normalized === 'thinking') {
           root.setAttribute('data-lid', 'thinking')
+          applyLidClip()
           stopGaze()
         } else {
           root.removeAttribute('data-lid')
+          applyLidClip()
+          if (lidShape && lidKey) {
+            lidShape.removeAttribute('transform')
+            if (lidEdge) lidEdge.removeAttribute('transform')
+            lidKey = ''
+          }
           scheduleGaze()
         }
         if (suspended) return
@@ -2059,7 +2191,12 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
         bands = []
         svg = null
         corners = null
-        lens = null
+        layers = []
+        lidShape = null
+        lidEdge = null
+        anatomies = []
+        lidClipId = ''
+        lidKey = ''
         drift = null
         appliedState = null
         suspended = false

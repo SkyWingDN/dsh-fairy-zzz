@@ -8,7 +8,7 @@
 
 [English](README.en.md) · [变更记录](docs/CHANGELOG.md) · [技术说明](docs/TECHNICAL.md) · [性能报告](docs/PERFORMANCE.md)
 
-![version](https://img.shields.io/badge/version-1.7.5-D8FA00?style=flat-square&labelColor=101110)
+![version](https://img.shields.io/badge/version-1.7.6-D8FA00?style=flat-square&labelColor=101110)
 [![npm](https://img.shields.io/npm/v/@sky_wing_dn%2Fdsh-fairy-zzz?style=flat-square&labelColor=101110&color=D8FA00)](https://www.npmjs.com/package/@sky_wing_dn/dsh-fairy-zzz)
 ![license](https://img.shields.io/badge/license-MIT-101110?style=flat-square)
 ![platform](https://img.shields.io/badge/DSH-Desktop%20%26%20Web-101110?style=flat-square)
@@ -47,6 +47,7 @@ dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
 | 眼徽运行时（单 SVG + 15fps 矢量重绘、目光微动、dock 定位与拖拽） | 本仓库 v1.5 – v1.6 |
 | 「绳网终端 / WIRE-NET TERMINAL」宿主皮肤 | 本仓库 v1.7.0 |
 | 电费读数、画布字墙、眼徽手势与一次性完成动效 | 本仓库 v1.7.5 |
+| 眼徽五层呼吸、思考态眼皮呼吸 | 本仓库 v1.7.6 |
 | `scripts/build-client.mjs`（皮肤 CSS 单源内联） | 本仓库 v1.7.1 |
 
 第三方许可全文在 [licenses/](licenses/)，逐项署名见 [NOTICE-fairy-dsh.md](NOTICE-fairy-dsh.md)。
@@ -72,7 +73,7 @@ dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
 **眼徽**
 
 - 问候结束约 1.9s 后飞到会话区左缘中线常驻，光晕淡出，只做状态指示。
-- 状态来自宿主 Agent 注册表：`idle` / `thinking` / `working` / `done`，思考与执行期间眼睑半闭。
+- 状态来自宿主 Agent 注册表：`idle` / `thinking` / `working` / `done`，思考与执行期间眼睑半闭，并跟着呼吸一开一合。
 - 眼睑、叶片公转、眼球呼吸、目光微动由一份静态 SVG + 15fps ticker 重绘（矢量中间帧，不是旋转位图）；光晕、脉冲环、氛围光走 CSS `steps()` 时间线，没有常驻 `requestAnimationFrame` 主循环。
 - 右键按住拖动、双击右键复位；拖动与停靠限制在会话内容区内，落点被更高 `z-index` 的挂件挡住时会自动让位。
 - 「显示眼徽」可以整体隐藏，电费读数不跟着隐藏。

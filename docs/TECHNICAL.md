@@ -1,7 +1,7 @@
-# dsh-fairy-zzz 插件技术说明（v1.7.5）
+# dsh-fairy-zzz 插件技术说明（v1.7.6）
 
 > 目标读者：**没有参与过本项目、但要继续维护或修改这个插件的人 / AI 智能体**。读完这篇文档，应该能独立定位代码、改功能、打版本、发布到 GitHub，并复现验证。
-> 最后更新：2026-11-07，对应版本 v1.7.5。v1.7.4 / v1.7.5 的完整改动见 README 的中英版本段落，本节只留结构性的几条（§19 顶部两条）。上一轮基线 v1.7.3（v1.7.3 修底部状态栏透字：composer 座位渐变的终点改为不透明画布色；并把只被覆盖层子树消费的 `--fz3-dock-*` / `--fz3-brand-*` 从 `:root` 改写到 `.fz3-layer`、hero 标题同步改挂载 / 卸载事件、dock 测量改锚点退避重试、dock 相氛围层降为普通合成——4K 下打开 21k 字大会话 style 637→567 ms、long task 1254→1140 ms，见 §21.9；v1.7.2 修 v1.7.1 遗留的两处选中态边线伪影：侧栏 active 胶囊左端青柠月牙、顶栏 active tab 下缘青柠下划线，见 §21.8；v1.7.1 修 v1.7.0 皮肤期的 6 类用户回归：删 boot 左上 `// H.D.D. NORTH SEEK DATA SYSTEM`；问候 kicker / 中文标题回 Fairy 冰蓝；禁用插件后 `--dsw-*` token 残留改为自己挂 `ctx.effect` 释放 `overrideTokens` 的 disposer；重启用插件不再重播开机动画（`bootPlayed` 存到 `window`）；设置弹窗几何恢复宿主默认、皮肤只换色；附件缩略图焦点环由外扩改内嵌、重绘移除按钮。v1.7.0 新增「绳网终端」宿主皮肤层，见 §21。此前：v1.6.2 删掉设置页「外观三档」，皮肤始终自动跟随宿主深浅色；「试听问候」改为每次点击都从本时段 5 条语音里重新随机抽一条并显示台词，不再复用开机抽中的那条。v1.6.0 把眼徽渲染从 v1.5.0 的「4 份 HTML 合成层 + CSS steps 动画」换回 **单 SVG + 15fps JS 向量重绘**：合成层的旋转 / 缩放动的是已经栅格化的位图副本，眼睑 clip 边、深蓝眼眶这类高对比边缘在重采样时会出现台阶 / 发虚（用户截图报「像素没覆盖到」）；v1.6.0 每 66.7ms 直接写 `#corners` / `#fz3-lens` / `#fz3-drift` 的 SVG transform 属性，由 Skia 按设备像素重新抗锯齿，边缘始终干净。代价：隔离 harness GPU 0.99% → 1.52%（+0.5 点）、主线程 0% → 0.8%；真实页面同轮 A/B 在噪声内（2.28% → 2.10 / 1.98%），相对 v1.4.0 的 9.3–11.8% / 47–54% 仍是约 1/6 与 1/50；192px 原生截图清晰度 +2%–4%。没有新增常驻层，动画数量与 v1.5.0 相同（4 个，全部 15fps）。v1.5.1 修问候语音 greet-night-2 的断句停顿：v1.4.0 那 20 条 mp3 本就按早期草稿台词合成，其中全角「；」不在引擎 cut5 的切分符号里，导致「我值班 / 您不睡」连读；现按同一份草稿台词重新合成，把该处「；」改成「。」，并在合成后于该句号的自然停顿处补 0.20s 静音（总停顿约 0.44s）；注意引擎 `merge_short_text_in_array(threshold=5)` 会把「我值班。」（4 字）与「您不睡，」（4 字）合并回同一片段，仅改标点只有模型自然的 ~0.2s 微停顿；屏幕字幕仍保留简洁版、与音频不强制逐字一致，V1 原版 5 条未动；v1.5.0 眼徽动效重做：4 份静态 SVG 副本 + 叶片公转 / 目光微动，持续动画用 steps() 量化到 15fps，GPU / CPU 再降约 80% / 90%；v1.4.0 新增问候语音库：每个时段 5 条（原 1 条 + 新录 4 条），按 Fairy 人设撰写 / 录制，随机播放且避免连续重复，屏幕台词为音频的简洁理解版；v1.3.4 修气泡脚注半句与眼标悬停原生提示；v1.3.0 新增：眼徽用量 / 花费气泡、眼徽拖拽与隐藏、外观三档（跟随 / 深色 / 浅色）、欢迎页文案改写，以及 host 侧 GET /fairy-zzz/usage 路由与 5 个稳定性修复；v1.3.1 把拖拽重写为 transform-only + 四边吸附 + 遮挡让位、用量改为预取缓存（点开即显）、气泡支持点外 / Esc 关闭、设置页删掉「（本地 CPU 推理）」后缀；v1.3.2 把拖拽与吸附范围从整个视口收进**会话内容区**（左 = 侧栏右缘、上 = 标题栏底缘，右 / 下 = 窗口边缘），边界在每次 pointerdown 时实时重量；v1.2.1 的死代码清理成果保留；v1.3.3 只改文案：气泡里的「用量 / 花费 / 峰谷」统一成「电费」口径（用量→电费、余额→电费余额、今日花费→今日电费、峰谷→五倍电费 / 十倍电费，峰段窗口提示为「十倍电费」），客户端对旧宿主的「高峰 / 空闲」字样做兜底改写）。
+> 最后更新：2026-11-07，对应版本 v1.7.6。v1.7.4–v1.7.6 的完整改动见 README 的中英版本段落，本节只留结构性的几条（§19 顶部两条）。v1.7.6 把眼徽呼吸拆成五层（巩膜 / 虹膜外圈 / 虹膜 / 瞳仁 / 高光各自幅度与相位，周期 1.4s），思考态眼皮随同一相位开合；上一轮基线 v1.7.3（v1.7.3 修底部状态栏透字：composer 座位渐变的终点改为不透明画布色；并把只被覆盖层子树消费的 `--fz3-dock-*` / `--fz3-brand-*` 从 `:root` 改写到 `.fz3-layer`、hero 标题同步改挂载 / 卸载事件、dock 测量改锚点退避重试、dock 相氛围层降为普通合成——4K 下打开 21k 字大会话 style 637→567 ms、long task 1254→1140 ms，见 §21.9；v1.7.2 修 v1.7.1 遗留的两处选中态边线伪影：侧栏 active 胶囊左端青柠月牙、顶栏 active tab 下缘青柠下划线，见 §21.8；v1.7.1 修 v1.7.0 皮肤期的 6 类用户回归：删 boot 左上 `// H.D.D. NORTH SEEK DATA SYSTEM`；问候 kicker / 中文标题回 Fairy 冰蓝；禁用插件后 `--dsw-*` token 残留改为自己挂 `ctx.effect` 释放 `overrideTokens` 的 disposer；重启用插件不再重播开机动画（`bootPlayed` 存到 `window`）；设置弹窗几何恢复宿主默认、皮肤只换色；附件缩略图焦点环由外扩改内嵌、重绘移除按钮。v1.7.0 新增「绳网终端」宿主皮肤层，见 §21。此前：v1.6.2 删掉设置页「外观三档」，皮肤始终自动跟随宿主深浅色；「试听问候」改为每次点击都从本时段 5 条语音里重新随机抽一条并显示台词，不再复用开机抽中的那条。v1.6.0 把眼徽渲染从 v1.5.0 的「4 份 HTML 合成层 + CSS steps 动画」换回 **单 SVG + 15fps JS 向量重绘**：合成层的旋转 / 缩放动的是已经栅格化的位图副本，眼睑 clip 边、深蓝眼眶这类高对比边缘在重采样时会出现台阶 / 发虚（用户截图报「像素没覆盖到」）；v1.6.0 每 66.7ms 直接写 `#corners` / `#fz3-lens` / `#fz3-drift` 的 SVG transform 属性，由 Skia 按设备像素重新抗锯齿，边缘始终干净。代价：隔离 harness GPU 0.99% → 1.52%（+0.5 点）、主线程 0% → 0.8%；真实页面同轮 A/B 在噪声内（2.28% → 2.10 / 1.98%），相对 v1.4.0 的 9.3–11.8% / 47–54% 仍是约 1/6 与 1/50；192px 原生截图清晰度 +2%–4%。没有新增常驻层，动画数量与 v1.5.0 相同（4 个，全部 15fps）。v1.5.1 修问候语音 greet-night-2 的断句停顿：v1.4.0 那 20 条 mp3 本就按早期草稿台词合成，其中全角「；」不在引擎 cut5 的切分符号里，导致「我值班 / 您不睡」连读；现按同一份草稿台词重新合成，把该处「；」改成「。」，并在合成后于该句号的自然停顿处补 0.20s 静音（总停顿约 0.44s）；注意引擎 `merge_short_text_in_array(threshold=5)` 会把「我值班。」（4 字）与「您不睡，」（4 字）合并回同一片段，仅改标点只有模型自然的 ~0.2s 微停顿；屏幕字幕仍保留简洁版、与音频不强制逐字一致，V1 原版 5 条未动；v1.5.0 眼徽动效重做：4 份静态 SVG 副本 + 叶片公转 / 目光微动，持续动画用 steps() 量化到 15fps，GPU / CPU 再降约 80% / 90%；v1.4.0 新增问候语音库：每个时段 5 条（原 1 条 + 新录 4 条），按 Fairy 人设撰写 / 录制，随机播放且避免连续重复，屏幕台词为音频的简洁理解版；v1.3.4 修气泡脚注半句与眼标悬停原生提示；v1.3.0 新增：眼徽用量 / 花费气泡、眼徽拖拽与隐藏、外观三档（跟随 / 深色 / 浅色）、欢迎页文案改写，以及 host 侧 GET /fairy-zzz/usage 路由与 5 个稳定性修复；v1.3.1 把拖拽重写为 transform-only + 四边吸附 + 遮挡让位、用量改为预取缓存（点开即显）、气泡支持点外 / Esc 关闭、设置页删掉「（本地 CPU 推理）」后缀；v1.3.2 把拖拽与吸附范围从整个视口收进**会话内容区**（左 = 侧栏右缘、上 = 标题栏底缘，右 / 下 = 窗口边缘），边界在每次 pointerdown 时实时重量；v1.2.1 的死代码清理成果保留；v1.3.3 只改文案：气泡里的「用量 / 花费 / 峰谷」统一成「电费」口径（用量→电费、余额→电费余额、今日花费→今日电费、峰谷→五倍电费 / 十倍电费，峰段窗口提示为「十倍电费」），客户端对旧宿主的「高峰 / 空闲」字样做兜底改写）。
 > 姊妹文档：[docs/PERFORMANCE.md](PERFORMANCE.md)（性能优化报告：为什么这么改、数据怎么量出来的）。
 
 ---
@@ -180,7 +180,7 @@ DSH 新会话欢迎页的标题行结构：
 | --- | --- | --- |
 | `window.__ModuleLoader__.load` | 模块头 | `require('react')`、`h = React.createElement` |
 | `const NS =`、`GREET_LINES`、`const HERO_COPY` | 常量 / 问候语库 / 存储键 | `NS` / `PKG`、`VOICE_KEY`、`SEEN_KEY`、`greetSlot()`、`GREET_LAST_KEY`、`GREET_LINES`、`currentGreeting()`、`GREETING()`、`DRAG_KEY` / `POS_KEY` / `EYE_KEY`、`HERO_COPY`、`CJK_RE` |
-| `const FAIRY_EYE_SVG`（`FZ3_ASSETS_BEGIN/END`） | SVG 资产 | `FAIRY_EYE_SVG`（viewBox `-1 -1 162 162`，defs 渐变 + clipPath `#fz3-lid-clip` + 眼睑 `#fz3-lid-rim`）、`FAIRY_PULSE_SVG`（5 圈脉冲环）；`FAIRY_THREADS_SVG`（feTurbulence 拉丝滤镜）已于 v1.7.5 整个删除，不再有滤镜定义 |
+| `const FAIRY_EYE_SVG`（`FZ3_ASSETS_BEGIN/END`） | SVG 资产 | `FAIRY_EYE_SVG`（viewBox `-1 -1 162 162`，defs 渐变 + clipPath `#fz3-lid-clip`（运行时改名 `#fz3-lid-clip-main`）；v1.7.6 删掉 `#fz3-lid-rim`、新增同色描边 `#fz3-lid-edge`（运行时改名 `#fz3-lid-edge-main`）与静态 `#fz3-lid-edge-clip`）、`FAIRY_PULSE_SVG`（5 圈脉冲环）；`FAIRY_THREADS_SVG`（feTurbulence 拉丝滤镜）已于 v1.7.5 整个删除，不再有滤镜定义 |
 | `const ZH =` / `const EN =` | i18n | 各 5 条：`boot.sound`、`greet.kicker/sub/tap`、`dock.error` |
 | `const voice =`、`function playClip`、`function speakText` | 声音状态 + 语音工具 | `voice`、`playClip`、`fetchVoice`、`chunkText`、`speakText` |
 | `function readStored` | 本地存储容错 | `readStored` / `readBool` / `writeStored` |
@@ -216,7 +216,7 @@ DSH 新会话欢迎页的标题行结构：
 | `.fz3-core{` | **全息核心（v1.6.0 重写）** | `.fz3-core` 定位与 dock 过渡；`.fz3-eye` 网格；`.fz3-eye::before` 静态径向柔光 + `fz3-halo-breathe 6.4s steps(3)`；**`.fz3-eye-svg`（单 SVG 容器：`position:absolute;inset:0;z-index:2`，`transition:transform .28s` 供 hover 放大）与 `.fz3-eye-svg svg{width/height:100%;overflow:visible}`**；`.fz3-eye-pulse`（`fz3-lash-pulse 6.4s steps(24)`）。v1.5.0 的 gaze / body / plate / blades / anatomy / shine 六组规则已全部删除 |
 | `.fz3-set{` | 设置页 | 现役 `.fz3-set-*` 样式 |
 | `.fz3-gband{` | 信号故障 | `data-glitch="threads/blocks"` 的滤镜 / 切片 / 克隆；`.fz3-gband` 只在 blocks 时提升图层；滤镜目标为 `.fz3-eye-svg` |
-| `#fz3-lid-rim` | 待机小动作 + 关键帧 | 半闭眼：`clip-path:url(#fz3-lid-clip)` 裁 `#eye-anatomy`（形状固定，几何直接写在 path `d` 里）；**眼睑 rim**：`#fz3-lid-rim` 默认 `display:none`、thinking 态 `inline`，给裁切边界压同色描边消去 AA 白边；眼闪、完成庆祝、`[data-fz3-suspended]` 暂停全部时间线；现行关键帧 `fz3-halo-breathe` / `fz3-lash-pulse` / `fz3-atmos-breathe` 等；v1.5.0 的 `fz3-orbit` / `fz3-lens-breathe` 已删除 |
+| `.fz3-eye[data-lid="thinking"]` | 待机小动作 + 关键帧 | 半闭眼：`clip-path:url(#fz3-lid-clip-main)` 裁 `#eye-anatomy`（`cache()` 里给主眼那份 clipPath 改独占 id、并写行内 `clip-path`，否则 8 份同名副本会让它解析到字标那份）；形状写死在 path `d` 里，v1.7.6 起那条 path 的 `transform` 随呼吸走（下压 14.5–15.5 个单位、`scaleY` .55–1，origin 80 60）；v1.7.6 删掉 `#fz3-lid-rim`（固定画在裁切边界上的描边，眼皮一动就错位）；眼闪、完成庆祝、`[data-fz3-suspended]` 暂停全部时间线；现行关键帧 `fz3-halo-breathe` / `fz3-lash-pulse` / `fz3-atmos-breathe` 等；v1.5.0 的 `fz3-orbit` / `fz3-lens-breathe` 已删除 |
 | `.fz3-copy{` | 问候文案 | 镜面倒影标题、kicker / sub、SKIP2 按钮 |
 | `.fz3-sb-brand{` | 左下角坞 + 朗读按钮 | 字标、`.fz3-voice` 三态 |
 | `[class*="_brandName"]` | 官方字标隐藏 + 氛围 + 响应式 | 隐藏官方字标、`.fz3-rim` / `.fz3-bay`、`.fz3-atmos*`（glow 带 `fz3-atmos-breathe 14s steps(14)`）、`@media` 矮视口 |
@@ -271,14 +271,14 @@ const fz3EyeRuntime = (() => { ... return { mount, unmount, setState, suspend, r
 
 | API | 作用 |
 | --- | --- |
-| `mount(el)` | 绑定舞台根节点 `.fz3-eye`；`cache(el)` 取出内部 SVG、把 `#fairy` 包进 `#fz3-drift`、把 `#eye-anatomy` 的内容移进 `#fz3-lens`；启动 15fps ticker；排故障 / 眼闪 / 目光微动 |
-| `unmount()` | 停 ticker（`stopTicker`）、清 gaze / glitch / flicker 定时器、解绑可见性事件、清空 `svg/corners/lens/drift` 引用 |
-| `setState(mood)` | 只切 `data-lid="thinking"` 与 `data-glitch` 属性；thinking/working 时眼睑半闭（CSS clipPath）并 `stopGaze()`，其余状态恢复目光微动 |
+| `mount(el)` | 绑定舞台根节点 `.fz3-eye`；`cache(el)` 取出内部 SVG、把 `#fairy` 包进 `#fz3-drift`、缓存五层节点（`#sclera` / `#iris-outer` / `#iris-blue` / `#pupil` / `#highlight`）与裁切 path；启动 15fps ticker；排故障 / 眼闪 / 目光微动 |
+| `unmount()` | 停 ticker（`stopTicker`）、清 gaze / glitch / flicker 定时器、解绑可见性事件、清空 `svg/corners/layers/lid/drift` 引用 |
+| `setState(mood)` | 只切 `data-lid="thinking"` 与 `data-glitch` 属性；thinking/working 时眼睑半闭（CSS clipPath，随呼吸开合）并 `stopGaze()`，其余状态恢复目光微动 |
 | `suspend() / resume()` | 页面 hidden / visible：暂停 ticker、CSS 时间线（`data-fz3-suspended`）、清空目光并停止三个调度；恢复时重排相位（`clockElapsed` 累加） |
 
 ### 8.2 时间常量
 
-- **JS ticker（v1.6.0）**：`FZ3_TICK_MS = 1000 / 15`（66.67ms，15fps）。叶片 `FZ3_ORBIT_MS = 6400` / `FZ3_ORBIT_STEPS = 96`（每步 3.75°）；眼球呼吸 `FZ3_LENS_MS = 1600` / `FZ3_LENS_STEPS = 24` / `FZ3_LENS_SCALE = 0.095`（`scale 1→0.905`，余弦缓动）；目光缓动 `FZ3_GAZE_EASE_MS = 920`。三个周期都是 1/15s 的整数倍。
+- **JS ticker（v1.6.0）**：`FZ3_TICK_MS = 1000 / 15`（66.67ms，15fps）。叶片 `FZ3_ORBIT_MS = 6400` / `FZ3_ORBIT_STEPS = 96`（每步 3.75°）；眼球呼吸 `FZ3_BREATH_MS = 1400` + `FZ3_BREATH_LAYERS`（五层各自的 `from` / `to` / 相位领先，缓动是 `cubic-bezier(.72,0,.28,1)` 的三角波）；目光缓动 `FZ3_GAZE_EASE_MS = 920`。三个周期都是 1/15s 的整数倍。
 - **CSS 时间线**：光晕 `fz3-halo-breathe 6.4s steps(3)`、脉冲环 `fz3-lash-pulse 6.4s steps(24)`、氛围光 `fz3-atmos-breathe 14s steps(14)`。
 - `FZ3_GLITCH_MAX_MS = 900`：一次花屏视觉的硬上限，定时器丢了也不会一直挂着。
 - `FZ3_FAULT`：threads（水平拉丝，feTurbulence）与 blocks（5 条横切片）两类故障的拍数、拍间隔、收尾时长、位移 / 亮度 / 对比档位。
@@ -286,7 +286,7 @@ const fz3EyeRuntime = (() => { ... return { mount, unmount, setState, suspend, r
 
 ### 8.3 调度方式
 
-- **一个 15fps ticker + 三个离散 setTimeout 链**。ticker（`setInterval(tick, 66.67)`）每拍做三件事：写 `#corners` 的 `rotate(deg 80 80)`、写 `#fz3-lens` 的 `translate(80 80) scale(s) translate(-80 -80)`、推进目光缓动（`stepGaze` 把 x/y/r 写进 `#fz3-drift` 的 `transform`）。相位来自 `clockNow() = clockElapsed + (performance.now() - clockBase)`，页面隐藏后恢复也不会跳帧。
+- **一个 15fps ticker + 三个离散 setTimeout 链**。ticker（`setInterval(tick, 66.67)`）每拍做四件事：写 `#corners` 的 `rotate(deg 80 80)`、按层写 5 个节点的 `scale`（值变了才写）、推进思考态眼皮（`stepLid` 改 `#fz3-lid-clip path` 的 `transform`）、推进目光缓动（`stepGaze` 把 x/y/r 写进 `#fz3-drift` 的 `transform`）。相位来自 `clockNow() = clockElapsed + (performance.now() - clockBase)`，页面隐藏后恢复也不会跳帧。
 - 三个 `setTimeout` 链：`scheduleFlicker`（1.75-3.6s 随机轻闪，切 `data-flicker`）、`scheduleGlitch`（2.3-4.6s 随机故障，切 `data-glitch` + CSS 变量）、`scheduleGaze`（4.6-8.8s 一次目光，缓动去 / 回）；表情切换时 `playStateTransition` 播两段式强转场。
 - 花屏切片高度每次随机（`layoutBlocks`）；`armGlitchWatchdog` 兜底清理；`suspend` 后 ticker 与三个计时器全部停止、CSS 时间线一并暂停（后台标签页 ≈ 0 开销）。
 
@@ -295,12 +295,12 @@ const fz3EyeRuntime = (() => { ... return { mount, unmount, setState, suspend, r
 | 想改 | 改哪里 |
 | --- | --- |
 | 叶片旋转速度 | `tick()` 里的 `FZ3_ORBIT_MS / FZ3_ORBIT_STEPS`（改 ms 必须同步改 steps = ms × 15） |
-| 眼球呼吸速度 / 幅度 | `FZ3_LENS_MS / FZ3_LENS_STEPS / FZ3_LENS_SCALE`（余弦缓动写 `scale`） |
+| 眼球呼吸速度 / 幅度 | `FZ3_BREATH_MS` 与 `FZ3_BREATH_LAYERS` 的 `from` / `to` / `lead`（逐层写 `scale`） |
 | 目光微动幅度 / 频率 | `scheduleGaze()` 里的 `fz3Random` 区间 + `FZ3_GAZE_EASE_MS`（缓动曲线在 `gazeEase` 的 cubic-bezier） |
 | 光晕呼吸节奏 | `@keyframes fz3-halo-breathe`（852，6.4s / steps(3)） |
 | 眼闪频率 | `scheduleFlicker` 里的随机区间与持续时间（CSS `.fz3-eye-flicker`） |
 | 花屏频率 / 参数 | `FZ3_FAULT`（拍数、间隔、位移、亮度）与 `scheduleGlitch` 的随机区间 |
-| 思考态半闭眼形状 | `FAIRY_EYE_SVG` 里 `#fz3-lid-clip` 的 path（`.fz3-lid-clip-shape`） |
+| 思考态半闭眼形状 / 幅度 | `FAIRY_EYE_SVG` 里 `#fz3-lid-clip` 的 path `d`（形状）；`stepLid` 里的 `ty = 14.5 + progress` / `sy = 0.55 + 0.45 * progress`（幅度） |
 | 大眼尺寸 / 位置 | CSS 变量 `--fz3-eye` / `--fz3-eye-cy` / `--fz3-eye-gap`，以及问候页的额外上移量 `--fz3-eye-lift`（见 17.19） |
 | 加一层新的常驻动画 | 先读 8.5 / 8.6 的规则再动手：大面积的走 CSS `steps`，小图标走 ticker 写 SVG 属性 |
 
@@ -652,18 +652,18 @@ localStorage.getItem('fairy.zzz.theme-mode')              // null（v1.6.2 起�
 document.querySelectorAll('.fz3-eye-svg').length            // 1
 document.querySelectorAll('.fz3-eye-svg svg').length        // 1（静态 FAIRY_EYE_SVG）
 document.querySelector('.fz3-eye-svg #fz3-drift')           // 运行时插入，非 null
-document.querySelector('.fz3-eye-svg #fz3-lens')            // 运行时插入，非 null
+document.querySelector('.fz3-eye-svg #sclera').getAttribute('transform')   // v1.7.6 起五层各自缩放，运行时写入
 document.querySelectorAll('.fz3-eye-gaze,.fz3-eye-plate,.fz3-eye-blades,.fz3-eye-anatomy,.fz3-eye-shine').length  // 0（v1.5.0 的层已删）
 document.querySelector('.fz3-eye').getAnimations({subtree:true}).map(a => a.animationName)
 // ['fz3-halo-breathe','fz3-lash-pulse']（叶片 / 眼球 / 目光已改为 JS ticker）
 document.querySelector('.fz3-eye-svg #corners').getAttribute('transform')   // 两次读取应不同，如 rotate(18.75 80 80)
-document.querySelector('.fz3-eye-svg #fz3-lens').getAttribute('transform')  // translate(80 80) scale(0.9xx) translate(-80 -80)
+document.querySelector('.fz3-eye-svg #fz3-lid-clip-main path').getAttribute('transform')  // 思考态 translate(0 15.xx) … scale(1 0.xx) …，待机为 null（id 由 cache() 改名，仍用 #fz3-lid-clip 查会命中别处的副本）
 document.querySelector('.fz3-eye-svg #fz3-drift').getAttribute('transform') // translate(x y) rotate(r 80 80)，14s 内会变
 document.querySelector('.fz3-eye').getAttribute('data-lid')  // idle 时为 null；thinking/working 时为 'thinking'
-// v1.6.0 补丁：半闭眼眼睑 rim（白边修复）
-document.querySelectorAll('#fz3-lid-rim').length            // 8（主眼 1 + 花屏克隆 5 + 品牌位 / 字标 2）
-document.querySelectorAll('.fz3-eye[data-lid="thinking"] #fz3-lid-rim').length  // 6（主眼 + 克隆）
-getComputedStyle(document.querySelectorAll('#fz3-lid-rim')[0]).display  // 'none'（品牌位副本默认隐藏）
+// v1.7.6：主眼眼皮真的会动（v1.6.0 的 #fz3-lid-rim 已删，这里改验独占 id 与行内 clip-path）
+document.querySelectorAll('#fz3-lid-clip').length          // 7 上下（主眼那份已改名，其余是花屏克隆 + 品牌位 / 字标）
+document.querySelectorAll('#fz3-lid-clip-main').length     // 1（只有主眼）
+getComputedStyle(document.querySelector('.fz3-eye-svg .fz3-anatomy')).clipPath  // 思考态 'url("#fz3-lid-clip-main")'，待机 'none'
 ```
 
 ### 16.2 headless Chrome 真实加载（v1.3.0 流程）
@@ -713,6 +713,7 @@ v1.3.0 的回归 harness（`tmp/merge/`，一次性）：`t7-routes.mjs`（8 个
 16. **问候音频的台词与屏幕字幕是两套文案**：`GREET_LINES` 里 `file`（mp3）是富文本台词、`text` 是给屏幕看的简洁理解版，两者**允许不一致**（v1.4.0 起就是这样，v1.5.1 已在文档中澄清）；改 `text` 不必重录音频，只有改音频台词本身才需要重录（方法见 13.1）。另注意引擎行为：①`cut5` 的切分符号集合只含**半角** `;`、不含全角 `；`，全角分号处不会切；②切完还会走 `TextPreprocessor.merge_short_text_in_array(threshold=5)`，把累计不足 5 字的短片段合并——「我值班。」（4 字）与「您不睡，」（4 字）会被合并回同一片段，所以**仅把「；」改成「。」也只得到模型自然的 ~0.2s 微停顿**。要让停顿明显，除了改标点，还要在合成后对 wav 该处追加静音（v1.5.1 追加 0.20s，总停顿 0.44s）再编码 mp3；或者调整前后文让该片段本身 ≥5 字。
 17. **不要让合成层去旋转 / 缩放 SVG 位图**（v1.5.0 的教训，v1.6.0 已修）：把同一份 SVG 复制成多个 HTML 层、用 CSS `transform` 做旋转 / 缩放时，合成器搬的是已经栅格化的位图，眼徽这种高对比小图标（尤其 `clipPath` 裁出的眼睑硬边）会出现台阶 / 发虚，用户看到的就是「像素没覆盖到」。小面积图标要「会转」就必须让矢量重绘：单 SVG + 15fps ticker 写 `transform` 属性（见 8.6）；大面积 / 全屏层仍然只能静态或 `steps()`。
 18. **同一份内联 SVG 被复制多份时，`url(#id)` 只解析文档里第一个同 id 元素**（v1.6.0 半闭眼白边的根因）：页面同时有 8 份 `#fz3-lid-clip`（主眼 1 + 花屏克隆 5 + 品牌位 / 字标 2）；主眼 `clip-path:url(#fz3-lid-clip)` 吃到的是**最靠前**的侧栏字标副本，而字标不在 `.fz3-eye` 作用域内、拿不到 `.fz3-eye .fz3-lid-clip-shape{transform:translateY(15.5px)}`，所以主眼实际裁切边界一直是 path 原始曲线 `y=75`（不是注释里写的 90.5）。教训：**眼睑 / clip 几何必须写死在 path `d` 里**，不要靠 CSS transform 调；重复 id 数量可用 `document.querySelectorAll('#fz3-lid-clip').length` 检查。裁切边界上的 AA 白边用同色 rim 描边（`#fz3-lid-rim`，thinking 态才显示）把「白压深」反转成「深压白」，静态绘制、零运行时开销。
+    **v1.7.6 修正**：上面「必须写死」只对「想用 CSS 规则改形状」成立。要让它动起来的正解是——给主眼那份 clipPath 一个独占 id（`#fz3-lid-clip-main`），给主眼 `.fz3-anatomy` 写**行内** `clip-path:url(#fz3-lid-clip-main)`，再在 15fps ticker 里写那条 path 的 `transform`（§8.3 `stepLid`）。rim 描边已删：它画在固定边界上，眼皮一动就错位。
 
 19. **问候页第一行小字被眼徽光晕压住**（v1.6.1）：`.fz3-copy` 的 `top` 是 `calc(--fz3-eye-cy + --fz3-eye/2 + --fz3-eye-gap)`，而 `.fz3-eye::before` 的静态柔光用 `inset:-13%`，比眼睛包围盒每边多探出 `0.13 × eye`（1610×949 下 39.5px）。于是 kicker（`H.D.D CORE // ONLINE`，高 12px）上半截正好落在柔光里，8–9.5px 细字在亮蓝底上的对比度只剩 ~1.2，看起来就像被图案盖住。
     **修法**：新增 `--fz3-eye-lift:clamp(12px,2.8vh,28px)`，只从 `.fz3-core` 的 `top` 里减掉（`calc(var(--fz3-eye-cy) - var(--fz3-eye-lift))`），`.fz3-copy` 锚点保持 `--fz3-eye-cy`——眼徽上移、文案原地，等于把两者的间距拉开一个 lift，而不是把整组内容一起上移。实测（headless Chrome，真实 GUI 1610×949 dpr1）光晕底边到 kicker 的净空：1610×949 = 19px、1440×900 = 19px、1280×800 = 16px、1100×700 = 15px（矮视口 `max-height:620` 本来就 `display:none` 掉 kicker）。
@@ -744,6 +745,18 @@ v1.3.0 的回归 harness（`tmp/merge/`，一次性）：`t7-routes.mjs`（8 个
 ---
 
 ## 19. 变更记录
+
+### 1.7.6（2026-11-07）
+
+- **眼徽呼吸拆成五层**：删掉包住 `#eye-anatomy` 的 `g#fz3-lens`（整体缩放一个节点），改成 `FZ3_BREATH_LAYERS` 里五条 `[selector, from, to, leadMs]`——`#sclera`(.985→.91, 0ms)、`#iris-outer`(1→.9, 45ms)、`#iris-blue`(1→.87, 90ms)、`#pupil`(1→.85, 180ms)、`#highlight`(1→.87, 90ms)。周期 `FZ3_BREATH_MS = 1400`（1440 在 15fps 网格上是 21.6 拍，取 21 拍），缓动是 `cubic-bezier(.72,0,.28,1)` 解的三角波（`breathEase` 牛顿 4 次 + `breathPhase` 折返）。每拍只在数值变化（0.1 取整比较）时写一次 `translate(80 80) scale(s) translate(-80 -80)`。
+- **思考态眼皮随呼吸开合**：`stepLid(phase)` 只写 `#fz3-lid-clip path` 的 `transform`（`translate(0 ty) translate(80 60) scale(1 sy) translate(-80 -60)`，`ty = 14.5 + progress`、`sy = 0.55 + 0.45 * progress`），不重写 `d`，与参考项目 `@keyframes dsh-fairy-thinking-clip` 同值。
+- **修复思考态眼皮其实没动**：页面里 `#fz3-lid-clip` 有 8 份同名副本（主眼 1 + 花屏克隆 5 + 侧栏字标 2），`url(#id)` 按文档顺序只解析最靠前那份，写进主眼那份的 `transform` 无人消费。改为 `cache()` 里把主眼那份改名 `#fz3-lid-clip-main`，进思考态时给 `.fz3-anatomy` 写行内 `clip-path:url(#fz3-lid-clip-main)`（离开时清掉），CSS 里的 `.fz3-eye[data-lid="thinking"] .fz3-anatomy` 保留作兜底。删掉 `#fz3-lid-rim`（固定画在裁切边界上的描边，眼皮一动就错位；参考项目没有这条）。
+- **修复工作态花屏切片切出旧眼睑**：5 份 `.fz3-gband` 各自内联一份完整眼睛 SVG，它们的 `.fz3-anatomy` 只能走 CSS `url(#fz3-lid-clip)`，按文档顺序解析到别处的静态副本（没有 `transform`），切片里露出的是未下压的旧形状——每次花屏都闪一下「以前的样子」。改为 `applyLidClip()` 把组件内**每一份** `.fz3-anatomy` 的 `clip-path` 都指向主眼那条独占 `#fz3-lid-clip-main`（进 / 出思考态各写一次，不逐帧）。
+- **修复眼睑切口的白边**：巩膜（`#eef0f5`）与深蓝眼睑（`#1f2573`）之间的抗锯齿过渡带在 128px 下读成一条亮边。加一条 `<path id="fz3-lid-edge" d="M20 60 Q80 90 140 60" stroke="#1f2573" stroke-width="1.6">`，套在静态 `#fz3-lid-edge-clip`（`circle cx=80 cy=80 r=48`，用来把跨度 x=20..140 的曲线收进巩膜内、不在蓝色外盘上露头）；`stepLid` 给它写与裁切路径**同一个** `transform`，主眼那份在 `cache()` 里改名 `#fz3-lid-edge-main`，花屏克隆里的同名副本保持 `display:none`。描边与眼皮同色，视觉上等于把过渡带换成了深→白的硬边。
+- **修复待机态那条深蓝弧线**：`#fz3-lid-edge` 在 `cache()` 里被改名 `#fz3-lid-edge-main`，而 CSS 的默认隐藏只写了 `#fz3-lid-edge{display:none}`——改名后不再匹配，path 恢复 SVG 默认可见，待机态就一直横着一条 `#1f2573` 弧线（思考态被下压的眼皮盖住才看不见）。改为 `#fz3-lid-edge,\n#fz3-lid-edge-main{display:none}`，显示仍只发生在 `.fz3-eye[data-lid="thinking"]` / `.fz3-layer[data-lid="thinking"]` 下。
+- **兜底心跳**：`tick()` 每拍核对一次 `.fz3-anatomy` 的行内 `clip-path` 是否等于 `lidClipCss`（`url("#fz3-lid-clip-main")`，Chrome 会把行内值序列化成带引号形态，拿未加引号的串比较会每拍误判成「丢了」然后狂写），不等就补 `applyLidClip()`；节点掉出文档的重缓存节流 2s → 400ms。
+- **性能**：眼皮动画与关掉的 A/B 差落在噪声内（见 PERFORMANCE.md §11.8），15fps 只改同一条 path 的 `transform`，不重演 v1.1 的逐帧重裁。
+- `package.json` 1.7.5 → 1.7.6。
 
 ### 1.7.5（2026-11-07）
 

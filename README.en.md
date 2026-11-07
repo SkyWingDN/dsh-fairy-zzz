@@ -8,7 +8,7 @@ Boot animation → greeting → docked eye badge, plus a "Wire-Net Terminal" hos
 
 [中文](README.md) · [Changelog](docs/CHANGELOG.md) · [Technical notes](docs/TECHNICAL.md) · [Performance report](docs/PERFORMANCE.md)
 
-![version](https://img.shields.io/badge/version-1.7.5-D8FA00?style=flat-square&labelColor=101110)
+![version](https://img.shields.io/badge/version-1.7.6-D8FA00?style=flat-square&labelColor=101110)
 [![npm](https://img.shields.io/npm/v/@sky_wing_dn%2Fdsh-fairy-zzz?style=flat-square&labelColor=101110&color=D8FA00)](https://www.npmjs.com/package/@sky_wing_dn/dsh-fairy-zzz)
 ![license](https://img.shields.io/badge/license-MIT-101110?style=flat-square)
 ![platform](https://img.shields.io/badge/DSH-Desktop%20%26%20Web-101110?style=flat-square)
@@ -47,6 +47,7 @@ Since v1.1.0 the rendering, placement, voice and skin paths have largely been re
 | Eye runtime (single SVG + 15 fps vector redraw, gaze drift, dock placement and dragging) | This repo, v1.5 – v1.6 |
 | "Wire-Net Terminal" host skin | This repo, v1.7.0 |
 | Fee readout, letter wall, badge gestures, one-shot completion animation | This repo, v1.7.5 |
+| Five-layer eye breathing, thinking lid breathing | This repo, v1.7.6 |
 | `scripts/build-client.mjs` (single-source skin CSS inlining) | This repo, v1.7.1 |
 
 Full third-party license texts live in [licenses/](licenses/); per-item attribution in [NOTICE-fairy-dsh.md](NOTICE-fairy-dsh.md).
@@ -72,7 +73,7 @@ Full third-party license texts live in [licenses/](licenses/); per-item attribut
 **Eye badge**
 
 - About 1.9 s after the greeting it flies to the vertical middle of the conversation's left edge and stays there as a status indicator.
-- Its state comes from the host's agent registry: `idle` / `thinking` / `working` / `done`; the eyelid stays half-closed while thinking or working.
+- Its state comes from the host's agent registry: `idle` / `thinking` / `working` / `done`; the eyelid stays half-closed while thinking or working, and opens/closes with the breath.
 - Eyelid, blade rotation, lens breathing and gaze drift are drawn from a single static SVG by a 15 fps ticker (vector mid-frames, not rotated bitmaps). Halo, pulse rings and ambient light run on CSS `steps()` timelines — no resident `requestAnimationFrame` loop.
 - Hold right mouse button to drag, double right-click to reset. Dragging and docking stay inside the conversation area and step aside when a higher `z-index` widget covers the landing spot.
 - "Show eye badge" hides the badge; the fee readout stays.
