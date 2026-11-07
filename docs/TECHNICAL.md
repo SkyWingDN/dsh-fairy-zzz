@@ -1,7 +1,7 @@
-# dsh-fairy-zzz 插件技术说明（v2.0.1）
+# dsh-fairy-zzz 插件技术说明（v2.0.2）
 
 > 目标读者：**没有参与过本项目、但要继续维护或修改这个插件的人 / AI 智能体**。读完这篇文档，应该能独立定位代码、改功能、打版本、发布到 GitHub，并复现验证。
-> 最后更新：2026-11-08，对应版本 v2.0.1。v2.0.1 修更新失败的提示（宿主只回 `error.code`，现在翻成中文、分三步、带上回滚结果）并在查询阶段跳过与当前 DSH 不兼容的新版本，见 §22.6。v2.0.0 新增插件自更新（§22：查 npm 版本 + 走宿主 `pluginManager.updateBundle` 安装；`link:` 安装不可更新），并修账户菜单快捷键的对比度（根因是 skin 里 kbd 选择器漏写容器前缀，见 §22.4）。v1.7.4–v1.7.6 的完整改动见 README 的中英版本段落，本节只留结构性的几条（§19 顶部两条）。v1.7.6 把眼徽呼吸拆成五层（巩膜 / 虹膜外圈 / 虹膜 / 瞳仁 / 高光各自幅度与相位，周期 1.4s），思考态眼皮随同一相位开合；上一轮基线 v1.7.3（v1.7.3 修底部状态栏透字：composer 座位渐变的终点改为不透明画布色；并把只被覆盖层子树消费的 `--fz3-dock-*` / `--fz3-brand-*` 从 `:root` 改写到 `.fz3-layer`、hero 标题同步改挂载 / 卸载事件、dock 测量改锚点退避重试、dock 相氛围层降为普通合成——4K 下打开 21k 字大会话 style 637→567 ms、long task 1254→1140 ms，见 §21.9；v1.7.2 修 v1.7.1 遗留的两处选中态边线伪影：侧栏 active 胶囊左端青柠月牙、顶栏 active tab 下缘青柠下划线，见 §21.8；v1.7.1 修 v1.7.0 皮肤期的 6 类用户回归：删 boot 左上 `// H.D.D. NORTH SEEK DATA SYSTEM`；问候 kicker / 中文标题回 Fairy 冰蓝；禁用插件后 `--dsw-*` token 残留改为自己挂 `ctx.effect` 释放 `overrideTokens` 的 disposer；重启用插件不再重播开机动画（`bootPlayed` 存到 `window`）；设置弹窗几何恢复宿主默认、皮肤只换色；附件缩略图焦点环由外扩改内嵌、重绘移除按钮。v1.7.0 新增「绳网终端」宿主皮肤层，见 §21。此前：v1.6.2 删掉设置页「外观三档」，皮肤始终自动跟随宿主深浅色；「试听问候」改为每次点击都从本时段 5 条语音里重新随机抽一条并显示台词，不再复用开机抽中的那条。v1.6.0 把眼徽渲染从 v1.5.0 的「4 份 HTML 合成层 + CSS steps 动画」换回 **单 SVG + 15fps JS 向量重绘**：合成层的旋转 / 缩放动的是已经栅格化的位图副本，眼睑 clip 边、深蓝眼眶这类高对比边缘在重采样时会出现台阶 / 发虚（用户截图报「像素没覆盖到」）；v1.6.0 每 66.7ms 直接写 `#corners` / `#fz3-lens` / `#fz3-drift` 的 SVG transform 属性，由 Skia 按设备像素重新抗锯齿，边缘始终干净。代价：隔离 harness GPU 0.99% → 1.52%（+0.5 点）、主线程 0% → 0.8%；真实页面同轮 A/B 在噪声内（2.28% → 2.10 / 1.98%），相对 v1.4.0 的 9.3–11.8% / 47–54% 仍是约 1/6 与 1/50；192px 原生截图清晰度 +2%–4%。没有新增常驻层，动画数量与 v1.5.0 相同（4 个，全部 15fps）。v1.5.1 修问候语音 greet-night-2 的断句停顿：v1.4.0 那 20 条 mp3 本就按早期草稿台词合成，其中全角「；」不在引擎 cut5 的切分符号里，导致「我值班 / 您不睡」连读；现按同一份草稿台词重新合成，把该处「；」改成「。」，并在合成后于该句号的自然停顿处补 0.20s 静音（总停顿约 0.44s）；注意引擎 `merge_short_text_in_array(threshold=5)` 会把「我值班。」（4 字）与「您不睡，」（4 字）合并回同一片段，仅改标点只有模型自然的 ~0.2s 微停顿；屏幕字幕仍保留简洁版、与音频不强制逐字一致，V1 原版 5 条未动；v1.5.0 眼徽动效重做：4 份静态 SVG 副本 + 叶片公转 / 目光微动，持续动画用 steps() 量化到 15fps，GPU / CPU 再降约 80% / 90%；v1.4.0 新增问候语音库：每个时段 5 条（原 1 条 + 新录 4 条），按 Fairy 人设撰写 / 录制，随机播放且避免连续重复，屏幕台词为音频的简洁理解版；v1.3.4 修气泡脚注半句与眼标悬停原生提示；v1.3.0 新增：眼徽用量 / 花费气泡、眼徽拖拽与隐藏、外观三档（跟随 / 深色 / 浅色）、欢迎页文案改写，以及 host 侧 GET /fairy-zzz/usage 路由与 5 个稳定性修复；v1.3.1 把拖拽重写为 transform-only + 四边吸附 + 遮挡让位、用量改为预取缓存（点开即显）、气泡支持点外 / Esc 关闭、设置页删掉「（本地 CPU 推理）」后缀；v1.3.2 把拖拽与吸附范围从整个视口收进**会话内容区**（左 = 侧栏右缘、上 = 标题栏底缘，右 / 下 = 窗口边缘），边界在每次 pointerdown 时实时重量；v1.2.1 的死代码清理成果保留；v1.3.3 只改文案：气泡里的「用量 / 花费 / 峰谷」统一成「电费」口径（用量→电费、余额→电费余额、今日花费→今日电费、峰谷→五倍电费 / 十倍电费，峰段窗口提示为「十倍电费」），客户端对旧宿主的「高峰 / 空闲」字样做兜底改写）。
+> 最后更新：2026-11-08，对应版本 v2.0.2。v2.0.2 修好自更新从发布起就没真正跑通过的两个根因：cordis 的 inject 少声明 `remote.pluginManager`（访问即抛 `cannot get property "remote.pluginManager" without inject`，检查永远静默失败、胶囊从不出现），以及 `updateBundle` 传了空 registry 被宿主当 URL 正规化而拒绝（`gateway/internal`）；顺带把「安装期间插件被卸载、结果浮层跟着消失」改成结果落盘、重挂载后补显示（§22.7）。v2.0.1 修更新失败的提示（宿主只回 `error.code`，现在翻成中文、分三步、带上回滚结果）并在查询阶段跳过与当前 DSH 不兼容的新版本，见 §22.6。v2.0.0 新增插件自更新（§22：查 npm 版本 + 走宿主 `pluginManager.updateBundle` 安装；`link:` 安装不可更新），并修账户菜单快捷键的对比度（根因是 skin 里 kbd 选择器漏写容器前缀，见 §22.4）。v1.7.4–v1.7.6 的完整改动见 README 的中英版本段落，本节只留结构性的几条（§19 顶部两条）。v1.7.6 把眼徽呼吸拆成五层（巩膜 / 虹膜外圈 / 虹膜 / 瞳仁 / 高光各自幅度与相位，周期 1.4s），思考态眼皮随同一相位开合；上一轮基线 v1.7.3（v1.7.3 修底部状态栏透字：composer 座位渐变的终点改为不透明画布色；并把只被覆盖层子树消费的 `--fz3-dock-*` / `--fz3-brand-*` 从 `:root` 改写到 `.fz3-layer`、hero 标题同步改挂载 / 卸载事件、dock 测量改锚点退避重试、dock 相氛围层降为普通合成——4K 下打开 21k 字大会话 style 637→567 ms、long task 1254→1140 ms，见 §21.9；v1.7.2 修 v1.7.1 遗留的两处选中态边线伪影：侧栏 active 胶囊左端青柠月牙、顶栏 active tab 下缘青柠下划线，见 §21.8；v1.7.1 修 v1.7.0 皮肤期的 6 类用户回归：删 boot 左上 `// H.D.D. NORTH SEEK DATA SYSTEM`；问候 kicker / 中文标题回 Fairy 冰蓝；禁用插件后 `--dsw-*` token 残留改为自己挂 `ctx.effect` 释放 `overrideTokens` 的 disposer；重启用插件不再重播开机动画（`bootPlayed` 存到 `window`）；设置弹窗几何恢复宿主默认、皮肤只换色；附件缩略图焦点环由外扩改内嵌、重绘移除按钮。v1.7.0 新增「绳网终端」宿主皮肤层，见 §21。此前：v1.6.2 删掉设置页「外观三档」，皮肤始终自动跟随宿主深浅色；「试听问候」改为每次点击都从本时段 5 条语音里重新随机抽一条并显示台词，不再复用开机抽中的那条。v1.6.0 把眼徽渲染从 v1.5.0 的「4 份 HTML 合成层 + CSS steps 动画」换回 **单 SVG + 15fps JS 向量重绘**：合成层的旋转 / 缩放动的是已经栅格化的位图副本，眼睑 clip 边、深蓝眼眶这类高对比边缘在重采样时会出现台阶 / 发虚（用户截图报「像素没覆盖到」）；v1.6.0 每 66.7ms 直接写 `#corners` / `#fz3-lens` / `#fz3-drift` 的 SVG transform 属性，由 Skia 按设备像素重新抗锯齿，边缘始终干净。代价：隔离 harness GPU 0.99% → 1.52%（+0.5 点）、主线程 0% → 0.8%；真实页面同轮 A/B 在噪声内（2.28% → 2.10 / 1.98%），相对 v1.4.0 的 9.3–11.8% / 47–54% 仍是约 1/6 与 1/50；192px 原生截图清晰度 +2%–4%。没有新增常驻层，动画数量与 v1.5.0 相同（4 个，全部 15fps）。v1.5.1 修问候语音 greet-night-2 的断句停顿：v1.4.0 那 20 条 mp3 本就按早期草稿台词合成，其中全角「；」不在引擎 cut5 的切分符号里，导致「我值班 / 您不睡」连读；现按同一份草稿台词重新合成，把该处「；」改成「。」，并在合成后于该句号的自然停顿处补 0.20s 静音（总停顿约 0.44s）；注意引擎 `merge_short_text_in_array(threshold=5)` 会把「我值班。」（4 字）与「您不睡，」（4 字）合并回同一片段，仅改标点只有模型自然的 ~0.2s 微停顿；屏幕字幕仍保留简洁版、与音频不强制逐字一致，V1 原版 5 条未动；v1.5.0 眼徽动效重做：4 份静态 SVG 副本 + 叶片公转 / 目光微动，持续动画用 steps() 量化到 15fps，GPU / CPU 再降约 80% / 90%；v1.4.0 新增问候语音库：每个时段 5 条（原 1 条 + 新录 4 条），按 Fairy 人设撰写 / 录制，随机播放且避免连续重复，屏幕台词为音频的简洁理解版；v1.3.4 修气泡脚注半句与眼标悬停原生提示；v1.3.0 新增：眼徽用量 / 花费气泡、眼徽拖拽与隐藏、外观三档（跟随 / 深色 / 浅色）、欢迎页文案改写，以及 host 侧 GET /fairy-zzz/usage 路由与 5 个稳定性修复；v1.3.1 把拖拽重写为 transform-only + 四边吸附 + 遮挡让位、用量改为预取缓存（点开即显）、气泡支持点外 / Esc 关闭、设置页删掉「（本地 CPU 推理）」后缀；v1.3.2 把拖拽与吸附范围从整个视口收进**会话内容区**（左 = 侧栏右缘、上 = 标题栏底缘，右 / 下 = 窗口边缘），边界在每次 pointerdown 时实时重量；v1.2.1 的死代码清理成果保留；v1.3.3 只改文案：气泡里的「用量 / 花费 / 峰谷」统一成「电费」口径（用量→电费、余额→电费余额、今日花费→今日电费、峰谷→五倍电费 / 十倍电费，峰段窗口提示为「十倍电费」），客户端对旧宿主的「高峰 / 空闲」字样做兜底改写）。
 > 姊妹文档：[docs/PERFORMANCE.md](PERFORMANCE.md)（性能优化报告：为什么这么改、数据怎么量出来的）。
 
 ---
@@ -746,6 +746,13 @@ v1.3.0 的回归 harness（`tmp/merge/`，一次性）：`t7-routes.mjs`（8 个
 
 ## 19. 变更记录
 
+### 2.0.2（2026-11-08）
+
+- **修「胶囊永远不出现」**：插件 `apply` 返回的 inject 只有 `remote.account`，而访问 `ctx.remote.pluginManager` 是 cordis 注入的硬检查——没有声明就抛 `cannot get property "remote.pluginManager" without inject`，`checkPluginUpdate()` 在取 manager 这一步就中断，2.0.0 / 2.0.1 的更新检查从来没有执行过。现在 inject 加上 `remote.pluginManager`，并加 `pluginManagerOf(ctx)` 兜底（先试 `ctx.remote.pluginManager`，抛错再试 `ctx['remote.pluginManager']`）。
+- **修「点更新必失败」**：`updateBundle` 的 options 传了 `registry: info.registry`，而查询结果里 registry 为空串；宿主 `normalizeRegistry('')` 直接抛 `a registry must be an http(s) URL:`（包成 `gateway/internal`）。现在只有 registry 非空才带，否则用宿主默认 registry。
+- **补「安装结果」浮层**：宿主 HMR 的更新会先卸载旧版再装新版，插件 React 树随之重建，`.fz3-upd` 浮层里的「安装完成 / 失败」跟着消失。现在安装前把上下文写进 `localStorage['fairy.zzz.update.resume']`（running / done / error），重挂载后读出来补一条结果浮层，30 分钟过期。
+- `package.json` 2.0.1 → 2.0.2。
+
 ### 2.0.0（2026-11-08）
 
 - **插件自更新**：`client.js` 新增 `checkPluginUpdate()` / `runPluginUpdate()` 与 `.fz3-upd-pill` 胶囊、`.fz3-upd` 浮层（样式在 base CSS 段）。查询走 `ctx.remote.pluginManager.listVersions(PKG, {})`，安装走 `updateBundle(PKG, version, { registry, requestId })`；结果缓存 6 小时，失败静默；`status === 'refused'`（`link:` 安装）时不出按钮。面板打开时订阅 `plugin-manager/update-state` 显示 checking / removing / installing / restoring，按 `value.result.application` 区分「刷新页面」（applied）与「重启 DSH」（restart-required）。细节见 §22。
@@ -1142,3 +1149,47 @@ v2.0.0 两处改动（都在 `docs/skin/wire-net-terminal.css`）：
 - **用户取消**（`InstallCancelledError`）：`application === 'cancelled'`，浮层显示「更新被取消，当前版本没有变化」。
 
 重试入口：失败态下按钮从「更新」变「重试」，另有「重新检查」清缓存后重新 `listVersions`（例如用户先发了新包、20 分钟后 CDN 才生效）。
+
+### 22.7 v2.0.2：为什么 2.0.0 / 2.0.1 的自更新从来没生效
+
+三个独立的坑：前两个让功能完全不可用，第三个只在真安装时才暴露。
+
+**坑一：inject 少一个服务名。** 插件 `apply` 返回的 `inject` 里只有 `['slots', 'locale', 'theme', 'remote', 'remote.account']`。`ctx.remote.pluginManager` 是 cordis 按服务名注入的，属性访问本身就是检查：没声明时 traceable ctx 的 get 直接抛 `cannot get property "remote.pluginManager" without inject`（错误串在 `@deepseek-ai/cordis/lib/index.js` 的 static handler 里）。`checkPluginUpdate()` 在 `const manager = ctx.remote.pluginManager` 那一行抛异常，后面的 `listVersions` 根本不执行；外层 `.catch(() => null)` 又把异常吃成「没有新版本」，于是胶囊永远不出现、localStorage 缓存也永远是 null。
+
+定位方法：在函数里按行埋 localStorage 探针（入口 → 读缓存 → 取 ctx → 取 manager），二分到「取 manager」那步为 false，再把异常字符串记下来。
+
+修复：inject 里补 `'remote.pluginManager'`，并写 `pluginManagerOf(ctx)` 做兜底（服务名带点，两种属性写法都可能出现）：
+
+```js
+function pluginManagerOf(ctx) {
+  try {
+    const direct = ctx && ctx.remote && ctx.remote.pluginManager
+    if (direct) return direct
+  } catch (e) {}
+  try {
+    return (ctx && ctx['remote.pluginManager']) || null
+  } catch (e) {
+    return null
+  }
+}
+```
+
+**坑二：空 registry 被当成 URL。** 宿主 `updateBundle(name, version, options)` 里：
+
+```js
+const plan = registryPlan(this.registryFor(name, options?.registry), await this.registries())
+```
+
+`normalizeRegistry(url)` 对任何**字符串**都做 `new URL(url)`，失败就抛 `a registry must be an http(s) URL: ${url}`，外层包成 `gateway/internal`。查询结果里 `value.registry` 在默认 registry 下是空串，客户端却无条件传了 `registry: ''`，于是每次点「更新」都在 check 阶段失败、什么都没装。修复：只有非空才放进 options，否则整个字段不传。
+
+**坑三：安装期间浮层消失。** 有 HMR 时宿主会把已安装版本先卸载再装新版（见 `updateBundle` 注释），插件的 React 树连同 `.fz3-upd` 浮层一起被拆掉；`updateBundle` 的 Promise 在旧模块里继续 resolve，但已经没有 UI 显示结果——用户点完「更新」只看到浮层消失，不知道成没成。修复：安装前写 `localStorage['fairy.zzz.update.resume']`：
+
+| 时机 | 写入内容 |
+| --- | --- |
+| 调 `updateBundle` 之前 | `{ phase: 'running', from, to, requestId, at }` |
+| 拿到 `applied` / `restart-required` | `{ phase: 'done', application, from, to, at }` |
+| 任何失败 / 取消 | `{ phase: 'error', message, cancelled?, at }` |
+
+`FairySkin` 挂载后读这个键：`phase` 是 `done` / `error` 就直接补一条结果浮层；还是 `running` 就 0.8 / 2 / 4 / 8 / 15 秒各再看一次（等旧模块在卸载后写完最终结果）。超过 30 分钟的记录当作过期丢弃，避免下次启动凭空弹「刚更新完」；浮层关闭时顺手清掉这个键。
+
+验证记录（隔离 DSH_HOME + 独立 profile + 无头 Chrome CDP，2026-11-08）：2.0.0 → 2.0.1 真实安装成功，磁盘 `node_modules/@sky_wing_dn/dsh-fairy-zzz/package.json` 版本从 2.0.0 变 2.0.1；安装瞬间页面里的 `.fz3-upd` 消失，新版本挂载后由 resume 记录补出「安装完成」。

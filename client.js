@@ -448,6 +448,34 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /* ————————————————————————————————————————————————————————————————
+     * v2.0.2：更新会把正在运行的插件「卸掉再装回来」，React 树随之重建，
+     * 浮层里的「安装完成 / 失败」在宿主 HMR 下会跟着消失（实测 2.0.0 → 2.0.1 时，
+     * 点完更新约 3 秒后浮层就没了，用户看不到结果）。
+     * 所以把这一次更新的上下文写进 localStorage：
+     *   - 安装前写 phase:'running'；
+     *   - 拿到宿主结果后写 phase:'done'（application + 目标版本）或 phase:'error'（中文原因）；
+     *   - 重挂载（新版代码，或安装失败后回滚回来的旧版）读到就补一条结果浮层。
+     * 超过 30 分钟的旧记录直接丢弃，免得下次启动凭空弹出「刚更新完」。
+     * ———————————————————————————————————————————————————————————————— */
+    const UPDATE_RESUME_KEY = 'fairy.zzz.update.resume'
+    const UPDATE_RESUME_TTL = 30 * 60 * 1000
+
+    function writeUpdateResume(payload) {
+      try { writeStored(UPDATE_RESUME_KEY, payload) } catch (e) {}
+    }
+
+    function readUpdateResume() {
+      const raw = readStored(UPDATE_RESUME_KEY, null)
+      if (!raw || typeof raw !== 'object') return null
+      if (!Number.isFinite(raw.at) || Date.now() - raw.at > UPDATE_RESUME_TTL) return null
+      return raw
+    }
+
+    function clearUpdateResume() {
+      try { localStorage.removeItem(UPDATE_RESUME_KEY) } catch (e) {}
+    }
+
     function rememberUpdate(info) {
       updateCache.info = info
       updateCache.at = info.at
@@ -473,6 +501,22 @@ window.__ModuleLoader__.load({
       })
     }
 
+    /* 宿主把插件管理服务挂在 remote 命名空间上（服务名 remote.pluginManager）。
+       v2.0.2 修复：2.0.0/2.0.1 只 inject 了 remote.account，访问 ctx.remote.pluginManager
+       时 cordis 会抛 `cannot get property "remote.pluginManager" without inject`，
+       结果检查永远静默失败、胶囊从来不出现。这里除了补 inject，也做一层兜底。 */
+    function pluginManagerOf(ctx) {
+      try {
+        const direct = ctx && ctx.remote && ctx.remote.pluginManager
+        if (direct) return direct
+      } catch (e) {}
+      try {
+        return (ctx && ctx['remote.pluginManager']) || null
+      } catch (e) {
+        return null
+      }
+    }
+
     function checkPluginUpdate(force) {
       const debug = readUpdateDebug()
       if (debug) return Promise.resolve(debug)
@@ -488,7 +532,7 @@ window.__ModuleLoader__.load({
       }
       if (updateCache.promise) return updateCache.promise
       const ctx = runtime.ctx
-      const manager = ctx && ctx.remote && ctx.remote.pluginManager
+      const manager = pluginManagerOf(ctx)
       if (!manager || typeof manager.listVersions !== 'function') return Promise.resolve(null)
       updateCache.promise = Promise.resolve()
         .then(() => manager.listVersions(PKG, {}))
@@ -3198,6 +3242,40 @@ html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16
         }
       }, [phase])
 
+      /* v2.0.2：安装期间插件会被卸载，浮层跟着消失 —— 挂载后读一次落盘的结果，
+         补一条「安装完成 / 失败」浮层。还在安装中（phase:'running'）就隔几秒再看，
+         等宿主的最终结果或回滚后旧代码写下的错误原因。 */
+      useEffect(() => {
+        let alive = true
+        let done = false
+        let timers = []
+        const tryApply = () => {
+          if (!alive || done) return true
+          const resume = readUpdateResume()
+          if (!resume) return true
+          if (resume.phase === 'running') return false
+          done = true
+          clearUpdateResume()
+          setUpdateInfo({ installed: resume.from || '', latest: resume.to || '', resume: true })
+          if (resume.phase === 'error') {
+            setUpdateRun({ phase: 'error', cancelled: !!resume.cancelled, message: resume.message || '更新没有完成，请重试一次。' })
+          } else {
+            setUpdateRun({ phase: 'done', applied: resume.application === 'applied', restart: resume.application === 'restart-required', to: resume.to || '' })
+          }
+          setUpdateOpen(true)
+          return true
+        }
+        if (!tryApply()) {
+          timers = [800, 2000, 4000, 8000, 15000].map((ms) => setTimeout(() => {
+            if (tryApply()) timers.forEach(clearTimeout)
+          }, ms))
+        }
+        return () => {
+          alive = false
+          timers.forEach(clearTimeout)
+        }
+      }, [])
+
       /* 浮层打开时订阅宿主的安装进度：requestId 对得上才认（可能同时有别的东西在装） */
       useEffect(() => {
         if (!updateOpen) return undefined
@@ -3244,21 +3322,36 @@ html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16
           return
         }
         const ctx = runtime.ctx
-        const manager = ctx && ctx.remote && ctx.remote.pluginManager
+        const manager = pluginManagerOf(ctx)
         if (!manager || typeof manager.updateBundle !== 'function') {
           return setUpdateRun({ phase: 'error', message: '宿主没有提供插件更新接口，请在 DSH 桌面端里重试。' })
         }
+        /* v2.0.2：安装期间插件会被卸载，这个组件（连同浮层）随时可能消失；
+           先把上下文落盘，重挂载后由下面的 effect 补上结果。 */
+        const resumeBase = { at: Date.now(), from: info.installed || '', to: info.latest, requestId }
+        writeUpdateResume({ ...resumeBase, phase: 'running' })
         let answer
         try {
-          answer = await manager.updateBundle(PKG, info.latest, { registry: info.registry, requestId })
+          /* v2.0.2：registry 不能传空串 —— 宿主会把任何 string 当 URL 正规化，
+             空串直接抛 "a registry must be an http(s) URL:"（gateway/internal）。
+             只有查询确实报告了自定义 registry 时才带上，否则让宿主用默认配置。 */
+          const opts = { requestId }
+          if (info.registry) opts.registry = info.registry
+          answer = await manager.updateBundle(PKG, info.latest, opts)
         } catch (cause) {
-          return setUpdateRun({ phase: 'error', message: '调用更新接口失败：' + clipText(cause && cause.message ? cause.message : cause, 140) })
+          const message = '调用更新接口失败：' + clipText(cause && cause.message ? cause.message : cause, 140)
+          writeUpdateResume({ ...resumeBase, at: Date.now(), phase: 'error', message })
+          return setUpdateRun({ phase: 'error', message })
         }
         if (!answer) {
-          return setUpdateRun({ phase: 'error', message: '宿主没有返回更新结果，请重试一次。' })
+          const message = '宿主没有返回更新结果，请重试一次。'
+          writeUpdateResume({ ...resumeBase, at: Date.now(), phase: 'error', message })
+          return setUpdateRun({ phase: 'error', message })
         }
         if (answer.ok === false) {
-          return setUpdateRun({ phase: 'error', message: updateFailureMessage({ result: { error: answer.error } }) })
+          const message = updateFailureMessage({ result: { error: answer.error } })
+          writeUpdateResume({ ...resumeBase, at: Date.now(), phase: 'error', message })
+          return setUpdateRun({ phase: 'error', message })
         }
         const value = answer.value || {}
         const result = value.result || {}
@@ -3268,12 +3361,13 @@ html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16
           try { localStorage.removeItem(UPDATE_KEY) } catch (e) {}
           updateCache.info = null
           updateCache.at = 0
+          writeUpdateResume({ ...resumeBase, at: Date.now(), to, phase: 'done', application: result.application })
           return setUpdateRun({ phase: 'done', applied: result.application === 'applied', restart: result.application === 'restart-required', to })
         }
-        if (result.application === 'cancelled') {
-          return setUpdateRun({ phase: 'error', cancelled: true, message: '更新被取消，当前版本没有变化。' })
-        }
-        return setUpdateRun({ phase: 'error', message: updateFailureMessage(value) })
+        const message = result.application === 'cancelled' ? '更新被取消，当前版本没有变化。' : updateFailureMessage(value)
+        writeUpdateResume({ ...resumeBase, at: Date.now(), phase: 'error', cancelled: result.application === 'cancelled', message })
+        if (result.application === 'cancelled') return setUpdateRun({ phase: 'error', cancelled: true, message })
+        return setUpdateRun({ phase: 'error', message })
       }, [updateInfo, updateRun])
 
       /* v2.0.1：失败后「重新检查」—— 丢掉缓存（含内存里的）再问一次 registry */
@@ -4154,7 +4248,11 @@ html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16
               run: updateRun,
               onUpdate: runPluginUpdate,
               onRecheck: recheckPluginUpdate,
-              onClose: () => setUpdateOpen(false),
+              onClose: () => {
+                /* 关掉浮层就把「待补结果」清掉，免得下次重挂载又弹一遍 */
+                if (!(updateRun && updateRun.phase === 'running')) clearUpdateResume()
+                setUpdateOpen(false)
+              },
             })
           : null,
 
@@ -4182,7 +4280,7 @@ html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16
      * 挂载
      * ------------------------------------------------------------------ */
     return {
-      inject: ['slots', 'locale', 'theme', 'remote', 'remote.account'],
+      inject: ['slots', 'locale', 'theme', 'remote', 'remote.account', 'remote.pluginManager'],
       apply(ctx) {
         /* 账户余额等接口要经过 ctx 上的远程服务，气泡里用 runtime.ctx 取 */
         runtime.ctx = ctx

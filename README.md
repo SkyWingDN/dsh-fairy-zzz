@@ -8,7 +8,7 @@
 
 [English](README.en.md) · [变更记录](docs/CHANGELOG.md) · [技术说明](docs/TECHNICAL.md) · [性能报告](docs/PERFORMANCE.md)
 
-![version](https://img.shields.io/badge/version-2.0.1-D8FA00?style=flat-square&labelColor=101110)
+![version](https://img.shields.io/badge/version-2.0.2-D8FA00?style=flat-square&labelColor=101110)
 [![npm](https://img.shields.io/npm/v/@sky_wing_dn%2Fdsh-fairy-zzz?style=flat-square&labelColor=101110&color=D8FA00)](https://www.npmjs.com/package/@sky_wing_dn/dsh-fairy-zzz)
 ![license](https://img.shields.io/badge/license-MIT-101110?style=flat-square)
 ![platform](https://img.shields.io/badge/DSH-Desktop%20%26%20Web-101110?style=flat-square)
@@ -32,7 +32,7 @@ dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
 
 **运行时零依赖**：宿主半边只用 Node 内置模块，客户端半边是一份手写 ESM，不经过打包器，也不需要 `node_modules`。
 
-**自更新（v2.0.0 起）**：插件会自己问 npm 有没有新版本——侧栏 Fairy 字标右上出现「可更新」胶囊，点开确认就能装，装完按提示刷新页面或重启 DSH。只对 `dsh plugin --profile <name> add ...` 从 npm 装进来的插件生效；用 `link:` 指向本地目录的安装没有 registry 来源，不会显示这个按钮（改完源码照旧刷新页面即生效）。更新失败会说清原因（网络、版本不可用 / 与当前 DSH 不兼容、宿主正在使用等），可以点「重新检查」丢掉缓存重查；和当前 DSH 不兼容的新版本会被自动跳过。
+**自更新（v2.0.0 起）**：插件会自己问 npm 有没有新版本——侧栏 Fairy 字标右上出现「可更新」胶囊，点开确认就能装，装完按提示刷新页面或重启 DSH。只对 `dsh plugin --profile <name> add ...` 从 npm 装进来的插件生效；用 `link:` 指向本地目录的安装没有 registry 来源，不会显示这个按钮（改完源码照旧刷新页面即生效）。更新失败会说清原因（网络、版本不可用 / 与当前 DSH 不兼容、宿主正在使用等），可以点「重新检查」丢掉缓存重查；和当前 DSH 不兼容的新版本会被自动跳过。**2.0.2 修好了这条链路本身**（2.0.0 / 2.0.1 的检查从未真正执行、安装也必然失败），装插件的那台机器需要手动装到 2.0.2 一次，之后才能用按钮更新。
 
 ## 来源与致谢
 

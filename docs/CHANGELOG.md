@@ -4,6 +4,18 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。记录原则：小改动一行带过，大版本 / 大功能才展开。
 
+## [2.0.2] — 2026-11-08
+
+### 修复
+
+- **自更新从来没生效（检查永远静默失败）**：插件 `apply` 的 inject 少声明 `remote.pluginManager`，取 manager 时 cordis 直接抛 `cannot get property "remote.pluginManager" without inject`，异常被外层吞成「没有新版本」。2.0.0 / 2.0.1 的「可更新」胶囊因此从未出现过；现在补上 inject 并加兜底取值。
+- **点「更新」必失败**：`updateBundle` 把查询结果里的空 registry 原样传给宿主，被 `normalizeRegistry` 当 URL 拒绝（`gateway/internal`）。现在只有非空才传。
+- **装完看不到结果**：宿主 HMR 会先卸载旧版再装新版，插件界面连同结果浮层一起消失。现在安装上下文写入 `localStorage`，新版本挂载后补出「安装完成 / 更新失败」（30 分钟内有效）。
+
+### 变更
+
+- 版本号 2.0.1 → 2.0.2。
+
 ## [2.0.1] — 2026-11-08
 
 ### 修复
