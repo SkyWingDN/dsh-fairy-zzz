@@ -8,7 +8,7 @@ Boot animation → greeting → docked eye badge, plus a "Wire-Net Terminal" hos
 
 [中文](README.md) · [Changelog](docs/CHANGELOG.md) · [Technical notes](docs/TECHNICAL.md) · [Performance report](docs/PERFORMANCE.md)
 
-![version](https://img.shields.io/badge/version-2.0.0-D8FA00?style=flat-square&labelColor=101110)
+![version](https://img.shields.io/badge/version-2.0.1-D8FA00?style=flat-square&labelColor=101110)
 [![npm](https://img.shields.io/npm/v/@sky_wing_dn%2Fdsh-fairy-zzz?style=flat-square&labelColor=101110&color=D8FA00)](https://www.npmjs.com/package/@sky_wing_dn/dsh-fairy-zzz)
 ![license](https://img.shields.io/badge/license-MIT-101110?style=flat-square)
 ![platform](https://img.shields.io/badge/DSH-Desktop%20%26%20Web-101110?style=flat-square)
@@ -32,7 +32,7 @@ It is not a pure theme pack. The plugin ships a small host half too: static asse
 
 **Zero runtime dependencies.** The host half only uses Node built-ins; the client half is a single hand-written ESM file with no bundler and no `node_modules`.
 
-**Self-update (since v2.0.0).** The plugin asks npm whether a newer version exists; a small 「可更新 / update available」 pill shows next to the Fairy wordmark in the sidebar, and one click on the confirmation popover installs it — refresh the page or restart DSH when prompted. This only works for copies installed from npm via `dsh plugin --profile <name> add ...`; a `link:` install pointing at a local folder has no registry source and never shows the button (edit the source and refresh the page instead).
+**Self-update (since v2.0.0).** The plugin asks npm whether a newer version exists; a small 「可更新 / update available」 pill shows next to the Fairy wordmark in the sidebar, and one click on the confirmation popover installs it — refresh the page or restart DSH when prompted. This only works for copies installed from npm via `dsh plugin --profile <name> add ...`; a `link:` install pointing at a local folder has no registry source and never shows the button (edit the source and refresh the page instead). Failed updates explain the reason (network, unavailable or incompatible version, host refusing to replace a running plugin) and offer a re-check button; versions incompatible with the current DSH are skipped automatically.
 
 ## Credits
 
@@ -44,14 +44,9 @@ Since v1.1.0 the rendering, placement, voice and skin paths have largely been re
 | --- | --- |
 | Plugin skeleton, H.D.D skin concept, boot video and its audio, 5 base greeting recordings | AssassinVIX/fairy-zzz-plugin (MIT) |
 | Eye glyph artwork, motion geometry and timings | Chengzhibense/Fairy-DSH (Apache-2.0) |
-| Performance layer (rAF → CSS timelines, static eyelid, no per-frame filters, asset compression, ETag/304) | This repo, v1.1 – v1.6 |
-| Greeting library expansion (4 extra lines per slot, 20 in total) and the voice pipeline | This repo, v1.4 |
-| Eye runtime (single SVG + 15 fps vector redraw, gaze drift, dock placement and dragging) | This repo, v1.5 – v1.6 |
-| "Wire-Net Terminal" host skin | This repo, v1.7.0 |
-| Fee readout, letter wall, badge gestures, one-shot completion animation | This repo, v1.7.5 |
-| Five-layer eye breathing, thinking lid breathing | This repo, v1.7.6 |
-| Boot animation restored to source colours | This repo, v1.7.7 |
-| One-click self-update, account-menu shortcut contrast fix | This repo, v2.0.0 |
+| Performance layer (rAF → CSS timelines, static eyelid, no per-frame filters, asset compression, ETag/304) and the eye runtime (single SVG, 15 fps redraw, dock dragging) | This repo, v1.1 – v1.6 |
+| "Wire-Net Terminal" host skin, greeting library, fee readout, letter wall | This repo, v1.4 – v1.7 |
+| One-click self-update | This repo, v2.0 |
 | `scripts/build-client.mjs` (single-source skin CSS inlining) | This repo, v1.7.1 |
 
 Full third-party license texts live in [licenses/](licenses/); per-item attribution in [NOTICE-fairy-dsh.md](NOTICE-fairy-dsh.md).
@@ -260,7 +255,19 @@ node --check client.js                 # syntax check
 
 The script locates the skin block through two markers and leaves every other hand-written region of `client.js` untouched.
 
-## Known limitations
+### Publishing
+
+The version number lives in `package.json`, the README badge and `docs/CHANGELOG.md`. To cut a release:
+
+```bash
+node scripts/build-client.mjs --check
+node --check client.js
+npm version patch   # or minor / major; also tags the commit
+npm publish --access public
+git push --follow-tags
+```
+
+Attach the tarball from `npm pack` to the GitHub Release; npm-installed users will see the「可更新」pill on their next visit.
 
 - The official wordmark is an inline SVG with no replaceable text node, and `sidebar.brand.mark/name` is a `single` slot won by the first registrant. The skin can only hide the official wordmark and overlay its own in the same place, so a host DOM change may require selector updates.
 - The desktop shell's window title, menus and some sidebar labels belong to the app; the plugin cannot change them.
@@ -281,7 +288,7 @@ The script locates the skin block through two markers and leaves every other han
 
 ## Changelog
 
-User-visible changes per release live in [docs/CHANGELOG.md](docs/CHANGELOG.md); implementation notes and trade-offs in [docs/TECHNICAL.md](docs/TECHNICAL.md).
+Milestones: v1.1–v1.6 performance and eye-runtime rewrite; v1.7 Wire-Net Terminal skin, fee readout, boot colour correction; v2.0 one-click self-update. User-visible changes per release live in [docs/CHANGELOG.md](docs/CHANGELOG.md); implementation notes and trade-offs in [docs/TECHNICAL.md](docs/TECHNICAL.md).
 
 ## License
 

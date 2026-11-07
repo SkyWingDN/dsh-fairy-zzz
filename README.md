@@ -8,7 +8,7 @@
 
 [English](README.en.md) · [变更记录](docs/CHANGELOG.md) · [技术说明](docs/TECHNICAL.md) · [性能报告](docs/PERFORMANCE.md)
 
-![version](https://img.shields.io/badge/version-2.0.0-D8FA00?style=flat-square&labelColor=101110)
+![version](https://img.shields.io/badge/version-2.0.1-D8FA00?style=flat-square&labelColor=101110)
 [![npm](https://img.shields.io/npm/v/@sky_wing_dn%2Fdsh-fairy-zzz?style=flat-square&labelColor=101110&color=D8FA00)](https://www.npmjs.com/package/@sky_wing_dn/dsh-fairy-zzz)
 ![license](https://img.shields.io/badge/license-MIT-101110?style=flat-square)
 ![platform](https://img.shields.io/badge/DSH-Desktop%20%26%20Web-101110?style=flat-square)
@@ -32,7 +32,7 @@ dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
 
 **运行时零依赖**：宿主半边只用 Node 内置模块，客户端半边是一份手写 ESM，不经过打包器，也不需要 `node_modules`。
 
-**自更新（v2.0.0 起）**：插件会自己问 npm 有没有新版本——侧栏 Fairy 字标右上出现「可更新」胶囊，点开确认就能装，装完按提示刷新页面或重启 DSH。只对 `dsh plugin --profile <name> add ...` 从 npm 装进来的插件生效；用 `link:` 指向本地目录的安装没有 registry 来源，不会显示这个按钮（改完源码照旧刷新页面即生效）。
+**自更新（v2.0.0 起）**：插件会自己问 npm 有没有新版本——侧栏 Fairy 字标右上出现「可更新」胶囊，点开确认就能装，装完按提示刷新页面或重启 DSH。只对 `dsh plugin --profile <name> add ...` 从 npm 装进来的插件生效；用 `link:` 指向本地目录的安装没有 registry 来源，不会显示这个按钮（改完源码照旧刷新页面即生效）。更新失败会说清原因（网络、版本不可用 / 与当前 DSH 不兼容、宿主正在使用等），可以点「重新检查」丢掉缓存重查；和当前 DSH 不兼容的新版本会被自动跳过。
 
 ## 来源与致谢
 
@@ -44,14 +44,9 @@ dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
 | --- | --- |
 | 插件骨架、H.D.D 皮肤概念、开机视频与开场音效、5 条基础问候录音 | AssassinVIX/fairy-zzz-plugin（MIT） |
 | 眼徽 SVG 美术、动效几何与时长参数 | Chengzhibense/Fairy-DSH（Apache-2.0） |
-| 性能层（rAF → CSS 时间线、静态眼睑、去掉逐帧滤镜、资源压缩与 ETag/304） | 本仓库 v1.1 – v1.6 |
-| 问候语音扩充（每时段 4 条，共 20 条）与语音管线 | 本仓库 v1.4 |
-| 眼徽运行时（单 SVG + 15fps 矢量重绘、目光微动、dock 定位与拖拽） | 本仓库 v1.5 – v1.6 |
-| 「绳网终端 / WIRE-NET TERMINAL」宿主皮肤 | 本仓库 v1.7.0 |
-| 电费读数、画布字墙、眼徽手势与一次性完成动效 | 本仓库 v1.7.5 |
-| 眼徽五层呼吸、思考态眼皮呼吸 | 本仓库 v1.7.6 |
-| 开场动画恢复原片颜色 | 本仓库 v1.7.7 |
-| 一键自更新、账户菜单快捷键对比度修复 | 本仓库 v2.0.0 |
+| 性能层（rAF → CSS 时间线、静态眼睑、去掉逐帧滤镜、资源压缩与 ETag/304）与眼徽运行时（单 SVG 15fps 重绘、dock 拖拽） | 本仓库 v1.1 – v1.6 |
+| 「绳网终端 / WIRE-NET TERMINAL」宿主皮肤、问候语音扩充、电费读数、画布字墙 | 本仓库 v1.4 – v1.7 |
+| 一键自更新 | 本仓库 v2.0 |
 | `scripts/build-client.mjs`（皮肤 CSS 单源内联） | 本仓库 v1.7.1 |
 
 第三方许可全文在 [licenses/](licenses/)，逐项署名见 [NOTICE-fairy-dsh.md](NOTICE-fairy-dsh.md)。
@@ -260,7 +255,19 @@ node --check client.js                 # 语法检查
 
 `scripts/build-client.mjs` 用文件里两处标记定位皮肤段（`assets/zzz-pattern.webp` 字墙规则与 `START/END` 注释），手工改动 `client.js` 里的其它区域不会被覆盖。
 
-## 已知限制
+### 发布
+
+版本号同时出现在 `package.json`、README 徽章和 `docs/CHANGELOG.md`。发一版：
+
+```bash
+node scripts/build-client.mjs --check
+node --check client.js
+npm version patch   # 或 minor / major，自动打 tag
+npm publish --access public
+git push --follow-tags
+```
+
+GitHub Release 附 `npm pack` 生成的 tarball；从 npm 装的用户下次打开时会看到「可更新」胶囊。
 
 - 官方字标是内联 SVG、没有可替换的文本节点，`sidebar.brand.mark/name` 又是宿主先注册者常驻的 `single` 槽位；皮肤只能「隐藏官方字标 + 原位叠自己的字标」，宿主 DOM 一改就要跟着调选择器。
 - 桌面壳的窗口标题、菜单、侧栏条目文案属于应用本身，插件改不了。
@@ -281,7 +288,7 @@ node --check client.js                 # 语法检查
 
 ## 变更记录
 
-按版本的用户可见改动见 [docs/CHANGELOG.md](docs/CHANGELOG.md)；实现细节与设计取舍在 [docs/TECHNICAL.md](docs/TECHNICAL.md)。
+主要节点：v1.1–v1.6 性能与眼徽重写；v1.7 绳网终端皮肤、电费读数、开机颜色校正；v2.0 一键自更新。逐版本的用户可见改动见 [docs/CHANGELOG.md](docs/CHANGELOG.md)；实现细节与设计取舍在 [docs/TECHNICAL.md](docs/TECHNICAL.md)。
 
 ## 许可
 

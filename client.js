@@ -428,6 +428,8 @@ window.__ModuleLoader__.load({
      （not a third-party package installed in this profile）——查询静默失败，UI 不出按钮，
      不做假按钮。
      结果缓存 6 小时；失败静默（离线 / 未登录 / 宿主没暴露服务都不打扰用户）。
+     v2.0.1：安装失败按宿主返回的 error.code 翻成中文（updateFailureMessage），
+     区分查版本 / 移除 / 安装三步与回滚结果；与当前 DSH 不兼容的新版本在查询阶段就跳过。
      调试时可以往 localStorage 里放一份假结果来演 UI：
        localStorage['fairy.zzz.update.debug'] =
          JSON.stringify({ latest: '9.9.9', installed: '2.0.0' })
@@ -454,13 +456,20 @@ window.__ModuleLoader__.load({
     }
 
     function updateInfoFromValue(value) {
-      if (!value || value.status !== 'listed') return null
-      const newest = Array.isArray(value.versions) && value.versions.length ? value.versions[0] : null
+      if (!value || value.status !== 'listed' || !Array.isArray(value.versions)) return null
+      /* v2.0.1：宿主的 versions 按新→旧排列，并会给每个版本附 incompatible（与当前 DSH 不兼容时）。
+         取第一个兼容的版本；更新的版本不兼容就跳过，全都装不了就当没有可用更新（静默）。 */
+      const versions = value.versions.filter((item) => item && item.version)
+      const usable = versions.filter((item) => !item.incompatible)
+      if (!usable.length) return null
+      const pick = usable[0]
+      const skipped = versions.slice(0, versions.indexOf(pick)).map((item) => String(item.version))
       return rememberUpdate({
         at: Date.now(),
-        latest: newest && newest.version ? String(newest.version) : '',
+        latest: String(pick.version),
         installed: value.installed ? String(value.installed) : '',
         registry: value.registry ? String(value.registry) : '',
+        skipped: skipped.length ? skipped : undefined,
       })
     }
 
@@ -491,6 +500,72 @@ window.__ModuleLoader__.load({
         .catch(() => null)
         .finally(() => { updateCache.promise = null })
       return updateCache.promise
+    }
+
+    /* v2.0.1：失败原因映射。宿主只给 { code, diagnostic?, incompatible? }，没有 message 字段；
+       2.0.0 直接把英文 code 甩到界面上，这里翻成中文并补一段可读的细节。
+       失败可能发生在三步上：查版本（check）/ 移除旧版（remove）/ 装新版（install）；
+       HMR 下装新版失败宿主会自动回滚（restore），回滚本身失败要单独提醒。 */
+    const UPDATE_ERROR_TEXT = {
+      'invalid-spec': '目标版本不可用',
+      'operation-error': '和 npm 通讯失败',
+      'not-bundle': '新版本没有声明 DSH 插件包',
+      'incompatible-version': '新版本与当前 DSH 版本不兼容',
+      'unsupported-platform': '新版本不支持当前系统',
+      'unknown-plugin': 'profile 里没有这个插件',
+      'already-installed': '这个版本已经装过',
+      'ambiguous-install': '安装来源不唯一',
+      'not-removable': '插件管理器不能移除这个插件',
+      'stop-profile': '需要先停止当前 profile',
+      'bundle-in-use': '插件正在使用中',
+      'management-required': '需要由插件管理器执行',
+      'stale-approval': '操作授权已过期',
+    }
+
+    function clipText(text, max) {
+      const flat = String(text == null ? '' : text).replace(/\s+/g, ' ').trim()
+      if (!flat) return ''
+      const limit = max || 150
+      return flat.length > limit ? flat.slice(0, limit) + '…' : flat
+    }
+
+    function updateFailureMessage(value) {
+      const result = (value && value.result) || {}
+      const error = result.error || {}
+      const restore = value && value.restore
+      const code = error.code ? String(error.code) : ''
+      const detail = clipText(error.diagnostic || error.message, 150)
+      let text
+      if (code === 'incompatible-version') {
+        const first = (Array.isArray(error.incompatible) && error.incompatible[0]) || {}
+        const need = Array.isArray(first.requirements) ? first.requirements.join('、') : first.requirements
+        text = '新版本与当前 DSH 版本不兼容'
+        if (need) text += '（要求 ' + clipText(need, 80) + (first.runtimeVersion ? '，当前 ' + first.runtimeVersion : '') + '）'
+        text += '，已取消安装。'
+      } else if (code === 'not-bundle') {
+        text = '新版本没有声明 DSH 插件包，已取消安装。'
+      } else if (code === 'operation-error') {
+        text = '和 npm 通讯失败或目标版本不存在'
+        text += detail ? '：' + detail : '，请检查网络后重试。'
+      } else if (code === 'invalid-spec') {
+        text = '目标版本不可用' + (detail ? '：' + detail : '') + '。'
+      } else if (code === 'bundle-in-use' || code === 'not-removable' || code === 'stop-profile' || code === 'management-required') {
+        text = '插件正在使用中，宿主不允许在这里替换 —— 完全退出 DSH 后重试，或用 dsh plugin 手动升级。'
+      } else if (code) {
+        text = '更新失败：' + (UPDATE_ERROR_TEXT[code] || code)
+        if (detail) text += '（' + detail + '）'
+      } else {
+        text = '更新没有完成，请重试一次。'
+      }
+      if (restore) {
+        if (!/[。！？]$/.test(text)) text += '。'
+        if (restore.application === 'failed' || restore.application === 'cancelled') {
+          text += ' 旧版本回滚也失败了，Fairy 现在可能不可用 —— 请重启 DSH；仍然不行就用 dsh plugin 重新装一次。'
+        } else {
+          text += ' 已自动回滚到更新前的版本，Fairy 仍可继续使用。'
+        }
+      }
+      return text
     }
 
     function yuan(value) {
@@ -2978,7 +3053,8 @@ html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16
       }
       const from = info.installed || '当前版本'
       const to = info.latest || ''
-      const title = done ? (run.applied ? '更新完成' : '安装完成') : failed ? '更新失败' : '发现新版本'
+      const cancelled = failed && run.cancelled
+      const title = done ? (run.applied ? '更新完成' : '安装完成') : failed ? (cancelled ? '更新已取消' : '更新失败') : '发现新版本'
       let desc
       if (done) {
         desc = run.applied
@@ -2990,6 +3066,10 @@ html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16
         desc = (stepText[run.step] || '准备中…') + '安装期间 Fairy 会短暂断开，完成后按提示刷新即可。'
       } else {
         desc = '从 npm 下载并替换当前插件。安装过程会短暂断开 Fairy，装完刷新页面即可。'
+      }
+      /* v2.0.1：更新的版本里若有和当前 DSH 不兼容的，说明为什么跳到稍旧的版本 */
+      if (!done && !failed && info.skipped && info.skipped.length) {
+        desc += '（更新的 ' + info.skipped.join('、') + ' 与当前 DSH 不兼容，已跳过）'
       }
       return h(
         'div',
@@ -3022,6 +3102,8 @@ html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16
               ? h('button', { type: 'button', className: 'fz3-upd-btn is-primary', onClick: () => { try { window.location.reload() } catch (e) {} } }, '刷新页面')
               : h('button', { type: 'button', className: 'fz3-upd-btn is-primary', onClick: close }, '知道了')
             : h('button', { type: 'button', className: 'fz3-upd-btn is-primary', onClick: props.onUpdate, disabled: running }, running ? '更新中…' : failed ? '重试' : '更新'),
+          /* v2.0.1：失败（多半是缓存过期 / 来源变了）时允许重新查一次 registry */
+          failed ? h('button', { type: 'button', className: 'fz3-upd-btn is-ghost', onClick: props.onRecheck, disabled: running }, '重新检查') : null,
           done || failed
             ? null
             : h('button', { type: 'button', className: 'fz3-upd-btn is-ghost', onClick: close, disabled: running }, '稍后'),
@@ -3163,30 +3245,48 @@ html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16
         }
         const ctx = runtime.ctx
         const manager = ctx && ctx.remote && ctx.remote.pluginManager
-        const fail = (message) => setUpdateRun({ phase: 'error', message: message || '更新失败' })
         if (!manager || typeof manager.updateBundle !== 'function') {
-          return fail('宿主没有提供插件更新接口，请在 DSH 桌面端里重试')
+          return setUpdateRun({ phase: 'error', message: '宿主没有提供插件更新接口，请在 DSH 桌面端里重试。' })
         }
         let answer
         try {
           answer = await manager.updateBundle(PKG, info.latest, { registry: info.registry, requestId })
         } catch (cause) {
-          return fail(cause && cause.message ? cause.message : String(cause))
+          return setUpdateRun({ phase: 'error', message: '调用更新接口失败：' + clipText(cause && cause.message ? cause.message : cause, 140) })
         }
-        if (!answer || answer.ok === false) {
-          return fail(answer && answer.error && (answer.error.message || answer.error.code))
+        if (!answer) {
+          return setUpdateRun({ phase: 'error', message: '宿主没有返回更新结果，请重试一次。' })
         }
-        /* 版本已经变了：清缓存，免得下次还提示同一个版本 */
-        try { localStorage.removeItem(UPDATE_KEY) } catch (e) {}
-        updateCache.info = null
-        updateCache.at = 0
+        if (answer.ok === false) {
+          return setUpdateRun({ phase: 'error', message: updateFailureMessage({ result: { error: answer.error } }) })
+        }
         const value = answer.value || {}
         const result = value.result || {}
         const to = value.to || info.latest
-        if (result.application === 'applied') return setUpdateRun({ phase: 'done', applied: true, to })
-        if (result.application === 'restart-required') return setUpdateRun({ phase: 'done', applied: false, restart: true, to })
-        return fail((result.error && (result.error.message || result.error.code)) || '更新未应用（' + (result.application || '未知状态') + '）')
+        /* v2.0.1：只有真的换掉版本才清缓存；失败时保留，重试不用再查一遍 registry */
+        if (result.application === 'applied' || result.application === 'restart-required') {
+          try { localStorage.removeItem(UPDATE_KEY) } catch (e) {}
+          updateCache.info = null
+          updateCache.at = 0
+          return setUpdateRun({ phase: 'done', applied: result.application === 'applied', restart: result.application === 'restart-required', to })
+        }
+        if (result.application === 'cancelled') {
+          return setUpdateRun({ phase: 'error', cancelled: true, message: '更新被取消，当前版本没有变化。' })
+        }
+        return setUpdateRun({ phase: 'error', message: updateFailureMessage(value) })
       }, [updateInfo, updateRun])
+
+      /* v2.0.1：失败后「重新检查」—— 丢掉缓存（含内存里的）再问一次 registry */
+      const recheckPluginUpdate = useCallback(() => {
+        try { localStorage.removeItem(UPDATE_KEY) } catch (e) {}
+        updateCache.info = null
+        updateCache.at = 0
+        setUpdateRun(null)
+        checkPluginUpdate(true).then((info) => {
+          setUpdateInfo(info || null)
+          if (!info) setUpdateOpen(false)
+        })
+      }, [])
       const dragRef = useRef(null)
       const coreRef = useRef(null)
       /* 刚结束一次右键拖动的时间戳：用来吞掉 mouseup 之后补发的那一个 contextmenu */
@@ -4053,6 +4153,7 @@ html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16
               info: updateInfo,
               run: updateRun,
               onUpdate: runPluginUpdate,
+              onRecheck: recheckPluginUpdate,
               onClose: () => setUpdateOpen(false),
             })
           : null,

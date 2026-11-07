@@ -1,7 +1,7 @@
-# dsh-fairy-zzz 插件技术说明（v2.0.0）
+# dsh-fairy-zzz 插件技术说明（v2.0.1）
 
 > 目标读者：**没有参与过本项目、但要继续维护或修改这个插件的人 / AI 智能体**。读完这篇文档，应该能独立定位代码、改功能、打版本、发布到 GitHub，并复现验证。
-> 最后更新：2026-11-08，对应版本 v2.0.0。v2.0.0 新增插件自更新（§22：查 npm 版本 + 走宿主 `pluginManager.updateBundle` 安装；`link:` 安装不可更新），并修账户菜单快捷键的对比度（根因是 skin 里 kbd 选择器漏写容器前缀，见 §22.4）。v1.7.4–v1.7.6 的完整改动见 README 的中英版本段落，本节只留结构性的几条（§19 顶部两条）。v1.7.6 把眼徽呼吸拆成五层（巩膜 / 虹膜外圈 / 虹膜 / 瞳仁 / 高光各自幅度与相位，周期 1.4s），思考态眼皮随同一相位开合；上一轮基线 v1.7.3（v1.7.3 修底部状态栏透字：composer 座位渐变的终点改为不透明画布色；并把只被覆盖层子树消费的 `--fz3-dock-*` / `--fz3-brand-*` 从 `:root` 改写到 `.fz3-layer`、hero 标题同步改挂载 / 卸载事件、dock 测量改锚点退避重试、dock 相氛围层降为普通合成——4K 下打开 21k 字大会话 style 637→567 ms、long task 1254→1140 ms，见 §21.9；v1.7.2 修 v1.7.1 遗留的两处选中态边线伪影：侧栏 active 胶囊左端青柠月牙、顶栏 active tab 下缘青柠下划线，见 §21.8；v1.7.1 修 v1.7.0 皮肤期的 6 类用户回归：删 boot 左上 `// H.D.D. NORTH SEEK DATA SYSTEM`；问候 kicker / 中文标题回 Fairy 冰蓝；禁用插件后 `--dsw-*` token 残留改为自己挂 `ctx.effect` 释放 `overrideTokens` 的 disposer；重启用插件不再重播开机动画（`bootPlayed` 存到 `window`）；设置弹窗几何恢复宿主默认、皮肤只换色；附件缩略图焦点环由外扩改内嵌、重绘移除按钮。v1.7.0 新增「绳网终端」宿主皮肤层，见 §21。此前：v1.6.2 删掉设置页「外观三档」，皮肤始终自动跟随宿主深浅色；「试听问候」改为每次点击都从本时段 5 条语音里重新随机抽一条并显示台词，不再复用开机抽中的那条。v1.6.0 把眼徽渲染从 v1.5.0 的「4 份 HTML 合成层 + CSS steps 动画」换回 **单 SVG + 15fps JS 向量重绘**：合成层的旋转 / 缩放动的是已经栅格化的位图副本，眼睑 clip 边、深蓝眼眶这类高对比边缘在重采样时会出现台阶 / 发虚（用户截图报「像素没覆盖到」）；v1.6.0 每 66.7ms 直接写 `#corners` / `#fz3-lens` / `#fz3-drift` 的 SVG transform 属性，由 Skia 按设备像素重新抗锯齿，边缘始终干净。代价：隔离 harness GPU 0.99% → 1.52%（+0.5 点）、主线程 0% → 0.8%；真实页面同轮 A/B 在噪声内（2.28% → 2.10 / 1.98%），相对 v1.4.0 的 9.3–11.8% / 47–54% 仍是约 1/6 与 1/50；192px 原生截图清晰度 +2%–4%。没有新增常驻层，动画数量与 v1.5.0 相同（4 个，全部 15fps）。v1.5.1 修问候语音 greet-night-2 的断句停顿：v1.4.0 那 20 条 mp3 本就按早期草稿台词合成，其中全角「；」不在引擎 cut5 的切分符号里，导致「我值班 / 您不睡」连读；现按同一份草稿台词重新合成，把该处「；」改成「。」，并在合成后于该句号的自然停顿处补 0.20s 静音（总停顿约 0.44s）；注意引擎 `merge_short_text_in_array(threshold=5)` 会把「我值班。」（4 字）与「您不睡，」（4 字）合并回同一片段，仅改标点只有模型自然的 ~0.2s 微停顿；屏幕字幕仍保留简洁版、与音频不强制逐字一致，V1 原版 5 条未动；v1.5.0 眼徽动效重做：4 份静态 SVG 副本 + 叶片公转 / 目光微动，持续动画用 steps() 量化到 15fps，GPU / CPU 再降约 80% / 90%；v1.4.0 新增问候语音库：每个时段 5 条（原 1 条 + 新录 4 条），按 Fairy 人设撰写 / 录制，随机播放且避免连续重复，屏幕台词为音频的简洁理解版；v1.3.4 修气泡脚注半句与眼标悬停原生提示；v1.3.0 新增：眼徽用量 / 花费气泡、眼徽拖拽与隐藏、外观三档（跟随 / 深色 / 浅色）、欢迎页文案改写，以及 host 侧 GET /fairy-zzz/usage 路由与 5 个稳定性修复；v1.3.1 把拖拽重写为 transform-only + 四边吸附 + 遮挡让位、用量改为预取缓存（点开即显）、气泡支持点外 / Esc 关闭、设置页删掉「（本地 CPU 推理）」后缀；v1.3.2 把拖拽与吸附范围从整个视口收进**会话内容区**（左 = 侧栏右缘、上 = 标题栏底缘，右 / 下 = 窗口边缘），边界在每次 pointerdown 时实时重量；v1.2.1 的死代码清理成果保留；v1.3.3 只改文案：气泡里的「用量 / 花费 / 峰谷」统一成「电费」口径（用量→电费、余额→电费余额、今日花费→今日电费、峰谷→五倍电费 / 十倍电费，峰段窗口提示为「十倍电费」），客户端对旧宿主的「高峰 / 空闲」字样做兜底改写）。
+> 最后更新：2026-11-08，对应版本 v2.0.1。v2.0.1 修更新失败的提示（宿主只回 `error.code`，现在翻成中文、分三步、带上回滚结果）并在查询阶段跳过与当前 DSH 不兼容的新版本，见 §22.6。v2.0.0 新增插件自更新（§22：查 npm 版本 + 走宿主 `pluginManager.updateBundle` 安装；`link:` 安装不可更新），并修账户菜单快捷键的对比度（根因是 skin 里 kbd 选择器漏写容器前缀，见 §22.4）。v1.7.4–v1.7.6 的完整改动见 README 的中英版本段落，本节只留结构性的几条（§19 顶部两条）。v1.7.6 把眼徽呼吸拆成五层（巩膜 / 虹膜外圈 / 虹膜 / 瞳仁 / 高光各自幅度与相位，周期 1.4s），思考态眼皮随同一相位开合；上一轮基线 v1.7.3（v1.7.3 修底部状态栏透字：composer 座位渐变的终点改为不透明画布色；并把只被覆盖层子树消费的 `--fz3-dock-*` / `--fz3-brand-*` 从 `:root` 改写到 `.fz3-layer`、hero 标题同步改挂载 / 卸载事件、dock 测量改锚点退避重试、dock 相氛围层降为普通合成——4K 下打开 21k 字大会话 style 637→567 ms、long task 1254→1140 ms，见 §21.9；v1.7.2 修 v1.7.1 遗留的两处选中态边线伪影：侧栏 active 胶囊左端青柠月牙、顶栏 active tab 下缘青柠下划线，见 §21.8；v1.7.1 修 v1.7.0 皮肤期的 6 类用户回归：删 boot 左上 `// H.D.D. NORTH SEEK DATA SYSTEM`；问候 kicker / 中文标题回 Fairy 冰蓝；禁用插件后 `--dsw-*` token 残留改为自己挂 `ctx.effect` 释放 `overrideTokens` 的 disposer；重启用插件不再重播开机动画（`bootPlayed` 存到 `window`）；设置弹窗几何恢复宿主默认、皮肤只换色；附件缩略图焦点环由外扩改内嵌、重绘移除按钮。v1.7.0 新增「绳网终端」宿主皮肤层，见 §21。此前：v1.6.2 删掉设置页「外观三档」，皮肤始终自动跟随宿主深浅色；「试听问候」改为每次点击都从本时段 5 条语音里重新随机抽一条并显示台词，不再复用开机抽中的那条。v1.6.0 把眼徽渲染从 v1.5.0 的「4 份 HTML 合成层 + CSS steps 动画」换回 **单 SVG + 15fps JS 向量重绘**：合成层的旋转 / 缩放动的是已经栅格化的位图副本，眼睑 clip 边、深蓝眼眶这类高对比边缘在重采样时会出现台阶 / 发虚（用户截图报「像素没覆盖到」）；v1.6.0 每 66.7ms 直接写 `#corners` / `#fz3-lens` / `#fz3-drift` 的 SVG transform 属性，由 Skia 按设备像素重新抗锯齿，边缘始终干净。代价：隔离 harness GPU 0.99% → 1.52%（+0.5 点）、主线程 0% → 0.8%；真实页面同轮 A/B 在噪声内（2.28% → 2.10 / 1.98%），相对 v1.4.0 的 9.3–11.8% / 47–54% 仍是约 1/6 与 1/50；192px 原生截图清晰度 +2%–4%。没有新增常驻层，动画数量与 v1.5.0 相同（4 个，全部 15fps）。v1.5.1 修问候语音 greet-night-2 的断句停顿：v1.4.0 那 20 条 mp3 本就按早期草稿台词合成，其中全角「；」不在引擎 cut5 的切分符号里，导致「我值班 / 您不睡」连读；现按同一份草稿台词重新合成，把该处「；」改成「。」，并在合成后于该句号的自然停顿处补 0.20s 静音（总停顿约 0.44s）；注意引擎 `merge_short_text_in_array(threshold=5)` 会把「我值班。」（4 字）与「您不睡，」（4 字）合并回同一片段，仅改标点只有模型自然的 ~0.2s 微停顿；屏幕字幕仍保留简洁版、与音频不强制逐字一致，V1 原版 5 条未动；v1.5.0 眼徽动效重做：4 份静态 SVG 副本 + 叶片公转 / 目光微动，持续动画用 steps() 量化到 15fps，GPU / CPU 再降约 80% / 90%；v1.4.0 新增问候语音库：每个时段 5 条（原 1 条 + 新录 4 条），按 Fairy 人设撰写 / 录制，随机播放且避免连续重复，屏幕台词为音频的简洁理解版；v1.3.4 修气泡脚注半句与眼标悬停原生提示；v1.3.0 新增：眼徽用量 / 花费气泡、眼徽拖拽与隐藏、外观三档（跟随 / 深色 / 浅色）、欢迎页文案改写，以及 host 侧 GET /fairy-zzz/usage 路由与 5 个稳定性修复；v1.3.1 把拖拽重写为 transform-only + 四边吸附 + 遮挡让位、用量改为预取缓存（点开即显）、气泡支持点外 / Esc 关闭、设置页删掉「（本地 CPU 推理）」后缀；v1.3.2 把拖拽与吸附范围从整个视口收进**会话内容区**（左 = 侧栏右缘、上 = 标题栏底缘，右 / 下 = 窗口边缘），边界在每次 pointerdown 时实时重量；v1.2.1 的死代码清理成果保留；v1.3.3 只改文案：气泡里的「用量 / 花费 / 峰谷」统一成「电费」口径（用量→电费、余额→电费余额、今日花费→今日电费、峰谷→五倍电费 / 十倍电费，峰段窗口提示为「十倍电费」），客户端对旧宿主的「高峰 / 空闲」字样做兜底改写）。
 > 姊妹文档：[docs/PERFORMANCE.md](PERFORMANCE.md)（性能优化报告：为什么这么改、数据怎么量出来的）。
 
 ---
@@ -1068,7 +1068,7 @@ v1.7.0 皮肤上线后用户报 6 类问题（截图编号 1–7）。逐条根�
 
 ---
 
-## 22. 插件自更新（v2.0.0）
+## 22. 插件自更新（v2.0.0 起）
 
 ### 22.1 为什么只有「从 npm 安装」的插件能更新
 
@@ -1099,6 +1099,8 @@ dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
 - `FairySkin`：dock 相 4.2s 后查一次；`updateInfo` / `updateOpen` / `updateRun` 三个 state；面板打开时订阅 `update-state`、Esc 关闭。
 - `runPluginUpdate()`：debug 走假进度（checking → removing → installing，各 650ms）；真实调 `updateBundle`，成功后清缓存，按 `application` 落到 `done(applied)` / `done(restart-required)` / `error`。
 - UI：`.fz3-upd-pill`（`.fz3-sb-brand` 内，`pointer-events:auto`）+ `.fz3-upd` 浮层（fixed 定位在字标正下方，用 `--fz3-brand-left/top/h` 对齐）。两者样式都在 base CSS 段（`const CSS`），不会在重新内联皮肤 CSS 时被覆盖。
+- **v2.0.1 版本选择**：`updateInfoFromValue` 先丢掉没有 `version` 的项，再 `filter(item => !item.incompatible)`；取第一个可用的，前面被跳过的写进 `info.skipped`（浮层里提示「…与当前 DSH 不兼容，已跳过」）。如果没有可用版本就返回 `null`，胶囊不出现。
+- **v2.0.1 失败提示**：`updateFailureMessage(value)` + `UPDATE_ERROR_TEXT` 把宿主的 `error.code` 翻成中文；`clipText()` 折叠空白并截到 150 字。`bundle-in-use` / `not-removable` / `stop-profile` / `management-required` 归纳为「插件正在使用中」；`result.restore` 存在时再追加「已自动回滚」或「回滚也失败，请重启 DSH」。`application === 'cancelled'` 单独显示「更新被取消」。失败后浮层多一个「重新检查」按钮（`recheckPluginUpdate`：清 localStorage + 内存缓存，强制 `listVersions`）。
 
 ### 22.4 为什么快捷键提示之前几乎看不见
 
@@ -1115,5 +1117,28 @@ v2.0.0 两处改动（都在 `docs/skin/wire-net-terminal.css`）：
 
 - **假版本预览**（不发布也能演 UI）：`localStorage['fairy.zzz.update.debug'] = JSON.stringify({ latest: '9.9.9', installed: '2.0.0' })` → 胶囊出现、点开走假进度、不会真的安装；删掉这个键刷新即恢复真实检查。
 - **真实更新**：只有「npm 安装 + registry 上有更新版本」时才能验证。`link:` 安装会静默不显示胶囊，这是预期行为，不是 bug。
+- **失败路径**（不用发版）：往 `localStorage['fairy.zzz.update']` 写一条假缓存 `{"at": Date.now(), "latest": "9.9.9", "installed": "2.0.0", "registry": "https://registry.npmjs.org"}` 再刷新，胶囊会出现并走真实 `updateBundle` —— registry 上没有 9.9.9，宿主返回 `operation-error`；把 `latest` 改成 `0.0.1` 触发 `invalid-spec`；把 `registry` 改成 `http://127.0.0.1:1` 触发网络失败。测完删掉这个键。
 - **改完 CSS 必跑** `node scripts/build-client.mjs`（皮肤 CSS 会被内联回 `client.js`），再 `node --check client.js`。
 
+
+### 22.6 失败路径与提示（v2.0.1）
+
+宿主 `updateBundle` 的失败结果长这样：`{ from, to, step, result: { application: 'failed', error: { code, diagnostic?, incompatible? } }, restore?: {...} }`。`managementError()` 只给 `code`，没有 `message`，所以用户看到的每个字都得客户端自己翻：
+
+| 阶段 | 可能的 `error.code` | 浮层里的说法 |
+| --- | --- | --- |
+| 查版本（`step: 'check'`） | `invalid-spec`（`link:` 安装 / 版本不升）、`operation-error`（registry 拒绝或网络失败）、`not-bundle`、`incompatible-version` | 「目标版本不可用」「和 npm 通讯失败」「新版本没有声明 DSH 插件包」「新版本与当前 DSH 版本不兼容（列要求版本）」 |
+| 移除旧版（`step: 'remove'`） | `bundle-in-use` / `not-removable` / `stop-profile` / `management-required` 等 | 「插件正在使用中，宿主不允许在这里替换 —— 完全退出 DSH 后重试，或用 `dsh plugin` 手动升级」 |
+| 安装新版（`step: 'install'`） | 同上 + `operation-error` | 同上；带 `diagnostic` 时附在括号里 |
+| 回滚（`restore`） | `restore.application` ∈ `applied` / `restart-required` / `failed` / `cancelled` | 成功：「已自动回滚到更新前的版本，Fairy 仍可继续使用」；失败：「旧版本回滚也失败了…请重启 DSH；仍然不行就用 `dsh plugin` 重新装一次」 |
+
+典型场景与走向：
+
+- **网络不通 / registry 抽风**：`listVersions` 静默返回 `null`（不显示胶囊）；用户主动点更新时才会看到 `operation-error` 的具体报文。
+- **目标版本不存在**（假缓存、或被删包）：`check` 阶段 `operation-error`，没有改动任何文件。
+- **版本不升 / 来源不对**：`invalid-spec`，没有改动任何文件。
+- **新版本与当前 DSH 不兼容**：查询阶段就被过滤，不会提示更新；若用户手改缓存硬更新，`check` 阶段报 `incompatible-version` 并带上 `requirements` / `runtimeVersion`。
+- **更新中途失败**：宿主有 HMR 时会自动 `installBundle(previous@from)` 回滚，`restore` 字段告诉客户端回滚结果；用户看到的是「旧版本已回滚 / 回滚失败」两档文案。
+- **用户取消**（`InstallCancelledError`）：`application === 'cancelled'`，浮层显示「更新被取消，当前版本没有变化」。
+
+重试入口：失败态下按钮从「更新」变「重试」，另有「重新检查」清缓存后重新 `listVersions`（例如用户先发了新包、20 分钟后 CDN 才生效）。
