@@ -9,6 +9,10 @@ window.__ModuleLoader__.load({
     const PKG = '@sky_wing_dn/dsh-fairy-zzz'
     const VOICE_KEY = 'fairy.zzz.voice'
     const SEEN_KEY = 'fairy.zzz.seen'
+    /* v2.0.0 自更新：缓存 6 小时；debug 键只用来演 UI，不会真的安装 */
+    const UPDATE_KEY = 'fairy.zzz.update'
+    const UPDATE_DEBUG_KEY = 'fairy.zzz.update.debug'
+    const UPDATE_TTL = 6 * 60 * 60 * 1000
     const greetSlot = () => {
       const hh = new Date().getHours()
       if (hh >= 5 && hh < 11) return 'morning'
@@ -411,6 +415,82 @@ window.__ModuleLoader__.load({
     function prefetchUsage() {
       loadUsage(false)
       loadBalance(false)
+    }
+
+    /* ------------------------------------------------------------------ *
+     * v2.0.0 插件自更新：向 npm registry 查新版本，一键让宿主替换当前插件
+     * ------------------------------------------------------------------ *
+     宿主把插件管理服务挂在 ctx.remote.pluginManager 上（与 ctx.remote.account 同一套
+     remote 服务，页面侧可以直接调用）：
+       listVersions(name)             → 比较 profile 里已安装的版本和 registry，versions[0] 即最新
+       updateBundle(name, version, …) → 真正执行「移除旧版 + 安装新版」
+     只有「从 npm 装的第三方插件」才能更新：link: 本地目录安装会被宿主拒绝
+     （not a third-party package installed in this profile）——查询静默失败，UI 不出按钮，
+     不做假按钮。
+     结果缓存 6 小时；失败静默（离线 / 未登录 / 宿主没暴露服务都不打扰用户）。
+     调试时可以往 localStorage 里放一份假结果来演 UI：
+       localStorage['fairy.zzz.update.debug'] =
+         JSON.stringify({ latest: '9.9.9', installed: '2.0.0' })
+     调试态只走假进度，不会真的调用 updateBundle。 */
+    const updateCache = { at: 0, info: null, promise: null }
+
+    function readUpdateDebug() {
+      const raw = readStored(UPDATE_DEBUG_KEY, null)
+      if (!raw || typeof raw !== 'object' || !raw.latest) return null
+      return {
+        at: Date.now(),
+        latest: String(raw.latest),
+        installed: raw.installed ? String(raw.installed) : '',
+        registry: raw.registry ? String(raw.registry) : '',
+        debug: true,
+      }
+    }
+
+    function rememberUpdate(info) {
+      updateCache.info = info
+      updateCache.at = info.at
+      try { writeStored(UPDATE_KEY, info) } catch (e) {}
+      return info
+    }
+
+    function updateInfoFromValue(value) {
+      if (!value || value.status !== 'listed') return null
+      const newest = Array.isArray(value.versions) && value.versions.length ? value.versions[0] : null
+      return rememberUpdate({
+        at: Date.now(),
+        latest: newest && newest.version ? String(newest.version) : '',
+        installed: value.installed ? String(value.installed) : '',
+        registry: value.registry ? String(value.registry) : '',
+      })
+    }
+
+    function checkPluginUpdate(force) {
+      const debug = readUpdateDebug()
+      if (debug) return Promise.resolve(debug)
+      const now = Date.now()
+      if (!force) {
+        if (updateCache.info && now - updateCache.at < UPDATE_TTL) return Promise.resolve(updateCache.info)
+        const cached = readStored(UPDATE_KEY, null)
+        if (cached && Number.isFinite(cached.at) && now - cached.at < UPDATE_TTL) {
+          updateCache.info = cached
+          updateCache.at = cached.at
+          return Promise.resolve(cached)
+        }
+      }
+      if (updateCache.promise) return updateCache.promise
+      const ctx = runtime.ctx
+      const manager = ctx && ctx.remote && ctx.remote.pluginManager
+      if (!manager || typeof manager.listVersions !== 'function') return Promise.resolve(null)
+      updateCache.promise = Promise.resolve()
+        .then(() => manager.listVersions(PKG, {}))
+        .then((answer) => {
+          /* 返回 { ok: true, value } | { ok: false, error }；被宿主拒绝时 value.status === 'refused' */
+          if (!answer || answer.ok === false) return null
+          return updateInfoFromValue(answer.value)
+        })
+        .catch(() => null)
+        .finally(() => { updateCache.promise = null })
+      return updateCache.promise
     }
 
     function yuan(value) {
@@ -1023,6 +1103,38 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
   font-family:"Palatino Linotype","Songti SC",Georgia,serif;font-style:italic}
 .fz3-sb-text i{font-style:normal;font-size:8.5px;letter-spacing:.16em;color:rgba(150,168,220,.72);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
+/* v2.0.0：插件自更新 —— 侧栏字标右上的「可更新」胶囊 + 点开的确认浮层。
+   胶囊挂在 .fz3-sb-brand 里（那个容器 pointer-events:none，所以这里单独开 auto）；
+   浮层 fixed 定位在字标正下方，靠 --fz3-brand-* 三个变量对齐（measureOnce 写入）。 */
+.fz3-upd-pill{position:absolute;right:8px;top:50%;transform:translateY(-50%);display:inline-flex;align-items:center;gap:5px;height:21px;padding:0 9px;font-family:var(--fz3-mono);font-size:10.5px;font-weight:700;letter-spacing:.08em;color:#0a0b08;background:var(--fz3-lime);border:1px solid rgba(0,0,0,.6);border-radius:999px;box-shadow:0 0 0 3px rgba(216,250,0,.12),0 2px 8px rgba(0,0,0,.5);cursor:pointer;pointer-events:auto;white-space:nowrap}
+.fz3-upd-pill:hover{background:#e6ff3d}
+.fz3-upd-pill[data-state="busy"]{background:var(--fz3-amber)}
+.fz3-upd-pill:focus-visible{outline:2px solid #f2f2ee;outline-offset:2px}
+.fz3-upd-pill-dot{width:6px;height:6px;border-radius:50%;background:#0a0b08;animation:fz3-blink 1.6s steps(2,end) infinite}
+.fz3-upd{position:fixed;box-sizing:border-box;left:var(--fz3-brand-left,10px);top:calc(var(--fz3-brand-top,52px) + var(--fz3-brand-h,46px) + 10px);width:304px;padding:14px 15px 13px;z-index:20;pointer-events:auto;color:#f2f2ee;background:rgba(12,14,12,.98);border:1px solid rgba(216,250,0,.26);border-radius:12px;box-shadow:0 20px 54px rgba(0,0,0,.66)}
+.fz3-upd-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.fz3-upd-title{font-family:var(--fz3-mono);font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--fz3-lime)}
+.fz3-upd-close{flex:none;width:20px;height:20px;margin:-2px -4px 0 0;border:0;background:transparent;color:rgba(242,242,238,.5);font-size:16px;line-height:1;cursor:pointer;border-radius:6px}
+.fz3-upd-close:hover{color:#f2f2ee;background:rgba(242,242,238,.08)}
+.fz3-upd-vers{margin-top:9px;display:flex;align-items:center;gap:8px;font-family:var(--fz3-mono);font-size:16px;font-weight:700;letter-spacing:.02em}
+.fz3-upd-vers b{font-weight:700;color:rgba(242,242,238,.62)}
+.fz3-upd-vers .fz3-upd-new{color:#f2f2ee}
+.fz3-upd-arrow{color:var(--fz3-lime);font-size:14px}
+.fz3-upd-desc{margin-top:8px;font-size:11.5px;line-height:1.65;color:rgba(242,242,238,.56)}
+.fz3-upd-desc.is-err{color:#ff8a72}
+.fz3-upd-bar{position:relative;overflow:hidden;height:2px;margin-top:10px;background:rgba(242,242,238,.1);border-radius:2px}
+.fz3-upd-bar i{position:absolute;left:0;top:0;bottom:0;width:42%;background:linear-gradient(90deg,transparent,var(--fz3-lime),transparent);animation:fz3-upd-scan 1.15s linear infinite}
+@keyframes fz3-upd-scan{0%{transform:translateX(-100%)}100%{transform:translateX(240%)}}
+.fz3-upd-note{margin-top:8px;font-size:10.5px;line-height:1.5;color:rgba(240,180,92,.8)}
+.fz3-upd-actions{display:flex;gap:8px;margin-top:12px}
+.fz3-upd-btn{font-family:var(--fz3-font);font-size:12px;line-height:1;padding:8px 16px;border-radius:9px;cursor:pointer;border:1px solid transparent}
+.fz3-upd-btn.is-primary{font-weight:700;color:#0a0b08;background:var(--fz3-lime);border-color:rgba(0,0,0,.6)}
+.fz3-upd-btn.is-primary:hover:not(:disabled){background:#e6ff3d}
+.fz3-upd-btn.is-ghost{color:rgba(242,242,238,.8);background:rgba(255,255,255,.04);border-color:rgba(140,160,190,.24)}
+.fz3-upd-btn.is-ghost:hover:not(:disabled){background:rgba(255,255,255,.08);color:#f2f2ee}
+.fz3-upd-btn:disabled{opacity:.45;cursor:default}
+.fz3-upd-btn:focus-visible{outline:2px solid #f2f2ee;outline-offset:2px}
+
 .fz3-rim{position:fixed;left:-90px;top:-140px;width:560px;height:560px;pointer-events:none;
   background:radial-gradient(closest-side,rgba(126,92,255,.16),rgba(70,60,220,.05) 58%,transparent 76%);filter:blur(8px)}
 .fz3-bay{position:fixed;left:50%;bottom:-190px;width:980px;height:400px;transform:translateX(-50%);pointer-events:none;
@@ -1271,7 +1383,9 @@ html[data-fz3-theme="light"] .wtg9ga_root{border-right-color:rgba(255,255,255,.1
   box-shadow:3px 3px 0 rgba(0,0,0,.55);
 }
 .wtg9ga_newSession *{color:#0a0b08!important}
-.wtg9ga_newSession [class*="_kbd"],[class*="_key"],[class*="_separator"]{
+.wtg9ga_newSession [class*="_kbd"],
+.wtg9ga_newSession [class*="_key"],
+.wtg9ga_newSession [class*="_separator"]{
   border-color:rgba(10,11,8,.32)!important;color:rgba(10,11,8,.66)!important;background:transparent!important;
 }
 .wtg9ga_newSession:hover{background:#f4ffb8!important}
@@ -1544,6 +1658,20 @@ html[data-fz3-phase="dock"] .fz3-atmos-flash{
  * dock 相直接停绘。boot / greet / hero 三相保留——那几屏才是它们露脸的时候。 */
 html[data-fz3-phase="dock"] body::before,
 html[data-fz3-phase="dock"] body::after{display:none!important}
+
+/* ---------- K. 账户菜单快捷键提示的对比度（v2.0.0） ----------
+ * 「设置」右侧的 Ctrl+, 由宿主渲染成 _shortcut_ > _shortcutKeys_ > _keys_ > _key_，
+ * 颜色取 --dsw-alias-label-tertiary，本皮肤深色只有 0.40 alpha；压在近黑菜单上太糊。
+ * 真正的病根在上面的 newSession 规则：后两个选择器漏了容器前缀，全局的 [class*="_key"]
+ * 把「新会话」按钮的深色墨字刷到了菜单快捷键上。那里已经补上容器前缀，
+ * 这一段再把颜色抬到 0.56：读得清，但仍明显暗于菜单项标题（label-primary #f2f2ee），
+ * 不会比「设置」本身更抢眼。选择器限定在 _shortcut_ 容器内，不碰其它 kbd 区域。 */
+[class*="_shortcut_"] [class*="_keys_"],
+[class*="_shortcut_"] [class*="_shortcutKeys_"],
+[class*="_shortcut_"] [class*="_key"]{color:rgba(242,242,238,.56)!important}
+html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_keys_"],
+html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_shortcutKeys_"],
+html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16,17,16,.52)!important}
 
 `
 
@@ -2831,6 +2959,76 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
       )
     }
 
+    /* ------------------------------------------------------------------ *
+     * v2.0.0 插件更新确认浮层
+     * ------------------------------------------------------------------ */
+    function PluginUpdatePanel(props) {
+      const info = props.info || {}
+      const run = props.run
+      const phase = run && run.phase ? run.phase : 'idle'
+      const running = phase === 'running'
+      const done = phase === 'done'
+      const failed = phase === 'error'
+      const close = props.onClose
+      const stepText = {
+        checking: '检查版本…',
+        removing: '移除旧版本…',
+        installing: '下载并安装…',
+        restoring: '回滚到旧版本…',
+      }
+      const from = info.installed || '当前版本'
+      const to = info.latest || ''
+      const title = done ? (run.applied ? '更新完成' : '安装完成') : failed ? '更新失败' : '发现新版本'
+      let desc
+      if (done) {
+        desc = run.applied
+          ? '已安装 ' + (run.to || to) + '。刷新页面就能用新版，未发送的输入不会丢。'
+          : '已安装 ' + (run.to || to) + '，但当前进程还在用旧代码 —— 重启 DSH 后生效。'
+      } else if (failed) {
+        desc = run.message || '更新没有完成，请稍后重试。'
+      } else if (running) {
+        desc = (stepText[run.step] || '准备中…') + '安装期间 Fairy 会短暂断开，完成后按提示刷新即可。'
+      } else {
+        desc = '从 npm 下载并替换当前插件。安装过程会短暂断开 Fairy，装完刷新页面即可。'
+      }
+      return h(
+        'div',
+        { className: 'fz3-upd', role: 'dialog', 'aria-label': '插件更新' },
+        h(
+          'div',
+          { className: 'fz3-upd-head' },
+          h('span', { className: 'fz3-upd-title' }, title),
+          h('button', { type: 'button', className: 'fz3-upd-close', 'aria-label': '关闭', onClick: close }, '×'),
+        ),
+        done || failed
+          ? null
+          : h(
+              'div',
+              { className: 'fz3-upd-vers' },
+              h('b', null, from),
+              h('span', { className: 'fz3-upd-arrow' }, '→'),
+              h('b', { className: 'fz3-upd-new' }, to),
+            ),
+        h('div', { className: 'fz3-upd-desc' + (failed ? ' is-err' : '') }, desc),
+        running ? h('div', { className: 'fz3-upd-bar' }, h('i', null)) : null,
+        info.debug
+          ? h('div', { className: 'fz3-upd-note' }, '调试预览：假版本号，不会真的安装。清除 localStorage 的 fairy.zzz.update.debug 后恢复真实检查。')
+          : null,
+        h(
+          'div',
+          { className: 'fz3-upd-actions' },
+          done
+            ? run.applied
+              ? h('button', { type: 'button', className: 'fz3-upd-btn is-primary', onClick: () => { try { window.location.reload() } catch (e) {} } }, '刷新页面')
+              : h('button', { type: 'button', className: 'fz3-upd-btn is-primary', onClick: close }, '知道了')
+            : h('button', { type: 'button', className: 'fz3-upd-btn is-primary', onClick: props.onUpdate, disabled: running }, running ? '更新中…' : failed ? '重试' : '更新'),
+          done || failed
+            ? null
+            : h('button', { type: 'button', className: 'fz3-upd-btn is-ghost', onClick: close, disabled: running }, '稍后'),
+        ),
+      )
+    }
+
     function FairySkin() {
       /* 已经完整播过一次开机 → 重挂载直接从 dock 开始；设置页「重播开机动画」会清标记 */
       const [phase, setPhase] = useState(() => (bootPlayed ? 'dock' : 'boot'))
@@ -2895,6 +3093,100 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
       /* v1.7.5：复位按钮在「本来就没有自定义坐标」时也要能起作用（把眼标重新量一次），
          所以用一个自增标记当作测量 effect 的额外触发源。 */
       const [resetTick, setResetTick] = useState(0)
+      /* v2.0.0：侧栏字标右上的「可更新」胶囊 —— 查到 npm 上有更高版本才出现。
+         点开是确认浮层，确认后走宿主 pluginManager.updateBundle 真正安装。
+         link: 本地目录安装没有可升级的 registry 来源，宿主直接拒绝，所以不会出现按钮。 */
+      const [updateInfo, setUpdateInfo] = useState(null)
+      const [updateOpen, setUpdateOpen] = useState(false)
+      const [updateRun, setUpdateRun] = useState(null)
+      const updateRunRef = useRef('')
+
+      useEffect(() => {
+        if (phase !== 'dock') return undefined
+        let alive = true
+        /* 刚挂载时 remote 服务不一定就绪，晚 4.2s 再查；失败静默，下次挂载再试 */
+        const timer = setTimeout(() => {
+          checkPluginUpdate(false).then((info) => {
+            if (alive && info && info.latest) setUpdateInfo(info)
+          })
+        }, 4200)
+        return () => {
+          alive = false
+          clearTimeout(timer)
+        }
+      }, [phase])
+
+      /* 浮层打开时订阅宿主的安装进度：requestId 对得上才认（可能同时有别的东西在装） */
+      useEffect(() => {
+        if (!updateOpen) return undefined
+        const ctx = runtime.ctx
+        const remote = ctx && ctx.remote
+        if (!remote || typeof remote.$on !== 'function') return undefined
+        let off = null
+        try {
+          off = remote.$on('plugin-manager/update-state', (progress) => {
+            if (!progress || !progress.requestId || progress.requestId !== updateRunRef.current) return
+            setUpdateRun((cur) => (cur && cur.phase === 'running' ? { ...cur, step: progress.step } : cur))
+          })
+        } catch (e) {
+          off = null
+        }
+        return () => {
+          try { if (typeof off === 'function') off() } catch (e) {}
+        }
+      }, [updateOpen])
+
+      useEffect(() => {
+        if (!updateOpen) return undefined
+        const onKey = (event) => { if (event.key === 'Escape') setUpdateOpen(false) }
+        window.addEventListener('keydown', onKey)
+        return () => window.removeEventListener('keydown', onKey)
+      }, [updateOpen])
+
+      const runPluginUpdate = useCallback(async () => {
+        const info = updateInfo
+        if (!info || !info.latest) return
+        if (updateRun && updateRun.phase === 'running') return
+        const requestId = 'fz3-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8)
+        updateRunRef.current = requestId
+        setUpdateRun({ phase: 'running', step: 'checking', debug: !!info.debug })
+        if (info.debug) {
+          /* 调试态：只演 UI，不做真实安装 */
+          const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+          for (const step of ['checking', 'removing', 'installing']) {
+            await sleep(650)
+            setUpdateRun((cur) => (cur && cur.phase === 'running' ? { ...cur, step } : cur))
+          }
+          await sleep(700)
+          setUpdateRun({ phase: 'done', applied: true, to: info.latest, debug: true })
+          return
+        }
+        const ctx = runtime.ctx
+        const manager = ctx && ctx.remote && ctx.remote.pluginManager
+        const fail = (message) => setUpdateRun({ phase: 'error', message: message || '更新失败' })
+        if (!manager || typeof manager.updateBundle !== 'function') {
+          return fail('宿主没有提供插件更新接口，请在 DSH 桌面端里重试')
+        }
+        let answer
+        try {
+          answer = await manager.updateBundle(PKG, info.latest, { registry: info.registry, requestId })
+        } catch (cause) {
+          return fail(cause && cause.message ? cause.message : String(cause))
+        }
+        if (!answer || answer.ok === false) {
+          return fail(answer && answer.error && (answer.error.message || answer.error.code))
+        }
+        /* 版本已经变了：清缓存，免得下次还提示同一个版本 */
+        try { localStorage.removeItem(UPDATE_KEY) } catch (e) {}
+        updateCache.info = null
+        updateCache.at = 0
+        const value = answer.value || {}
+        const result = value.result || {}
+        const to = value.to || info.latest
+        if (result.application === 'applied') return setUpdateRun({ phase: 'done', applied: true, to })
+        if (result.application === 'restart-required') return setUpdateRun({ phase: 'done', applied: false, restart: true, to })
+        return fail((result.error && (result.error.message || result.error.code)) || '更新未应用（' + (result.application || '未知状态') + '）')
+      }, [updateInfo, updateRun])
       const dragRef = useRef(null)
       const coreRef = useRef(null)
       /* 刚结束一次右键拖动的时间戳：用来吞掉 mouseup 之后补发的那一个 contextmenu */
@@ -3681,6 +3973,25 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
 
 
 
+      /* v2.0.0：查到新版本才显示「可更新」胶囊；更新成功后收起（重启提示留在浮层里） */
+      const updatePill = updateInfo && updateInfo.latest && !(updateRun && updateRun.phase === 'done')
+        ? h(
+            'button',
+            {
+              type: 'button',
+              className: 'fz3-upd-pill',
+              'data-state': updateRun && updateRun.phase === 'running' ? 'busy' : 'idle',
+              title: '发现新版本 ' + updateInfo.latest,
+              onClick: () => {
+                setUpdateRun(null)
+                setUpdateOpen(true)
+              },
+            },
+            h('span', { className: 'fz3-upd-pill-dot' }),
+            updateRun && updateRun.phase === 'running' ? '更新中' : '可更新',
+          )
+        : null
+
       const busy = voiceState.busy || voiceState.speaking
 
       return h(
@@ -3709,6 +4020,7 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
                 h('b', null, 'Fairy'),
                 h('i', null, 'Ⅲ型总序式集成泛用人工智能'),
               ),
+              updatePill,
             )
           : null,
 
@@ -3734,6 +4046,16 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
         /* ———————————————————— 左下角电费实时读数 ———————————————————— */
         /* v1.7.5：读数独立于眼标 —— 关掉「显示眼徽」只收起眼标，这里照常显示 */
         phase === 'dock' ? h(BillDock) : null,
+
+        /* v2.0.0：更新确认浮层（只在点开胶囊后渲染，不加遮罩，点 × / Esc 关闭） */
+        updateOpen && updateInfo
+          ? h(PluginUpdatePanel, {
+              info: updateInfo,
+              run: updateRun,
+              onUpdate: runPluginUpdate,
+              onClose: () => setUpdateOpen(false),
+            })
+          : null,
 
         /* ———————————————————— */
         phase !== 'boot'

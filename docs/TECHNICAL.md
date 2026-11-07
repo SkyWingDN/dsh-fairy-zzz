@@ -1,7 +1,7 @@
-# dsh-fairy-zzz 插件技术说明（v1.7.7）
+# dsh-fairy-zzz 插件技术说明（v2.0.0）
 
 > 目标读者：**没有参与过本项目、但要继续维护或修改这个插件的人 / AI 智能体**。读完这篇文档，应该能独立定位代码、改功能、打版本、发布到 GitHub，并复现验证。
-> 最后更新：2026-11-07，对应版本 v1.7.7。v1.7.4–v1.7.6 的完整改动见 README 的中英版本段落，本节只留结构性的几条（§19 顶部两条）。v1.7.6 把眼徽呼吸拆成五层（巩膜 / 虹膜外圈 / 虹膜 / 瞳仁 / 高光各自幅度与相位，周期 1.4s），思考态眼皮随同一相位开合；上一轮基线 v1.7.3（v1.7.3 修底部状态栏透字：composer 座位渐变的终点改为不透明画布色；并把只被覆盖层子树消费的 `--fz3-dock-*` / `--fz3-brand-*` 从 `:root` 改写到 `.fz3-layer`、hero 标题同步改挂载 / 卸载事件、dock 测量改锚点退避重试、dock 相氛围层降为普通合成——4K 下打开 21k 字大会话 style 637→567 ms、long task 1254→1140 ms，见 §21.9；v1.7.2 修 v1.7.1 遗留的两处选中态边线伪影：侧栏 active 胶囊左端青柠月牙、顶栏 active tab 下缘青柠下划线，见 §21.8；v1.7.1 修 v1.7.0 皮肤期的 6 类用户回归：删 boot 左上 `// H.D.D. NORTH SEEK DATA SYSTEM`；问候 kicker / 中文标题回 Fairy 冰蓝；禁用插件后 `--dsw-*` token 残留改为自己挂 `ctx.effect` 释放 `overrideTokens` 的 disposer；重启用插件不再重播开机动画（`bootPlayed` 存到 `window`）；设置弹窗几何恢复宿主默认、皮肤只换色；附件缩略图焦点环由外扩改内嵌、重绘移除按钮。v1.7.0 新增「绳网终端」宿主皮肤层，见 §21。此前：v1.6.2 删掉设置页「外观三档」，皮肤始终自动跟随宿主深浅色；「试听问候」改为每次点击都从本时段 5 条语音里重新随机抽一条并显示台词，不再复用开机抽中的那条。v1.6.0 把眼徽渲染从 v1.5.0 的「4 份 HTML 合成层 + CSS steps 动画」换回 **单 SVG + 15fps JS 向量重绘**：合成层的旋转 / 缩放动的是已经栅格化的位图副本，眼睑 clip 边、深蓝眼眶这类高对比边缘在重采样时会出现台阶 / 发虚（用户截图报「像素没覆盖到」）；v1.6.0 每 66.7ms 直接写 `#corners` / `#fz3-lens` / `#fz3-drift` 的 SVG transform 属性，由 Skia 按设备像素重新抗锯齿，边缘始终干净。代价：隔离 harness GPU 0.99% → 1.52%（+0.5 点）、主线程 0% → 0.8%；真实页面同轮 A/B 在噪声内（2.28% → 2.10 / 1.98%），相对 v1.4.0 的 9.3–11.8% / 47–54% 仍是约 1/6 与 1/50；192px 原生截图清晰度 +2%–4%。没有新增常驻层，动画数量与 v1.5.0 相同（4 个，全部 15fps）。v1.5.1 修问候语音 greet-night-2 的断句停顿：v1.4.0 那 20 条 mp3 本就按早期草稿台词合成，其中全角「；」不在引擎 cut5 的切分符号里，导致「我值班 / 您不睡」连读；现按同一份草稿台词重新合成，把该处「；」改成「。」，并在合成后于该句号的自然停顿处补 0.20s 静音（总停顿约 0.44s）；注意引擎 `merge_short_text_in_array(threshold=5)` 会把「我值班。」（4 字）与「您不睡，」（4 字）合并回同一片段，仅改标点只有模型自然的 ~0.2s 微停顿；屏幕字幕仍保留简洁版、与音频不强制逐字一致，V1 原版 5 条未动；v1.5.0 眼徽动效重做：4 份静态 SVG 副本 + 叶片公转 / 目光微动，持续动画用 steps() 量化到 15fps，GPU / CPU 再降约 80% / 90%；v1.4.0 新增问候语音库：每个时段 5 条（原 1 条 + 新录 4 条），按 Fairy 人设撰写 / 录制，随机播放且避免连续重复，屏幕台词为音频的简洁理解版；v1.3.4 修气泡脚注半句与眼标悬停原生提示；v1.3.0 新增：眼徽用量 / 花费气泡、眼徽拖拽与隐藏、外观三档（跟随 / 深色 / 浅色）、欢迎页文案改写，以及 host 侧 GET /fairy-zzz/usage 路由与 5 个稳定性修复；v1.3.1 把拖拽重写为 transform-only + 四边吸附 + 遮挡让位、用量改为预取缓存（点开即显）、气泡支持点外 / Esc 关闭、设置页删掉「（本地 CPU 推理）」后缀；v1.3.2 把拖拽与吸附范围从整个视口收进**会话内容区**（左 = 侧栏右缘、上 = 标题栏底缘，右 / 下 = 窗口边缘），边界在每次 pointerdown 时实时重量；v1.2.1 的死代码清理成果保留；v1.3.3 只改文案：气泡里的「用量 / 花费 / 峰谷」统一成「电费」口径（用量→电费、余额→电费余额、今日花费→今日电费、峰谷→五倍电费 / 十倍电费，峰段窗口提示为「十倍电费」），客户端对旧宿主的「高峰 / 空闲」字样做兜底改写）。
+> 最后更新：2026-11-08，对应版本 v2.0.0。v2.0.0 新增插件自更新（§22：查 npm 版本 + 走宿主 `pluginManager.updateBundle` 安装；`link:` 安装不可更新），并修账户菜单快捷键的对比度（根因是 skin 里 kbd 选择器漏写容器前缀，见 §22.4）。v1.7.4–v1.7.6 的完整改动见 README 的中英版本段落，本节只留结构性的几条（§19 顶部两条）。v1.7.6 把眼徽呼吸拆成五层（巩膜 / 虹膜外圈 / 虹膜 / 瞳仁 / 高光各自幅度与相位，周期 1.4s），思考态眼皮随同一相位开合；上一轮基线 v1.7.3（v1.7.3 修底部状态栏透字：composer 座位渐变的终点改为不透明画布色；并把只被覆盖层子树消费的 `--fz3-dock-*` / `--fz3-brand-*` 从 `:root` 改写到 `.fz3-layer`、hero 标题同步改挂载 / 卸载事件、dock 测量改锚点退避重试、dock 相氛围层降为普通合成——4K 下打开 21k 字大会话 style 637→567 ms、long task 1254→1140 ms，见 §21.9；v1.7.2 修 v1.7.1 遗留的两处选中态边线伪影：侧栏 active 胶囊左端青柠月牙、顶栏 active tab 下缘青柠下划线，见 §21.8；v1.7.1 修 v1.7.0 皮肤期的 6 类用户回归：删 boot 左上 `// H.D.D. NORTH SEEK DATA SYSTEM`；问候 kicker / 中文标题回 Fairy 冰蓝；禁用插件后 `--dsw-*` token 残留改为自己挂 `ctx.effect` 释放 `overrideTokens` 的 disposer；重启用插件不再重播开机动画（`bootPlayed` 存到 `window`）；设置弹窗几何恢复宿主默认、皮肤只换色；附件缩略图焦点环由外扩改内嵌、重绘移除按钮。v1.7.0 新增「绳网终端」宿主皮肤层，见 §21。此前：v1.6.2 删掉设置页「外观三档」，皮肤始终自动跟随宿主深浅色；「试听问候」改为每次点击都从本时段 5 条语音里重新随机抽一条并显示台词，不再复用开机抽中的那条。v1.6.0 把眼徽渲染从 v1.5.0 的「4 份 HTML 合成层 + CSS steps 动画」换回 **单 SVG + 15fps JS 向量重绘**：合成层的旋转 / 缩放动的是已经栅格化的位图副本，眼睑 clip 边、深蓝眼眶这类高对比边缘在重采样时会出现台阶 / 发虚（用户截图报「像素没覆盖到」）；v1.6.0 每 66.7ms 直接写 `#corners` / `#fz3-lens` / `#fz3-drift` 的 SVG transform 属性，由 Skia 按设备像素重新抗锯齿，边缘始终干净。代价：隔离 harness GPU 0.99% → 1.52%（+0.5 点）、主线程 0% → 0.8%；真实页面同轮 A/B 在噪声内（2.28% → 2.10 / 1.98%），相对 v1.4.0 的 9.3–11.8% / 47–54% 仍是约 1/6 与 1/50；192px 原生截图清晰度 +2%–4%。没有新增常驻层，动画数量与 v1.5.0 相同（4 个，全部 15fps）。v1.5.1 修问候语音 greet-night-2 的断句停顿：v1.4.0 那 20 条 mp3 本就按早期草稿台词合成，其中全角「；」不在引擎 cut5 的切分符号里，导致「我值班 / 您不睡」连读；现按同一份草稿台词重新合成，把该处「；」改成「。」，并在合成后于该句号的自然停顿处补 0.20s 静音（总停顿约 0.44s）；注意引擎 `merge_short_text_in_array(threshold=5)` 会把「我值班。」（4 字）与「您不睡，」（4 字）合并回同一片段，仅改标点只有模型自然的 ~0.2s 微停顿；屏幕字幕仍保留简洁版、与音频不强制逐字一致，V1 原版 5 条未动；v1.5.0 眼徽动效重做：4 份静态 SVG 副本 + 叶片公转 / 目光微动，持续动画用 steps() 量化到 15fps，GPU / CPU 再降约 80% / 90%；v1.4.0 新增问候语音库：每个时段 5 条（原 1 条 + 新录 4 条），按 Fairy 人设撰写 / 录制，随机播放且避免连续重复，屏幕台词为音频的简洁理解版；v1.3.4 修气泡脚注半句与眼标悬停原生提示；v1.3.0 新增：眼徽用量 / 花费气泡、眼徽拖拽与隐藏、外观三档（跟随 / 深色 / 浅色）、欢迎页文案改写，以及 host 侧 GET /fairy-zzz/usage 路由与 5 个稳定性修复；v1.3.1 把拖拽重写为 transform-only + 四边吸附 + 遮挡让位、用量改为预取缓存（点开即显）、气泡支持点外 / Esc 关闭、设置页删掉「（本地 CPU 推理）」后缀；v1.3.2 把拖拽与吸附范围从整个视口收进**会话内容区**（左 = 侧栏右缘、上 = 标题栏底缘，右 / 下 = 窗口边缘），边界在每次 pointerdown 时实时重量；v1.2.1 的死代码清理成果保留；v1.3.3 只改文案：气泡里的「用量 / 花费 / 峰谷」统一成「电费」口径（用量→电费、余额→电费余额、今日花费→今日电费、峰谷→五倍电费 / 十倍电费，峰段窗口提示为「十倍电费」），客户端对旧宿主的「高峰 / 空闲」字样做兜底改写）。
 > 姊妹文档：[docs/PERFORMANCE.md](PERFORMANCE.md)（性能优化报告：为什么这么改、数据怎么量出来的）。
 
 ---
@@ -746,6 +746,12 @@ v1.3.0 的回归 harness（`tmp/merge/`，一次性）：`t7-routes.mjs`（8 个
 
 ## 19. 变更记录
 
+### 2.0.0（2026-11-08）
+
+- **插件自更新**：`client.js` 新增 `checkPluginUpdate()` / `runPluginUpdate()` 与 `.fz3-upd-pill` 胶囊、`.fz3-upd` 浮层（样式在 base CSS 段）。查询走 `ctx.remote.pluginManager.listVersions(PKG, {})`，安装走 `updateBundle(PKG, version, { registry, requestId })`；结果缓存 6 小时，失败静默；`status === 'refused'`（`link:` 安装）时不出按钮。面板打开时订阅 `plugin-manager/update-state` 显示 checking / removing / installing / restoring，按 `value.result.application` 区分「刷新页面」（applied）与「重启 DSH」（restart-required）。细节见 §22。
+- **修复账户菜单 Ctrl+, 几乎看不见**：skin CSS 的 `.wtg9ga_newSession [class*="_kbd"],[class*="_key"],[class*="_separator"]` 后两个选择器漏了容器前缀（全局生效），把「新会话」按钮的墨黑字色刷到了菜单快捷键（`_keys_` / `_key_`）上。补上前缀，并新增 K 段把 `_shortcut_` 内的快捷键抬到 `rgba(242,242,238,.56)`（浅色 `rgba(16,17,16,.52)`）。改完必须跑 `node scripts/build-client.mjs`。
+- `package.json` 1.7.7 → 2.0.0。
+
 ### 1.7.7（2026-11-07）
 
 - **开场视频恢复原片颜色**：`docs/skin/wire-net-terminal.css` 里 `.fz3-boot video` 的 `grayscale(.45) contrast(1.05) brightness(.84) saturate(.78)` 换成 `saturate(1.04) contrast(1.02) brightness(1.02)`；`.fz3-boot-fill` 从 `grayscale(.55) brightness(.50) contrast(1.12)` 换成 `blur(46px) brightness(.58) saturate(1.15)`。四帧实测（相对原片帧）：3.0s 帧亮度 76.6 → 100.0（原片 101.8）、饱和度 .136 → .255（原片 .235）。改完必须跑 `node scripts/build-client.mjs` 重新内联。
@@ -1059,4 +1065,55 @@ v1.7.0 皮肤上线后用户报 6 类问题（截图编号 1–7）。逐条根�
 **已排除的方向**（避免后人重复踩）：① 插件 JS 不是热点（profiler）；② 单独保留皮肤 CSS 与单独保留 base CSS 都同样重，说明成本不是某一段规则集；③ 眼徽 ticker 15fps → 6fps 只带来噪声内变化（open style 626→586、long task 1224→1187，n=2）且观感变卡，未采用；④ 运行时删规则 / 隐藏图层类的 subset 实验会同时破坏点击路径（全屏覆盖层恢复 `pointer-events:auto`），造成「会话没打开、longtask=0」的伪影——做 A/B 必须用真产物换文件 + `opened` 校验。剩余成本主要在宿主自身渲染（OFF 基线 style 459 ms）；ON 与 OFF 的 long task 总量差异在噪声内，用户「关掉插件明显更快」可能还含 paint / 持续动画成分，本轮未归因。
 
 **验证环境**：临时 DSH_HOME `tmp/perf-v173/home`（只放测试插件副本），真实桌面实例不参与；cookie 用临时 home 的 `.credentials.yaml` secret 自签（`dsh-auth-<sha256(authority)>`，HMAC-SHA256）；基线脚本 `tmp/perf-v173/compare.mjs`（真产物 A/B）、截图 `tmp/perf-v173/shots-v173.mjs`。
+
+---
+
+## 22. 插件自更新（v2.0.0）
+
+### 22.1 为什么只有「从 npm 安装」的插件能更新
+
+宿主 `dsh-plugin-manager` 的 `updateRefusal()` 是硬条件：bundle 必须装在 profile 里（`availability === "profile"`）、非官方包、有 source，并且 specifier 必须是 registry 来源、包名一致、range 不含 `:`。所以 `link:` 指向本地目录的安装**必然被拒**（`problem: "not-updatable"`）。客户端据此静默处理：`listVersions` 返回 `status === "refused"` 时当作没有新版本，不显示胶囊，也不做假按钮。
+
+桌面 profile 想用一键更新，先改成 npm 安装（会失去 link 的「改完刷新即生效」，之后要改源码得重新 link）：
+
+```powershell
+dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
+```
+
+装完必须重启 DSH（包名 / 包内容变了），之后更新走插件自己的胶囊。
+
+### 22.2 用到的宿主 API（页面侧）
+
+| API | 返回 / 事件 | 用途 |
+| --- | --- | --- |
+| `ctx.remote.pluginManager.listVersions(PKG, {})` | `{ ok: true, value }` 或 `{ ok: false, error }`；`value.status === 'listed'` 时 `versions` 只含比已安装**更新**的版本（倒序），`versions[0].version` 即最新；`status === 'refused'` 表示当前安装方式不可更新 | 查新版本 |
+| `ctx.remote.pluginManager.updateBundle(PKG, version, { registry, requestId })` | `value.result.application` ∈ `applied` / `restart-required` / `failed` / `cancelled`；`applied` 表示宿主有 HMR、已热替换，刷新页面即可；`restart-required` 表示文件已换但进程还是旧代码 | 执行更新 |
+| `ctx.remote.$on('plugin-manager/update-state', { requestId, step })` | `step` ∈ `checking` / `removing` / `installing` / `restoring` | 进度条文案；按 `requestId` 过滤（可能同时有别的东西在装） |
+
+这些服务经 `dsh-api-gateway` 以 `remote.<namespace>` 挂到 ctx 上；插件 `apply` 的 inject 列表里已有 `remote`（`client.js` 末尾），所以 `runtime.ctx.remote.pluginManager` 可直接调。`$on` 在拿不到事件时不影响更新本身——UI 会停在「检查版本…」直到 updateBundle 返回。
+
+### 22.3 客户端实现（client.js）
+
+- 常量：`UPDATE_KEY`（localStorage 缓存键）、`UPDATE_DEBUG_KEY`、`UPDATE_TTL = 6 小时`。
+- `checkPluginUpdate(force)`：debug 键优先 → 内存 / localStorage 双层缓存 → `listVersions`；Promise 去重；任何失败返回 `null`（静默）。
+- `FairySkin`：dock 相 4.2s 后查一次；`updateInfo` / `updateOpen` / `updateRun` 三个 state；面板打开时订阅 `update-state`、Esc 关闭。
+- `runPluginUpdate()`：debug 走假进度（checking → removing → installing，各 650ms）；真实调 `updateBundle`，成功后清缓存，按 `application` 落到 `done(applied)` / `done(restart-required)` / `error`。
+- UI：`.fz3-upd-pill`（`.fz3-sb-brand` 内，`pointer-events:auto`）+ `.fz3-upd` 浮层（fixed 定位在字标正下方，用 `--fz3-brand-left/top/h` 对齐）。两者样式都在 base CSS 段（`const CSS`），不会在重新内联皮肤 CSS 时被覆盖。
+
+### 22.4 为什么快捷键提示之前几乎看不见
+
+skin CSS 里「新会话」按钮的规则原文是 `.wtg9ga_newSession [class*="_kbd"],[class*="_key"],[class*="_separator"]{...}`——**只有第一个选择器有容器前缀**，后两个是全局的。账户菜单快捷键的类名正好是 `_shortcut_ > _shortcutKeys_ > _keys_ > _key_`，于是被刷成 `rgba(10,11,8,.66)`（给青柠按钮配的墨黑字），压在近黑菜单上就是「快看不见」。
+
+v2.0.0 两处改动（都在 `docs/skin/wire-net-terminal.css`）：
+
+1. 把那行的后两个选择器也限定进 `.wtg9ga_newSession`（一行拆成三行）。
+2. 新增「K. 账户菜单快捷键对比度」段：`[class*="_shortcut_"]` 容器内的 `_keys_` / `_shortcutKeys_` / `_key_` 抬到 `rgba(242,242,238,.56)`（浅色 `rgba(16,17,16,.52)`）。菜单项标题用 label-primary `#f2f2ee`，所以快捷键仍明显低一个层级。
+
+验证：无头 Chrome 复刻账户菜单（宿主 `_keys_` 规则 + 皮肤 CSS），computed color = `rgba(242, 242, 238, 0.56)`，标题 = `rgb(242, 242, 238)`。
+
+### 22.5 调试与验证
+
+- **假版本预览**（不发布也能演 UI）：`localStorage['fairy.zzz.update.debug'] = JSON.stringify({ latest: '9.9.9', installed: '2.0.0' })` → 胶囊出现、点开走假进度、不会真的安装；删掉这个键刷新即恢复真实检查。
+- **真实更新**：只有「npm 安装 + registry 上有更新版本」时才能验证。`link:` 安装会静默不显示胶囊，这是预期行为，不是 bug。
+- **改完 CSS 必跑** `node scripts/build-client.mjs`（皮肤 CSS 会被内联回 `client.js`），再 `node --check client.js`。
 

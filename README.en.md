@@ -8,7 +8,7 @@ Boot animation → greeting → docked eye badge, plus a "Wire-Net Terminal" hos
 
 [中文](README.md) · [Changelog](docs/CHANGELOG.md) · [Technical notes](docs/TECHNICAL.md) · [Performance report](docs/PERFORMANCE.md)
 
-![version](https://img.shields.io/badge/version-1.7.7-D8FA00?style=flat-square&labelColor=101110)
+![version](https://img.shields.io/badge/version-2.0.0-D8FA00?style=flat-square&labelColor=101110)
 [![npm](https://img.shields.io/npm/v/@sky_wing_dn%2Fdsh-fairy-zzz?style=flat-square&labelColor=101110&color=D8FA00)](https://www.npmjs.com/package/@sky_wing_dn/dsh-fairy-zzz)
 ![license](https://img.shields.io/badge/license-MIT-101110?style=flat-square)
 ![platform](https://img.shields.io/badge/DSH-Desktop%20%26%20Web-101110?style=flat-square)
@@ -32,6 +32,8 @@ It is not a pure theme pack. The plugin ships a small host half too: static asse
 
 **Zero runtime dependencies.** The host half only uses Node built-ins; the client half is a single hand-written ESM file with no bundler and no `node_modules`.
 
+**Self-update (since v2.0.0).** The plugin asks npm whether a newer version exists; a small 「可更新 / update available」 pill shows next to the Fairy wordmark in the sidebar, and one click on the confirmation popover installs it — refresh the page or restart DSH when prompted. This only works for copies installed from npm via `dsh plugin --profile <name> add ...`; a `link:` install pointing at a local folder has no registry source and never shows the button (edit the source and refresh the page instead).
+
 ## Credits
 
 This plugin started from [AssassinVIX/fairy-zzz-plugin](https://github.com/AssassinVIX/fairy-zzz-plugin) (MIT, video [BV1d4HK6eE3g](https://www.bilibili.com/video/BV1d4HK6eE3g)). Thanks to the original author for packaging the H.D.D skin, the boot video and the greeting recordings into a plugin that ran out of the box — without that starting point none of the later work would have had anywhere to land.
@@ -49,6 +51,7 @@ Since v1.1.0 the rendering, placement, voice and skin paths have largely been re
 | Fee readout, letter wall, badge gestures, one-shot completion animation | This repo, v1.7.5 |
 | Five-layer eye breathing, thinking lid breathing | This repo, v1.7.6 |
 | Boot animation restored to source colours | This repo, v1.7.7 |
+| One-click self-update, account-menu shortcut contrast fix | This repo, v2.0.0 |
 | `scripts/build-client.mjs` (single-source skin CSS inlining) | This repo, v1.7.1 |
 
 Full third-party license texts live in [licenses/](licenses/); per-item attribution in [NOTICE-fairy-dsh.md](NOTICE-fairy-dsh.md).

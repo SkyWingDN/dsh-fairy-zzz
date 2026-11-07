@@ -110,7 +110,9 @@ html[data-fz3-theme="light"] .wtg9ga_root{border-right-color:rgba(255,255,255,.1
   box-shadow:3px 3px 0 rgba(0,0,0,.55);
 }
 .wtg9ga_newSession *{color:#0a0b08!important}
-.wtg9ga_newSession [class*="_kbd"],[class*="_key"],[class*="_separator"]{
+.wtg9ga_newSession [class*="_kbd"],
+.wtg9ga_newSession [class*="_key"],
+.wtg9ga_newSession [class*="_separator"]{
   border-color:rgba(10,11,8,.32)!important;color:rgba(10,11,8,.66)!important;background:transparent!important;
 }
 .wtg9ga_newSession:hover{background:#f4ffb8!important}
@@ -383,3 +385,17 @@ html[data-fz3-phase="dock"] .fz3-atmos-flash{
  * dock 相直接停绘。boot / greet / hero 三相保留——那几屏才是它们露脸的时候。 */
 html[data-fz3-phase="dock"] body::before,
 html[data-fz3-phase="dock"] body::after{display:none!important}
+
+/* ---------- K. 账户菜单快捷键提示的对比度（v2.0.0） ----------
+ * 「设置」右侧的 Ctrl+, 由宿主渲染成 _shortcut_ > _shortcutKeys_ > _keys_ > _key_，
+ * 颜色取 --dsw-alias-label-tertiary，本皮肤深色只有 0.40 alpha；压在近黑菜单上太糊。
+ * 真正的病根在上面的 newSession 规则：后两个选择器漏了容器前缀，全局的 [class*="_key"]
+ * 把「新会话」按钮的深色墨字刷到了菜单快捷键上。那里已经补上容器前缀，
+ * 这一段再把颜色抬到 0.56：读得清，但仍明显暗于菜单项标题（label-primary #f2f2ee），
+ * 不会比「设置」本身更抢眼。选择器限定在 _shortcut_ 容器内，不碰其它 kbd 区域。 */
+[class*="_shortcut_"] [class*="_keys_"],
+[class*="_shortcut_"] [class*="_shortcutKeys_"],
+[class*="_shortcut_"] [class*="_key"]{color:rgba(242,242,238,.56)!important}
+html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_keys_"],
+html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_shortcutKeys_"],
+html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16,17,16,.52)!important}

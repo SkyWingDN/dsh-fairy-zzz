@@ -8,7 +8,7 @@
 
 [English](README.en.md) · [变更记录](docs/CHANGELOG.md) · [技术说明](docs/TECHNICAL.md) · [性能报告](docs/PERFORMANCE.md)
 
-![version](https://img.shields.io/badge/version-1.7.7-D8FA00?style=flat-square&labelColor=101110)
+![version](https://img.shields.io/badge/version-2.0.0-D8FA00?style=flat-square&labelColor=101110)
 [![npm](https://img.shields.io/npm/v/@sky_wing_dn%2Fdsh-fairy-zzz?style=flat-square&labelColor=101110&color=D8FA00)](https://www.npmjs.com/package/@sky_wing_dn/dsh-fairy-zzz)
 ![license](https://img.shields.io/badge/license-MIT-101110?style=flat-square)
 ![platform](https://img.shields.io/badge/DSH-Desktop%20%26%20Web-101110?style=flat-square)
@@ -32,6 +32,8 @@ dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
 
 **运行时零依赖**：宿主半边只用 Node 内置模块，客户端半边是一份手写 ESM，不经过打包器，也不需要 `node_modules`。
 
+**自更新（v2.0.0 起）**：插件会自己问 npm 有没有新版本——侧栏 Fairy 字标右上出现「可更新」胶囊，点开确认就能装，装完按提示刷新页面或重启 DSH。只对 `dsh plugin --profile <name> add ...` 从 npm 装进来的插件生效；用 `link:` 指向本地目录的安装没有 registry 来源，不会显示这个按钮（改完源码照旧刷新页面即生效）。
+
 ## 来源与致谢
 
 这个插件的起点是 [AssassinVIX/fairy-zzz-plugin](https://github.com/AssassinVIX/fairy-zzz-plugin)（MIT 许可，B 站 [BV1d4HK6eE3g](https://www.bilibili.com/video/BV1d4HK6eE3g)）。感谢原作者把 H.D.D 皮肤、开机视频和问候语音整理成一套能直接跑起来的插件——有这个起手式，后面这些改动才有地方落脚。
@@ -49,6 +51,7 @@ dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
 | 电费读数、画布字墙、眼徽手势与一次性完成动效 | 本仓库 v1.7.5 |
 | 眼徽五层呼吸、思考态眼皮呼吸 | 本仓库 v1.7.6 |
 | 开场动画恢复原片颜色 | 本仓库 v1.7.7 |
+| 一键自更新、账户菜单快捷键对比度修复 | 本仓库 v2.0.0 |
 | `scripts/build-client.mjs`（皮肤 CSS 单源内联） | 本仓库 v1.7.1 |
 
 第三方许可全文在 [licenses/](licenses/)，逐项署名见 [NOTICE-fairy-dsh.md](NOTICE-fairy-dsh.md)。
