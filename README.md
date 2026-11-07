@@ -8,7 +8,7 @@
 
 [English](README.en.md) · [变更记录](docs/CHANGELOG.md) · [技术说明](docs/TECHNICAL.md) · [性能报告](docs/PERFORMANCE.md)
 
-![version](https://img.shields.io/badge/version-1.7.6-D8FA00?style=flat-square&labelColor=101110)
+![version](https://img.shields.io/badge/version-1.7.7-D8FA00?style=flat-square&labelColor=101110)
 [![npm](https://img.shields.io/npm/v/@sky_wing_dn%2Fdsh-fairy-zzz?style=flat-square&labelColor=101110&color=D8FA00)](https://www.npmjs.com/package/@sky_wing_dn/dsh-fairy-zzz)
 ![license](https://img.shields.io/badge/license-MIT-101110?style=flat-square)
 ![platform](https://img.shields.io/badge/DSH-Desktop%20%26%20Web-101110?style=flat-square)
@@ -48,6 +48,7 @@ dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
 | 「绳网终端 / WIRE-NET TERMINAL」宿主皮肤 | 本仓库 v1.7.0 |
 | 电费读数、画布字墙、眼徽手势与一次性完成动效 | 本仓库 v1.7.5 |
 | 眼徽五层呼吸、思考态眼皮呼吸 | 本仓库 v1.7.6 |
+| 开场动画恢复原片颜色 | 本仓库 v1.7.7 |
 | `scripts/build-client.mjs`（皮肤 CSS 单源内联） | 本仓库 v1.7.1 |
 
 第三方许可全文在 [licenses/](licenses/)，逐项署名见 [NOTICE-fairy-dsh.md](NOTICE-fairy-dsh.md)。

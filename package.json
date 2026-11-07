@@ -1,6 +1,6 @@
 {
   "name": "@sky_wing_dn/dsh-fairy-zzz",
-  "version": "1.7.6",
+  "version": "1.7.7",
   "description": "Unofficial Zenless Zone Zero \"Fairy\" H.D.D skin for the DSH Web UI: boot animation, animated eye badge, hour-based greeting, Wire-Net Terminal host skin, always-on fee readout, and optional local GPT-SoVITS voice. Starts from AssassinVIX/fairy-zzz-plugin (MIT); eye artwork from Chengzhibense/Fairy-DSH (Apache-2.0); changelog in docs/CHANGELOG.md.",
   "type": "module",
   "license": "MIT",

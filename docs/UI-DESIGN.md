@@ -424,7 +424,7 @@ components:
 
 **8.14 fairy-row / Fairy 设置行** — 插件自有。.fz3-set gap 14；行 flex space-between + gap 16、padding 12 14、radius {rounded.control}、透明底 + 1px rgba(255,255,255,.10) 描边；标题 15、副文 11.5/.48；switch 42×24/radius 99，OFF 近黑底 + 冷灰描边，ON 青柠底 + ink 滑块 translateX(18)；按钮 radius 999 + mono 11，hover 青柠填充 ink 字。（client.js L821–849；skin L247–296）
 
-**8.15 boot-overlay / 开场覆盖层** — 全屏 #0a0a0a；::before 左上 `// H.D.D. NORTH SEEK DATA SYSTEM`（mono 10/600/.30em，rgba(216,250,0,.62)，left 26/top 22）；::after 为 3px 扫描线 + 径向压暗；视频降饱和 grayscale(.30) contrast(1.06) brightness(.92) saturate(.90)；skip 按钮 mono/.22em/青柠 .62。（skin L299–324）
+**8.15 boot-overlay / 开场覆盖层** — 全屏 #0a0a0a；::before 左上 `// H.D.D. NORTH SEEK DATA SYSTEM`（mono 10/600/.30em，rgba(216,250,0,.62)，left 26/top 22）；::after 为 3px 扫描线（1px 黑线 .10）+ 径向压暗（.46）；视频保持原片颜色，只做 `saturate(1.04) contrast(1.02) brightness(1.02)`（v1.7.7 起；v1.7.0–v1.7.6 是去色的 grayscale 分级）；skip 按钮 mono/.22em/青柠 .62。（skin L333–344）
 
 **8.16 voice-button / 语音按钮** — 26×26 圆、透明底/透明描边、图标 15；hover = 青柠 10% 底 + 青柠 .35 描边、无发光；play 态青柠；busy 态 amber。发光只保留给 Fairy 眼标，voice 不得抢签名色。（skin L332–334；client.js L983–991）
 

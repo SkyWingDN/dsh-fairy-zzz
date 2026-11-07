@@ -331,12 +331,16 @@ html[data-fz3-theme="light"] .fz3-set-input{background:#fff!important;border-col
 /* ---------- I. 开场覆盖层：墨黑 + 青柠 HUD 边框 ---------- */
 .fz3-screen{background:#0a0a0a!important}
 .fz3-boot{background:#0a0a0a!important}
-.fz3-boot-fill{filter:grayscale(.55) brightness(.50) contrast(1.12)!important}
-.fz3-boot video{filter:grayscale(.45) contrast(1.05) brightness(.84) saturate(.78)!important}
+/* 开场动画保持原片颜色：这一层原先是 grayscale(.45)+saturate(.78)+brightness(.84)，
+   实测把画面平均饱和度从 .235 压到 .136、亮度从 102 压到 77，观感发灰。
+   开场视频是插件里唯一的彩色素材，不该跟皮肤一起变灰，因此只保留极轻的对比校正，
+   扫描线与暗角也相应减弱；其余开机元素仍走皮肤配色。 */
+.fz3-boot-fill{filter:blur(46px) brightness(.58) saturate(1.15)!important}
+.fz3-boot video{filter:saturate(1.04) contrast(1.02) brightness(1.02)!important}
 .fz3-boot::after{
   background:
-    repeating-linear-gradient(0deg,rgba(0,0,0,.30) 0 1px,transparent 1px 3px),
-    radial-gradient(120% 96% at 50% 50%,transparent 46%,rgba(0,0,0,.72) 100%)!important;
+    repeating-linear-gradient(0deg,rgba(0,0,0,.10) 0 1px,transparent 1px 3px),
+    radial-gradient(124% 100% at 50% 50%,transparent 66%,rgba(0,0,0,.46) 100%)!important;
 }
 .fz3-boot-sound{color:rgba(216,250,0,.78)!important;font-family:var(--fz3-mono)!important;letter-spacing:.24em!important}
 .fz3-copy-lines{color:#efefec!important;text-shadow:0 2px 16px rgba(0,0,0,.65)!important}
