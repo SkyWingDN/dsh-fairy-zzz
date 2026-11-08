@@ -1363,11 +1363,14 @@ html[data-fz3-theme="light"] .fz3-set-switch[data-on="1"]::after{background:#041
 /* ---------- 常驻电费读数（v1.7.5） ---------- */
 /* 不做成卡片：没有底色、描边和阴影，就是侧栏页脚上方的几行字 + 一行计费说明，
    和侧栏自己在同一个平面上，不会在窗口里再「套一个窗口」抢视线。
-   位置仍在页脚胶囊正上方（同一条左边界、向上生长），不会盖住胶囊或「默认工作区」行。
+   位置（v2.0.3）：贴在侧栏页脚上沿 6px 处，具体值由 BillDock 实测页脚 top 后写进
+   --fz3-bill-bottom（窗口高度 / 页脚高度变化会跟着重算）；86px 只是 JS 未生效时的兜底。
+   同时 BillDock 把「电费坞高度 + 上下留白」写进 --fz3-bill-reserve，侧栏列表区底部
+   让出等高的空白（见下方 regionArea 规则），工作区列表再长也滚不到电费坞底下。
    这里就是电费唯一的出口：不再有气泡，也没有点击；眼徽退回纯状态指示。
    数据走 usageCache 的 30s / 60s TTL，20s 轮询基本都命中缓存，不会反复解压会话日志。 */
 .fz3-bill{
-  position:fixed;left:12px;bottom:86px;width:255px;z-index:2;box-sizing:border-box;
+  position:fixed;left:12px;bottom:var(--fz3-bill-bottom,86px);width:255px;z-index:2;box-sizing:border-box;
   display:grid;gap:1px;padding:8px 10px 9px;border-radius:8px;
   pointer-events:auto;background:transparent;
   font-family:var(--fz3-font);font-size:14px;line-height:1.45;color:rgba(242,242,238,.72);
@@ -1390,6 +1393,12 @@ html[data-fz3-theme="light"] .fz3-bill-v{color:rgba(16,17,16,.92)}
 html[data-fz3-theme="light"] .fz3-bill-clock{color:#2f8757}
 html[data-fz3-theme="light"] .fz3-bill-note{color:rgba(16,17,16,.44);border-top-color:rgba(16,17,16,.09)}
 html[data-fz3-theme="light"] .fz3-bill[data-tone="peak"] .fz3-bill-clock{color:#a06718}
+
+/* v2.0.3：侧栏工作区列表区底部让出电费坞的高度，列表最后一行永远停在电费坞上方。
+   变量由 BillDock 实测写入（电费坞高度 + 14px），默认 0 = 不占位。
+   regionArea 是 flex 列 + overflow:hidden，padding-bottom 只会缩内层滚动区的底边，
+   不会把页脚顶走（已按宿主 content-box 实测：regionArea 高度不变，列表 -152px）。 */
+[class*="_regionArea"]{padding-bottom:var(--fz3-bill-reserve,0px)}
 
 /* ==================================================================
  * v1.7.0 — 「绳网终端 / WIRE-NET TERMINAL」宿主皮肤层
@@ -3006,6 +3015,7 @@ html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16
       const [nowTick, setNowTick] = useState(() => Date.now())
       const alive = useRef(true)
       const flipRef = useRef(0)
+      const dockRef = useRef(null)
 
       const refresh = useCallback(async (force) => {
         const [usage, balance] = await Promise.all([loadUsage(!!force), loadBalance(!!force)])
@@ -3024,6 +3034,69 @@ html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16
           clearInterval(tick)
         }
       }, [refresh])
+
+      /* v2.0.3：电费坞贴住侧栏页脚上沿，并把自身高度让给工作区列表区。
+         只写两个 CSS 变量，不动宿主 DOM：
+           --fz3-bill-bottom   电费坞底边 = 页脚 top 反算（窗口 / 页脚高度变化自动跟随）
+           --fz3-bill-reserve  列表区底部预留 = 电费坞高 + 14px（列表滚到底也压不到坞）
+         侧栏收起 / 页脚不可见时 apply() 返回 false，保持 CSS 兜底值，不硬挪。 */
+      useEffect(() => {
+        const root = document.documentElement
+        let tries = 0
+        let timer = null
+        let resizeTimer = null
+        let observer = null
+
+        const apply = () => {
+          const dock = dockRef.current
+          const foot = document.querySelector('[class*="_footArea"]')
+          if (!dock || !foot) return false
+          const fr = foot.getBoundingClientRect()
+          /* 宽度 <200px = 侧栏被收成窄条，页脚不是正常形态，别跟着它算 */
+          if (fr.height <= 0 || fr.width < 200) return false
+          root.style.setProperty('--fz3-bill-bottom', Math.max(8, Math.round(window.innerHeight - fr.top + 6)) + 'px')
+          const h = Math.round(dock.offsetHeight)
+          if (h > 0) root.style.setProperty('--fz3-bill-reserve', h + 14 + 'px')
+          return true
+        }
+        const onResize = () => {
+          if (resizeTimer) return
+          resizeTimer = setTimeout(() => {
+            resizeTimer = null
+            try { apply() } catch (e) {}
+          }, 120)
+        }
+        const attach = () => {
+          const foot = document.querySelector('[class*="_footArea"]')
+          if (foot && typeof ResizeObserver === 'function') {
+            observer = new ResizeObserver(() => {
+              try { apply() } catch (e) {}
+            })
+            try {
+              observer.observe(foot)
+              if (dockRef.current) observer.observe(dockRef.current)
+            } catch (e) {}
+          }
+          window.addEventListener('resize', onResize)
+        }
+        const tick = () => {
+          let ok = false
+          try { ok = apply() } catch (e) {}
+          if (ok || tries >= 20) return attach()
+          tries += 1
+          timer = setTimeout(tick, 300)
+          return undefined
+        }
+        tick()
+        return () => {
+          if (timer) clearTimeout(timer)
+          if (resizeTimer) clearTimeout(resizeTimer)
+          if (observer) observer.disconnect()
+          window.removeEventListener('resize', onResize)
+          root.style.removeProperty('--fz3-bill-bottom')
+          root.style.removeProperty('--fz3-bill-reserve')
+        }
+      }, [])
 
       const usage = data.usage
       const balance = data.balance
@@ -3047,7 +3120,7 @@ html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16
 
       return h(
         'div',
-        { className: 'fz3-bill', 'data-tone': tone, 'data-loading': usage || balance ? '0' : '1' },
+        { ref: dockRef, className: 'fz3-bill', 'data-tone': tone, 'data-loading': usage || balance ? '0' : '1' },
         h('div', { className: 'fz3-bill-head' }, 'Fairyの电费'),
         h(
           'div',

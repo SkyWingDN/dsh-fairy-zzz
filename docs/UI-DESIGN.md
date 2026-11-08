@@ -596,6 +596,12 @@ v1.7.2 的两处修复都是「边线装饰放错了形状」：
 - 「设置」右侧的 Ctrl+, 从几乎不可见抬到 `rgba(242,242,238,.56)`（浅色 `rgba(16,17,16,.52)`）；菜单项标题仍是 label-primary `#f2f2ee`，快捷键低一个层级，不抢「设置」。
 - 根因记录：skin 里 `.wtg9ga_newSession [class*="_kbd"],[class*="_key"],[class*="_separator"]` 的后两个选择器漏了容器前缀，全局把菜单快捷键刷成墨黑；v2.0.0 补前缀 + K 段统一抬对比度（技术细节见 TECHNICAL §22.4）。
 
+### 16.6 电费坞贴底与工作区预留（v2.0.3）
+
+- 位置：电费坞不再写死 `bottom:86px`，改为 `bottom:var(--fz3-bill-bottom,86px)`；`BillDock` 挂载后读 `[class*="_footArea"]` 的 `getBoundingClientRect().top`，把「窗口高 - 页脚顶 + 6」写进变量，坞底离页脚 6px。
+- 预留：同一 effect 用坞自身 `offsetHeight + 14` 写 `--fz3-bill-reserve`，基础 CSS 加 `[class*="_regionArea"]{padding-bottom:var(--fz3-bill-reserve,0px)}`，会话列表可视区底边停在坞顶上方约 8px。
+- 兜底与跟随：页脚未挂载 / 高度为 0（侧栏折叠成窄条）时保留 86px；页脚与坞都挂 `ResizeObserver`，窗口 resize 120ms 防抖；卸载时清 timer / observer / listener 并移除两个变量。
+
 ## 17. 截图索引
 
 - 皮肤（欢迎页）：[浅色](img/skin-v17-light-home.jpg) / [深色](img/skin-v17-dark-home.jpg)（1624×1042，含侧栏、欢迎页、composer、幽灵 05）。

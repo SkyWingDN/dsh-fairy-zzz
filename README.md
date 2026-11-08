@@ -8,7 +8,7 @@
 
 [English](README.en.md) · [变更记录](docs/CHANGELOG.md) · [技术说明](docs/TECHNICAL.md) · [性能报告](docs/PERFORMANCE.md)
 
-![version](https://img.shields.io/badge/version-2.0.2-D8FA00?style=flat-square&labelColor=101110)
+![version](https://img.shields.io/badge/version-2.0.3-D8FA00?style=flat-square&labelColor=101110)
 [![npm](https://img.shields.io/npm/v/@sky_wing_dn%2Fdsh-fairy-zzz?style=flat-square&labelColor=101110&color=D8FA00)](https://www.npmjs.com/package/@sky_wing_dn/dsh-fairy-zzz)
 ![license](https://img.shields.io/badge/license-MIT-101110?style=flat-square)
 ![platform](https://img.shields.io/badge/DSH-Desktop%20%26%20Web-101110?style=flat-square)
@@ -288,7 +288,7 @@ GitHub Release 附 `npm pack` 生成的 tarball；从 npm 装的用户下次打�
 
 ## 变更记录
 
-主要节点：v1.1–v1.6 性能与眼徽重写；v1.7 绳网终端皮肤、电费读数、开机颜色校正；v2.0 一键自更新。逐版本的用户可见改动见 [docs/CHANGELOG.md](docs/CHANGELOG.md)；实现细节与设计取舍在 [docs/TECHNICAL.md](docs/TECHNICAL.md)。
+主要节点：v1.1–v1.6 性能与眼徽重写；v1.7 绳网终端皮肤、电费读数、开机颜色校正；v2.0 一键自更新；v2.0.3 电费坞贴底、不再压住会话列表。逐版本的用户可见改动见 [docs/CHANGELOG.md](docs/CHANGELOG.md)；实现细节与设计取舍在 [docs/TECHNICAL.md](docs/TECHNICAL.md)。
 
 ## 许可
 
