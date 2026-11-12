@@ -78,7 +78,7 @@ colors:
     usage: "Fairy 眼标辉光唯一签名色（drop-shadow rgba(96,148,255,.45–.50)），其他位置禁用"
 typography:
   display:
-    fontFamily: "Bahnschrift, DIN Alternate, HarmonyOS Sans SC, Microsoft YaHei UI, PingFang SC, system-ui, sans-serif"
+    fontFamily: "FZ3 Display (bundled Anton 400), Impact, Haettenschweiler, Arial Narrow, HarmonyOS Sans SC, Microsoft YaHei UI, PingFang SC, system-ui, sans-serif"
     fontSize: 26px
     fontWeight: 700
     lineHeight: 32px
@@ -601,6 +601,13 @@ v1.7.2 的两处修复都是「边线装饰放错了形状」：
 - 位置：电费坞不再写死 `bottom:86px`，改为 `bottom:var(--fz3-bill-bottom,86px)`；`BillDock` 挂载后读 `[class*="_footArea"]` 的 `getBoundingClientRect().top`，把「窗口高 - 页脚顶 + 6」写进变量，坞底离页脚 6px。
 - 预留：同一 effect 用坞自身 `offsetHeight + 14` 写 `--fz3-bill-reserve`，基础 CSS 加 `[class*="_regionArea"]{padding-bottom:var(--fz3-bill-reserve,0px)}`，会话列表可视区底边停在坞顶上方约 8px。
 - 兜底与跟随：页脚未挂载 / 高度为 0（侧栏折叠成窄条）时保留 86px；页脚与坞都挂 `ResizeObserver`，窗口 resize 120ms 防抖；卸载时清 timer / observer / listener 并移除两个变量。
+
+### 16.7 标题字体层（v2.0.4）
+
+- 标题清单：侧栏字标（`.fz3-brandname b` / `.fz3-sb-text b`）、欢迎页大标题（`.fz3-copy-title` / `.WOwLGG_headline`）、分区标题（`.GAkraW_sectionLabel`）、设置页标题（`.fz3-set-name` / `.AnXs9G_navTitle`）、电费坞标题（`.fz3-bill-head`）。
+- 字体：随包 Anton 400（`assets/anton/Anton-Regular.woff2`，SIL OFL 1.1）以 `@font-face "FZ3 Display"` 声明，`--fz3-display` 首选它；Impact / Haettenschweiler / Arial Narrow 与 CJK 系统字体依次回落。没装 Impact 的机器（macOS / 移动端）也是同一套窄体标题。
+- 字重：Anton 只有 400，标题声明 700 时用 `font-synthesis-weight:none` 关掉合成加粗，英文保持 400 的天然粗细；汉字回落的 CJK 字体自带真 Bold，仍是粗的。
+- 正文、对话、代码、标签、数值、按钮、会话名不套显示字体，仍用 `--fz3-font` / `--fz3-mono`。
 
 ## 17. 截图索引
 

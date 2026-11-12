@@ -235,37 +235,262 @@ window.__ModuleLoader__.load({
       }
     }
 
-    function cleanSpeakable(raw) {
-      return String(raw ?? '')
-        .replace(/```[\s\S]*?```/g, '')
-        .replace(/`[^`]*`/g, '')
-        .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
-        .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-        .replace(/https?:\/\/\S+/g, '')
-        .replace(/<[^>]+>/g, '')
-        .replace(/[*_~#>|]+/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .slice(0, 420)
+    /* READING_PATCH_BEGIN */
+    /* 朗读文本预处理（reading-fix）：
+       先把 markdown 按行拆成“块”（标题 / 列表 / 引用 / 表格 / 段落），逐块去标记并补句末标点，
+       最后只用换行保留块边界，绝不再把相邻块直接拼成无标点长串。
+       说明：源码里统一用 \x60 表示反引号，避免本段被模板串/补丁脚本截断。 */
+    function speakEnsureEnd(line) {
+      let text = String(line == null ? '' : line).trim()
+      if (!text) return ''
+      if (/[。！？；…!?;]$/.test(text)) return text
+      text = text.replace(/[，、：,:]+$/, '')
+      return text + '。'
     }
 
-    function chunkText(text, maxLength = 90, maxChunks = 8) {
-      const pieces = text.split(/(?<=[。！？；\n])/).map((s) => s.trim()).filter(Boolean)
-      const chunks = []
-      let buffer = ''
-      for (const piece of pieces) {
-        if ((buffer + piece).length > maxLength && buffer) {
-          chunks.push(buffer)
-          buffer = piece
-        } else {
-          buffer += piece
-        }
-        if (chunks.length >= maxChunks) break
-      }
-      if (buffer && chunks.length < maxChunks) chunks.push(buffer)
-      const out = chunks.filter((s) => s.length > 0)
-      return out.length ? out : [text.slice(0, maxLength)]
+    /* 文件名后缀：把“.”念成“点”，防止 gsv 把点当句号切句（ADAPTER.md / gsv_server.exe） */
+    const SPEAK_FILE_RE = /([A-Za-z0-9_\-]{1,40})\.(?=(?:md|exe|json|wav|py|bat|ps1|log|txt|dll|gguf|zip|js|mjs|cjs|html|css|ini|yml|yaml|toml|cpp|hpp|h|png|jpg|jpeg|gif|bmp|webp|mp3|mp4|docx|xlsx|pptx|pdf|cmd|sh|vbs|pth|ckpt|onnx|safetensors|psm1|ipynb)\b)/gi
+    const speakFileReplace = (match, name) => name.replace(/_+/g, ' ') + '点'
+    function speakFileDots(text) {
+      return String(text == null ? '' : text).replace(SPEAK_FILE_RE, speakFileReplace)
     }
+
+    /* 行内代码里的单位/数字/日期/分数按中文习惯转写：km/h -> 千米每小时（否则被当路径换成
+       "km h" 后 h 被当字母拖长）、9800/9880/9882 -> 九八零零、九八八零、九八八二、
+       ≥ 等符号由前端处理，这里先保证不把 / 换成空格。2026-11-10 21:4x */
+    const SPEAK_DIGITS_CN = '零一二三四五六七八九'
+    const SPEAK_UNIT_PAIRS_CN = {
+      'km/h': '千米每小时', 'm/s': '米每秒', 'km/s': '千米每秒',
+      'km/min': '千米每分钟', 'm/min': '米每分钟', 'r/min': '转每分钟',
+      'mb/s': '兆字节每秒', 'gb/s': '吉字节每秒', 'kb/s': '千字节每秒',
+    }
+    const SPEAK_UNITS_CN = {
+      ms: '毫秒', min: '分钟', km: '千米', cm: '厘米', mm: '毫米', kg: '千克',
+      mg: '毫克', kb: '千字节', mb: '兆字节', gb: '吉字节', tb: '太字节',
+      ml: '毫升', db: '分贝', kw: '千瓦', ma: '毫安', ah: '安时', h: '小时',
+      s: '秒', m: '米', g: '克', l: '升', w: '瓦', v: '伏', a: '安',
+    }
+    function speakSmallNumber(value) {
+      const n = Number(String(value).replace(/^0+(?=\d)/, ''))
+      if (!n || n < 0 || n > 999) return ''
+      const units = ['', '十', '百']
+      let out = ''
+      let pendingZero = false
+      for (let i = 2; i >= 0; i -= 1) {
+        const digit = Math.floor(n / Math.pow(10, i)) % 10
+        if (!digit) {
+          if (out) pendingZero = true
+          continue
+        }
+        if (pendingZero) {
+          out += '零'
+          pendingZero = false
+        }
+        out += SPEAK_DIGITS_CN[digit] + units[i]
+      }
+      return out.replace(/^一十/, '十')
+    }
+    function speakNumericCode(code) {
+      const raw = String(code == null ? '' : code).trim()
+      let m = /^(\d{4})[\/.\-](\d{1,2})[\/.\-](\d{1,2})$/.exec(raw)
+      if (m) return m[1] + '年' + m[2] + '月' + m[3] + '日'
+      if (/^\d+(?:\s*\/\s*\d+)+$/.test(raw)) {
+        const parts = raw.split(/\s*\/\s*/)
+        if (parts.every((part) => part.length >= 3)) {
+          const byDigit = Math.min.apply(null, parts.map((part) => part.length)) >= 4
+          const read = parts.map((part) => (byDigit
+            ? part.split('').map((digit) => SPEAK_DIGITS_CN[Number(digit)]).join('')
+            : part))
+          return read.join('、')
+        }
+      }
+      m = /^(\d{1,3})\s*\/\s*(\d{1,3})$/.exec(raw)
+      if (m) {
+        const numerator = speakSmallNumber(m[1])
+        const denominator = speakSmallNumber(m[2])
+        if (numerator && denominator) return denominator + '分之' + numerator
+      }
+      m = /^([A-Za-z]+)\s*\/\s*([A-Za-z]+)$/.exec(raw)
+      if (m) {
+        const pair = (m[1] + '/' + m[2]).toLowerCase()
+        if (SPEAK_UNIT_PAIRS_CN[pair]) return SPEAK_UNIT_PAIRS_CN[pair]
+      }
+      m = /^(\d+(?:\.\d+)?)\s*([A-Za-z]+)(\d*)$/.exec(raw)
+      if (m) {
+        const unit = SPEAK_UNITS_CN[m[2].toLowerCase()]
+        if (unit) return m[1].replace('.', '点') + unit + (m[3] || '')
+      }
+      return ''
+    }
+
+    /* 行内代码转成可朗读形式：D:\a\b.txt -> D盘 a b点txt；命令保留；URL / 超长丢弃 */
+    function speakCode(raw) {
+      let code = String(raw == null ? '' : raw).trim()
+      if (!code) return ''
+      if (/^(?:https?:\/\/|www\.|mailto:)/i.test(code)) return ''
+      if (code.length > 100) return ''
+      const numeric = speakNumericCode(code)
+      if (numeric) return numeric
+      const isPath = /^[A-Za-z]:[\\/]/.test(code) || /^(?:\.{1,2}[\\/]|~[\\/]|\\\\)/.test(code) || /[A-Za-z0-9_.-]+[\\/][A-Za-z0-9_.-]+/.test(code)
+      let out = code
+        .replace(/^([A-Za-z]):(?:[\\/]+|$)/, (match, drive) => drive.toUpperCase() + '盘 ')
+        .replace(/\\\\/g, ' ')
+        .replace(/[\\/]+/g, ' ')
+        .replace(/(^|\s)-{1,3}(?=[A-Za-z0-9])/g, '$1')
+        .replace(/_+/g, ' ')
+        .replace(/[{}<>$~^|\x60=;*]+/g, ' ')
+      if (isPath) out = out.replace(/\.(?=[A-Za-z0-9])/g, '点')
+      else out = speakFileDots(out)
+      return out.replace(/\s+/g, ' ').trim()
+    }
+
+    function speakInline(rawLine) {
+      return String(rawLine == null ? '' : rawLine)
+        /* 图片整段删；链接只留文字 */
+        .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+        .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+        /* 行内代码：转成可朗读文本（路径盘符念“D盘”、分隔符当停顿、文件名后缀的 . 念“点”） */
+        .replace(/\x60([^\x60]*)\x60/g, (match, code) => speakCode(code))
+        /* URL、HTML 标签、脚注都不念 */
+        .replace(/https?:\/\/[^\s)）]+/gi, '')
+        .replace(/www\.[^\s)）]+/gi, '')
+        /* 文件名后缀先转“点”（正文里的 ADAPTER.md / gsv_server.exe 也要处理） */
+        .replace(SPEAK_FILE_RE, speakFileReplace)
+        .replace(/<[^>]*>/g, '')
+        .replace(/\[\^?[^\]]{0,24}\]/g, '')
+        /* 加粗 / 斜体 / 删除线：直接删标记，不换成空格，避免“标题 正文”式词缝 */
+        .replace(/[*_~]+/g, '')
+        /* 零宽字符与 emoji */
+        .replace(/[\u200B-\u200D\u2060\uFEFF]/g, '')
+        .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{2B00}-\u{2BFF}]/gu, '')
+        /* 残留的 markdown 符号（# > | 反引号）不再念 */
+        .replace(/[#>|]+/g, ' ')
+        .replace(/\x60/g, '')
+    }
+
+    /* 块级清洗：分隔线 / 表格 / 标题 / 引用 / 列表 / 普通段落 */
+    function speakCleanLine(original) {
+      const line = String(original == null ? '' : original)
+      if (/^\s{0,3}(?:[-*+_]\s*){3,}$/.test(line)) return ''
+      if (/^\s{0,3}=+\s*$/.test(line)) return ''
+      /* 表格分隔行（|---|---|）删；表格行转成“单元格，单元格。” */
+      if (/^\s*\|?\s*:?-{2,}:?\s*(?:\|\s*:?-{2,}:?\s*)+\|?\s*$/.test(line)) return ''
+      const pipeCount = (line.match(/\|/g) || []).length
+      if (/^\s*\|/.test(line) || pipeCount >= 2) {
+        const cells = line
+          .split('|')
+          .map((cell) => speakInline(cell).trim())
+          .filter(Boolean)
+        if (!cells.length) return ''
+        return speakEnsureEnd(cells.join('，'))
+      }
+      /* 标题：去掉 #，行尾补句号 */
+      if (/^\s{0,3}#{1,6}\s+/.test(line)) {
+        return speakEnsureEnd(speakInline(line.replace(/^\s{0,3}#{1,6}\s+/, '')))
+      }
+      /* 引用：去掉 >，行尾补句号 */
+      if (/^\s{0,3}>\s?/.test(line)) {
+        return speakEnsureEnd(speakInline(line.replace(/^\s*>\s?/g, '')))
+      }
+      /* 列表：去掉标记；编号保留数字；每条独立成句（顺带兼容 DOM innerText 的圆点） */
+      const numbered = /^\s{0,3}(\d+)[.)]\s+/.exec(line)
+      const bullet = /^\s{0,3}[-*+•·◦‣▪]\s+/.exec(line)
+      if (numbered || bullet) {
+        const rest = line.replace(/^\s{0,3}(?:[-*+•·◦‣▪]|\d+[.)])\s+/, '')
+        const head = numbered ? numbered[1] + '. ' : ''
+        return speakEnsureEnd(head + speakInline(rest))
+      }
+      /* 普通段落：清理行内标记后补句号 */
+      const plain = speakInline(line).trim()
+      return plain ? speakEnsureEnd(plain) : ''
+    }
+
+    /* 连续标点归一：不破坏句边界，省略号原样保留 */
+    function speakNormalize(text) {
+      return String(text == null ? '' : text)
+        .replace(/[ \t\u00A0]+/g, ' ')
+        .replace(/ *\n */g, '\n')
+        .replace(/\n{2,}/g, '\n')
+        .replace(/[，、]{2,}/g, '，')
+        .replace(/[，、]+。/g, '。')
+        .replace(/。{2,}/g, '。')
+        .replace(/([！？；]){2,}/g, '$1')
+        .replace(/\s+([，。！？；：、])/g, '$1')
+        .replace(/^[\s。，、；：]+/, '')
+        .replace(/\s+$/, '')
+    }
+
+    function cleanSpeakable(raw) {
+      const source = String(raw == null ? '' : raw)
+        .replace(/\r\n?/g, '\n')
+        /* 围栏代码块整段删除，只留一个换行保住块边界；未闭合的从围栏删到文末 */
+        .replace(/\x60{3}[\s\S]*?\x60{3}/g, '\n')
+        .replace(/~{3}[\s\S]*?~{3}/g, '\n')
+        .replace(/\x60{3}[\s\S]*$/g, '')
+        .replace(/~{3}[\s\S]*$/g, '')
+      const blocks = []
+      for (const line of source.split('\n')) {
+        const cleaned = speakCleanLine(line)
+        /* 纯符号 / 空白块丢弃（语音没有可念的字就整块不要） */
+        if (cleaned && /[\p{L}\p{N}]/u.test(cleaned)) blocks.push(cleaned)
+      }
+      return speakNormalize(blocks.join('\n'))
+    }
+
+    /* 单句超过 maxLength 且没有句末标点时，在 60~110 字窗口里找逗号/顿号断，实在没有才硬切 */
+    function speakSplitLong(piece, maxLength) {
+      const parts = []
+      let rest = String(piece == null ? '' : piece).trim()
+      while (rest.length > maxLength) {
+        const windowText = rest.slice(0, maxLength)
+        let cut = -1
+        for (const mark of ['，', '、', '：', ',', ' ']) {
+          cut = Math.max(cut, windowText.lastIndexOf(mark))
+        }
+        if (cut < 40) cut = maxLength - 2
+        parts.push(speakEnsureEnd(rest.slice(0, cut + 1)))
+        rest = rest.slice(cut + 1).replace(/^[，、：,\s]+/, '')
+      }
+      if (rest) parts.push(speakEnsureEnd(rest))
+      return parts
+    }
+
+    function chunkText(text, maxLength = 110, maxChunks = Infinity) {
+      const pieces = String(text == null ? '' : text)
+        .replace(/\r\n?/g, '\n')
+        .split(/(?<=[。！？；…!?;\n])/)
+        .map((piece) => piece.trim())
+        .filter(Boolean)
+      const sentences = []
+      for (const piece of pieces) {
+        for (const part of speakSplitLong(piece, maxLength)) {
+          if (part) sentences.push(part)
+        }
+      }
+      /* 按句聚合，单块尽量落在 60~110 字，块尾必是完整句子 */
+      const rawChunks = []
+      let buffer = ''
+      for (const sentence of sentences) {
+        if (buffer && buffer.length + sentence.length > maxLength) {
+          rawChunks.push(buffer)
+          buffer = sentence
+        } else {
+          buffer += sentence
+        }
+      }
+      if (buffer) rawChunks.push(buffer)
+      /* 纯符号/空白块丢弃；全量返回：长回复从第一句念到最后一句，不再按总长/块数截断 */
+      const out = []
+      for (const chunk of rawChunks) {
+        const clean = chunk.trim()
+        if (!clean) continue
+        if (!/[\p{L}\p{N}]/u.test(clean)) continue
+        out.push(clean)
+        if (out.length >= maxChunks) break
+      }
+      return out
+    }
+    /* READING_PATCH_END */
 
     async function speakText(raw, options = {}) {
       const force = options.force === true
@@ -676,6 +901,14 @@ window.__ModuleLoader__.load({
 
     function speechTextOfRow(row) {
       const clone = row.cloneNode(true)
+      /* READING_DOM_PATCH_BEGIN
+         fairy-gsv reading patch：行内代码 <code> 转成反引号文本，交给 cleanSpeakable 的 speakCode
+         念成“D盘 fairy-gsv config点json”；块级代码（pre/code）仍由下面的选择器整块删除。 */
+      for (const codeNode of Array.from(clone.querySelectorAll('code'))) {
+        if (codeNode.closest('pre')) continue
+        codeNode.replaceWith('\x60' + String(codeNode.textContent || '') + '\x60')
+      }
+      /* READING_DOM_PATCH_END */
       for (const selector of NON_SPEECH_SELECTORS) {
         for (const node of Array.from(clone.querySelectorAll(selector))) node.remove()
       }
@@ -849,6 +1082,8 @@ window.__ModuleLoader__.load({
   --fz3-cyan:#8fb4ff;
   --fz3-amber:#ffc93c;
   --fz3-text:#e8f3ff;
+  /* v2.0.4（标题字体）：Impact 只给标题 / 字标用，正文与对话保持 2.0.3 的字体。
+     标题层的 Impact 令牌在皮肤段 --fz3-display 里定义。 */
   --fz3-font:"Bahnschrift","DIN Alternate","HarmonyOS Sans SC","Microsoft YaHei UI","PingFang SC","Noto Sans SC",system-ui,sans-serif;
   --fz3-dock-x:25vw;
   --fz3-dock-y:52vh;
@@ -1410,10 +1645,26 @@ html[data-fz3-theme="light"] .fz3-bill[data-tone="peak"] .fz3-bill-clock{color:#
 /* 令牌只留真正被 var() 消费的这几个。v1.7.5 清理掉的一批
  * （lime-dim / ink / paper / panel / panel-2 / hair / mute）从来没有任何规则引用，
  * 留着只会让人以为改它们有效。 */
+
+/* v2.0.4（标题字体）：标题层随包内置 Anton（SIL OFL 1.1，见 assets/anton/OFL.txt），
+ * 不再依赖用户机器装没装 Impact，跨平台观感一致；Impact 留作次选回落。
+ * Anton 只有 400 一档字重、且不含汉字：英文字形按 400 的天然粗细渲染（下面 L 段用
+ * font-synthesis-weight:none 关掉合成加粗），汉字逐字回落到后面的 CJK 字体。 */
+@font-face{
+  font-family:"FZ3 Display";
+  src:url("/fairy-zzz/assets/anton/Anton-Regular.woff2") format("woff2");
+  font-weight:400;
+  font-style:normal;
+  font-display:swap;
+}
+
 :root{
   --fz3-lime:#d8fa00;
   --fz3-amber:#ffde00;
+  /* v2.0.4（标题字体）：标题层首选内置 Anton（上面 @font-face），Impact 只作次选回落；
+     正文、对话、代码保持原字体。Anton / Impact 都不含汉字，汉字逐字回落到后面的 CJK 字体。 */
   --fz3-mono:"Cascadia Mono","Cascadia Code","SF Mono",Consolas,"Microsoft YaHei UI",monospace;
+  --fz3-display:"FZ3 Display","Impact","Haettenschweiler","Arial Narrow","HarmonyOS Sans SC","Microsoft YaHei UI","PingFang SC","Noto Sans SC",system-ui,sans-serif;
   --fz3-cyan:#d8fa00;
   --fz3-text:#f2f2ee;
 }
@@ -1533,7 +1784,7 @@ html[data-fz3-theme="light"] .wtg9ga_root{border-right-color:rgba(255,255,255,.1
    v1.7.5：原来 10px / 34% 白，比下面的会话行还小还淡，标题反而缩在内容后面；
    现在放大到 13px、提亮到 82%，让「工作区」先被看见，// 仍然是青柠。 */
 .GAkraW_sectionLabel{
-  font-family:var(--fz3-mono)!important;font-size:13px!important;font-weight:700!important;
+  font-family:var(--fz3-display)!important;font-size:13px!important;font-weight:700!important;
   letter-spacing:.12em!important;text-transform:uppercase;color:rgba(242,242,238,.82)!important;
 }
 .GAkraW_sectionLabel::before{content:"// ";color:var(--fz3-lime);font-weight:700}
@@ -1629,7 +1880,7 @@ html[data-fz3-theme="light"] ._86kJGG_trigger,html[data-fz3-theme="light"] ._9r0
 
 /* ---------- E. 欢迎页：网端终端名牌 ---------- */
 .WOwLGG_root{position:relative}
-.WOwLGG_headline{position:relative;font-weight:700!important;letter-spacing:.015em!important;color:#f2f2ee!important}
+.WOwLGG_headline{position:relative;font-family:var(--fz3-display)!important;font-weight:700!important;letter-spacing:.015em!important;color:#f2f2ee!important}
 .WOwLGG_headline::before{
   content:"// NETWORK TERMINAL 05";position:absolute;left:50%;top:-24px;transform:translateX(-50%);
   font-family:var(--fz3-mono);font-size:10px;font-weight:600;letter-spacing:.30em;
@@ -1673,7 +1924,7 @@ html[data-fz3-theme="light"] [data-slot="main.conversation"]{color:#101110}
   background:#1b1d1b!important;box-shadow:0 0 0 1px rgba(0,0,0,.55),0 40px 90px -44px rgba(0,0,0,.95)!important;
 }
 .AnXs9G_nav{box-shadow:inset -1px 0 0 rgba(255,255,255,.08)!important}
-.AnXs9G_navTitle{font-family:var(--fz3-mono)!important;letter-spacing:.18em!important;color:rgba(242,242,238,.50)!important}
+.AnXs9G_navTitle{font-family:var(--fz3-display)!important;letter-spacing:.18em!important;color:rgba(242,242,238,.50)!important}
 .AnXs9G_navCell{color:rgba(242,242,238,.62)!important}
 .AnXs9G_navCell:hover{background:rgba(255,255,255,.06)!important}
 .AnXs9G_navCell.AnXs9G_active{background:var(--fz3-lime)!important;color:#0a0b08!important;font-weight:700!important}
@@ -1716,12 +1967,13 @@ html[data-fz3-theme="light"] .AnXs9G_close:hover{background:rgba(16,17,16,.06)!i
 .fz3-set-input:focus{border-color:rgba(216,250,0,.6)!important;box-shadow:0 0 0 3px rgba(216,250,0,.12)!important}
 .fz3-set-dot.is-on{background:var(--fz3-lime);color:var(--fz3-lime)}
 .fz3-brandname b,:root[data-fz3-theme] .fz3-brandname b{
+  font-family:var(--fz3-display)!important;
   font-size:13px!important;font-weight:700!important;letter-spacing:.16em!important;color:#f2f2ee!important;text-shadow:none!important;
 }
 .fz3-brandname b::before{content:"// ";color:var(--fz3-lime);font-weight:700}
 .fz3-brandname i{font-family:var(--fz3-mono)!important;font-size:8px!important;letter-spacing:.18em!important;color:rgba(216,250,0,.72)!important}
 .fz3-brandmark-eye{filter:drop-shadow(0 0 6px rgba(96,148,255,.5))!important}
-.fz3-sb-text b{font-family:"Palatino Linotype","Book Antiqua",Palatino,serif!important;font-style:italic!important;font-size:19px!important;letter-spacing:.03em!important;color:#f2f2ee!important;text-shadow:none!important}
+.fz3-sb-text b{font-family:var(--fz3-display)!important;font-style:italic!important;font-size:19px!important;letter-spacing:.03em!important;color:#f2f2ee!important;text-shadow:none!important}
 .fz3-sb-text b::before{content:"//";font-family:var(--fz3-mono);font-style:normal;font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--fz3-lime);margin-right:6px;vertical-align:2px}
 .fz3-sb-text i{font-family:var(--fz3-mono)!important;font-size:8px!important;line-height:1.4!important;letter-spacing:.16em!important;color:rgba(216,250,0,.60)!important}
 html[data-fz3-theme="light"] .fz3-brandname b,html[data-fz3-theme="light"] .fz3-sb-text b{color:#f2f2ee!important}
@@ -1800,6 +2052,20 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
 html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_keys_"],
 html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_shortcutKeys_"],
 html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16,17,16,.52)!important}
+
+/* ---------- L. 字体层：标题 / 字标用内置 Anton（v2.0.4） ----------
+ * 用户口径：对话部分与非标题文本都不用这个字体，只有标题保留；标题英文字体不再加粗。
+ * 标题清单：侧栏字标（.fz3-brandname b / .fz3-sb-text b）、欢迎页大标题
+ * （.fz3-copy-title / .WOwLGG_headline）、分区标题（.GAkraW_sectionLabel）、
+ * 设置页标题（.fz3-set-name / .AnXs9G_navTitle）、电费坞标题（.fz3-bill-head）。
+ * 正文 / 对话 / 代码 / 标签 / 数值 / 按钮 / 会话名一律不套显示字体。
+ * 字体已随包（assets/anton/），没装 Impact 的机器也一样；万一 woff2 加载失败则按
+ * --fz3-display 后面的 Impact / 窄体 / 系统字体回落，不会缺字或豆腐块。
+ * font-synthesis-weight:none：Anton / Impact 都只有 400 一档，标题声明的是 700，
+ * 不开这个开关浏览器会合成加粗（笔画糊成一坨）；关掉后英文字形保持 400 的天然粗细，
+ * 汉字回落到的 CJK 字体（雅黑 / 苹方 / Noto）自带真 Bold，仍然是粗的。 */
+.fz3-copy-title,.fz3-set-name,.fz3-bill-head{font-family:var(--fz3-display)!important}
+.fz3-copy-title,.fz3-set-name,.fz3-bill-head,.fz3-sb-text b,.fz3-brandname b,.GAkraW_sectionLabel,.WOwLGG_headline,.AnXs9G_navTitle{font-synthesis-weight:none}
 
 `
 

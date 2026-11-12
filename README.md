@@ -8,7 +8,7 @@
 
 [English](README.en.md) · [变更记录](docs/CHANGELOG.md) · [技术说明](docs/TECHNICAL.md) · [性能报告](docs/PERFORMANCE.md)
 
-![version](https://img.shields.io/badge/version-2.0.3-D8FA00?style=flat-square&labelColor=101110)
+![version](https://img.shields.io/badge/version-2.0.4-D8FA00?style=flat-square&labelColor=101110)
 [![npm](https://img.shields.io/npm/v/@sky_wing_dn%2Fdsh-fairy-zzz?style=flat-square&labelColor=101110&color=D8FA00)](https://www.npmjs.com/package/@sky_wing_dn/dsh-fairy-zzz)
 ![license](https://img.shields.io/badge/license-MIT-101110?style=flat-square)
 ![platform](https://img.shields.io/badge/DSH-Desktop%20%26%20Web-101110?style=flat-square)
@@ -83,6 +83,7 @@ dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
 - 目前只做深色一套：浅色版还没弄完，v1.7.5 起暂时固定深色、不跟随宿主主题切换。
 - 纯静态 CSS + token 覆盖，无新增 React 组件、无新增动画层。设计规范见 [docs/UI-DESIGN.md](docs/UI-DESIGN.md)。
 - v1.7.5 起 `body` 背景铺上 `assets/zzz-pattern.webp` 字墙（`--fz3-wall-veil` 控制浓淡），四角与上下有暗角收边。
+- v2.0.4 起标题 / 字标 / 分区标题 / 欢迎页大标题改用**随包内置的 Anton**（SIL OFL 1.1，`assets/anton/`），不依赖系统装没装 Impact；正文、对话、代码保持原字体，英文标题按 Anton 的 400 字重渲染、不再合成加粗。
 
 **电费读数**
 
@@ -95,6 +96,7 @@ dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
 - 问候语音是预录 mp3，**不依赖引擎**。
 - 把回复念出来需要本地 GPT-SoVITS（CPU 推理）。本仓库**不含**模型权重、参考音频与推理引擎。
 - 设置里可指定引擎目录、启动 / 停止、试听问候、测试语音。
+- v2.0.4 起朗读前会先把 markdown 清洗成可念的句子：代码块整段跳过，行内代码里的路径 / 单位 / 数字转成中文读法，长回复从第一句念到最后一句（不再按总长或块数截断）。
 
 ## 安装
 
@@ -231,7 +233,7 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
 cordis.patch.yml       # 一行 insert（皮肤本体）
 client.js              # 客户端：皮肤、开机 / 问好 / 眼徽、设置面板、语音动作
 index.js               # 宿主：静态资源、TTS 队列与缓存、心情、电费解析、引擎托管
-assets/                # boot-opt.mp4 / poster.jpg / hero.webp / icon-180.png / zzz-pattern.webp / voice/*.mp3
+assets/                # boot-opt.mp4 / poster.jpg / hero.webp / icon-180.png / zzz-pattern.webp / voice/*.mp3 / anton/（标题字体 + OFL 许可）
 docs/skin/             # 皮肤 CSS 唯一可编辑源（构建时内联进 client.js）
 docs/                  # TECHNICAL.md / UI-DESIGN.md / PERFORMANCE.md / CHANGELOG.md / research
 presets/               # 可选的「Fairy 模式」agent 预设
@@ -288,7 +290,7 @@ GitHub Release 附 `npm pack` 生成的 tarball；从 npm 装的用户下次打�
 
 ## 变更记录
 
-主要节点：v1.1–v1.6 性能与眼徽重写；v1.7 绳网终端皮肤、电费读数、开机颜色校正；v2.0 一键自更新；v2.0.3 电费坞贴底、不再压住会话列表。逐版本的用户可见改动见 [docs/CHANGELOG.md](docs/CHANGELOG.md)；实现细节与设计取舍在 [docs/TECHNICAL.md](docs/TECHNICAL.md)。
+主要节点：v1.1–v1.6 性能与眼徽重写；v1.7 绳网终端皮肤、电费读数、开机颜色校正；v2.0 一键自更新；v2.0.3 电费坞贴底、不再压住会话列表；v2.0.4 内置 Anton 标题字体、朗读文本预处理。逐版本的用户可见改动见 [docs/CHANGELOG.md](docs/CHANGELOG.md)；实现细节与设计取舍在 [docs/TECHNICAL.md](docs/TECHNICAL.md)。
 
 ## 许可
 

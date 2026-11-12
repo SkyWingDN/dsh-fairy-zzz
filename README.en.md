@@ -8,7 +8,7 @@ Boot animation → greeting → docked eye badge, plus a "Wire-Net Terminal" hos
 
 [中文](README.md) · [Changelog](docs/CHANGELOG.md) · [Technical notes](docs/TECHNICAL.md) · [Performance report](docs/PERFORMANCE.md)
 
-![version](https://img.shields.io/badge/version-2.0.3-D8FA00?style=flat-square&labelColor=101110)
+![version](https://img.shields.io/badge/version-2.0.4-D8FA00?style=flat-square&labelColor=101110)
 [![npm](https://img.shields.io/npm/v/@sky_wing_dn%2Fdsh-fairy-zzz?style=flat-square&labelColor=101110&color=D8FA00)](https://www.npmjs.com/package/@sky_wing_dn/dsh-fairy-zzz)
 ![license](https://img.shields.io/badge/license-MIT-101110?style=flat-square)
 ![platform](https://img.shields.io/badge/DSH-Desktop%20%26%20Web-101110?style=flat-square)
@@ -83,6 +83,7 @@ Full third-party license texts live in [licenses/](licenses/); per-item attribut
 - Dark only for now: the light variant is unfinished, so since v1.7.5 the appearance is pinned to dark and no longer follows the host theme.
 - Pure static CSS plus token overrides — no new React components, no new animation layers. Spec: [docs/UI-DESIGN.md](docs/UI-DESIGN.md).
 - Since v1.7.5 the `body` paints `assets/zzz-pattern.webp` as a letter wall with corner vignettes; intensity is `--fz3-wall-veil`.
+- Since v2.0.4 the title layer (wordmark, section headings, welcome headline, settings nav title, fee dock heading) uses **Anton bundled with the package** (SIL OFL 1.1, `assets/anton/`), so it no longer depends on Impact being installed; body text, chat and code keep their original fonts, and English titles render at Anton's native 400 without synthetic bolding.
 
 **Fee readout**
 
@@ -95,6 +96,7 @@ Full third-party license texts live in [licenses/](licenses/); per-item attribut
 - Greeting lines are pre-recorded mp3s and need no engine.
 - Reading replies aloud needs a local GPT-SoVITS with CPU inference. **This repository ships no model weights, reference audio or inference engine.**
 - The settings panel can point at an engine directory, start / stop it, preview greetings and test synthesis.
+- Since v2.0.4 replies are cleaned into speakable sentences before synthesis: fenced code blocks are skipped, inline code paths / units / numbers are rewritten into Chinese reading, and long replies are read from the first sentence to the last (no total-length or chunk-count cut-off).
 
 ## Install
 
@@ -231,7 +233,7 @@ Method, attribution and rejected experiments: [docs/PERFORMANCE.md](docs/PERFORM
 cordis.patch.yml       # one insert entry (the skin itself)
 client.js              # client: skin, boot / greeting / badge, settings panel, voice actions
 index.js               # host: static assets, TTS queue and cache, mood, usage parsing, engine supervisor
-assets/                # boot-opt.mp4 / poster.jpg / hero.webp / icon-180.png / zzz-pattern.webp / voice/*.mp3
+assets/                # boot-opt.mp4 / poster.jpg / hero.webp / icon-180.png / zzz-pattern.webp / voice/*.mp3 / anton/ (title font + OFL licence)
 docs/skin/             # single editable source of the skin CSS (inlined at build time)
 docs/                  # TECHNICAL.md / UI-DESIGN.md / PERFORMANCE.md / CHANGELOG.md / research
 presets/               # optional "Fairy mode" agent preset
@@ -288,7 +290,7 @@ Attach the tarball from `npm pack` to the GitHub Release; npm-installed users wi
 
 ## Changelog
 
-Milestones: v1.1–v1.6 performance and eye-runtime rewrite; v1.7 Wire-Net Terminal skin, fee readout, boot colour correction; v2.0 one-click self-update; v2.0.3 the fee dock sits above the footer and no longer covers the session list. User-visible changes per release live in [docs/CHANGELOG.md](docs/CHANGELOG.md); implementation notes and trade-offs in [docs/TECHNICAL.md](docs/TECHNICAL.md).
+Milestones: v1.1–v1.6 performance and eye-runtime rewrite; v1.7 Wire-Net Terminal skin, fee readout, boot colour correction; v2.0 one-click self-update; v2.0.3 the fee dock sits above the footer and no longer covers the session list; v2.0.4 bundled Anton title font and speakable-text preprocessing. User-visible changes per release live in [docs/CHANGELOG.md](docs/CHANGELOG.md); implementation notes and trade-offs in [docs/TECHNICAL.md](docs/TECHNICAL.md).
 
 ## License
 

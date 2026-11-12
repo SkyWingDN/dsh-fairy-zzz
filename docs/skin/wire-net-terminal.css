@@ -9,10 +9,26 @@
 /* 令牌只留真正被 var() 消费的这几个。v1.7.5 清理掉的一批
  * （lime-dim / ink / paper / panel / panel-2 / hair / mute）从来没有任何规则引用，
  * 留着只会让人以为改它们有效。 */
+
+/* v2.0.4（标题字体）：标题层随包内置 Anton（SIL OFL 1.1，见 assets/anton/OFL.txt），
+ * 不再依赖用户机器装没装 Impact，跨平台观感一致；Impact 留作次选回落。
+ * Anton 只有 400 一档字重、且不含汉字：英文字形按 400 的天然粗细渲染（下面 L 段用
+ * font-synthesis-weight:none 关掉合成加粗），汉字逐字回落到后面的 CJK 字体。 */
+@font-face{
+  font-family:"FZ3 Display";
+  src:url("/fairy-zzz/assets/anton/Anton-Regular.woff2") format("woff2");
+  font-weight:400;
+  font-style:normal;
+  font-display:swap;
+}
+
 :root{
   --fz3-lime:#d8fa00;
   --fz3-amber:#ffde00;
+  /* v2.0.4（标题字体）：标题层首选内置 Anton（上面 @font-face），Impact 只作次选回落；
+     正文、对话、代码保持原字体。Anton / Impact 都不含汉字，汉字逐字回落到后面的 CJK 字体。 */
   --fz3-mono:"Cascadia Mono","Cascadia Code","SF Mono",Consolas,"Microsoft YaHei UI",monospace;
+  --fz3-display:"FZ3 Display","Impact","Haettenschweiler","Arial Narrow","HarmonyOS Sans SC","Microsoft YaHei UI","PingFang SC","Noto Sans SC",system-ui,sans-serif;
   --fz3-cyan:#d8fa00;
   --fz3-text:#f2f2ee;
 }
@@ -132,7 +148,7 @@ html[data-fz3-theme="light"] .wtg9ga_root{border-right-color:rgba(255,255,255,.1
    v1.7.5：原来 10px / 34% 白，比下面的会话行还小还淡，标题反而缩在内容后面；
    现在放大到 13px、提亮到 82%，让「工作区」先被看见，// 仍然是青柠。 */
 .GAkraW_sectionLabel{
-  font-family:var(--fz3-mono)!important;font-size:13px!important;font-weight:700!important;
+  font-family:var(--fz3-display)!important;font-size:13px!important;font-weight:700!important;
   letter-spacing:.12em!important;text-transform:uppercase;color:rgba(242,242,238,.82)!important;
 }
 .GAkraW_sectionLabel::before{content:"// ";color:var(--fz3-lime);font-weight:700}
@@ -228,7 +244,7 @@ html[data-fz3-theme="light"] ._86kJGG_trigger,html[data-fz3-theme="light"] ._9r0
 
 /* ---------- E. 欢迎页：网端终端名牌 ---------- */
 .WOwLGG_root{position:relative}
-.WOwLGG_headline{position:relative;font-weight:700!important;letter-spacing:.015em!important;color:#f2f2ee!important}
+.WOwLGG_headline{position:relative;font-family:var(--fz3-display)!important;font-weight:700!important;letter-spacing:.015em!important;color:#f2f2ee!important}
 .WOwLGG_headline::before{
   content:"// NETWORK TERMINAL 05";position:absolute;left:50%;top:-24px;transform:translateX(-50%);
   font-family:var(--fz3-mono);font-size:10px;font-weight:600;letter-spacing:.30em;
@@ -272,7 +288,7 @@ html[data-fz3-theme="light"] [data-slot="main.conversation"]{color:#101110}
   background:#1b1d1b!important;box-shadow:0 0 0 1px rgba(0,0,0,.55),0 40px 90px -44px rgba(0,0,0,.95)!important;
 }
 .AnXs9G_nav{box-shadow:inset -1px 0 0 rgba(255,255,255,.08)!important}
-.AnXs9G_navTitle{font-family:var(--fz3-mono)!important;letter-spacing:.18em!important;color:rgba(242,242,238,.50)!important}
+.AnXs9G_navTitle{font-family:var(--fz3-display)!important;letter-spacing:.18em!important;color:rgba(242,242,238,.50)!important}
 .AnXs9G_navCell{color:rgba(242,242,238,.62)!important}
 .AnXs9G_navCell:hover{background:rgba(255,255,255,.06)!important}
 .AnXs9G_navCell.AnXs9G_active{background:var(--fz3-lime)!important;color:#0a0b08!important;font-weight:700!important}
@@ -315,12 +331,13 @@ html[data-fz3-theme="light"] .AnXs9G_close:hover{background:rgba(16,17,16,.06)!i
 .fz3-set-input:focus{border-color:rgba(216,250,0,.6)!important;box-shadow:0 0 0 3px rgba(216,250,0,.12)!important}
 .fz3-set-dot.is-on{background:var(--fz3-lime);color:var(--fz3-lime)}
 .fz3-brandname b,:root[data-fz3-theme] .fz3-brandname b{
+  font-family:var(--fz3-display)!important;
   font-size:13px!important;font-weight:700!important;letter-spacing:.16em!important;color:#f2f2ee!important;text-shadow:none!important;
 }
 .fz3-brandname b::before{content:"// ";color:var(--fz3-lime);font-weight:700}
 .fz3-brandname i{font-family:var(--fz3-mono)!important;font-size:8px!important;letter-spacing:.18em!important;color:rgba(216,250,0,.72)!important}
 .fz3-brandmark-eye{filter:drop-shadow(0 0 6px rgba(96,148,255,.5))!important}
-.fz3-sb-text b{font-family:"Palatino Linotype","Book Antiqua",Palatino,serif!important;font-style:italic!important;font-size:19px!important;letter-spacing:.03em!important;color:#f2f2ee!important;text-shadow:none!important}
+.fz3-sb-text b{font-family:var(--fz3-display)!important;font-style:italic!important;font-size:19px!important;letter-spacing:.03em!important;color:#f2f2ee!important;text-shadow:none!important}
 .fz3-sb-text b::before{content:"//";font-family:var(--fz3-mono);font-style:normal;font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--fz3-lime);margin-right:6px;vertical-align:2px}
 .fz3-sb-text i{font-family:var(--fz3-mono)!important;font-size:8px!important;line-height:1.4!important;letter-spacing:.16em!important;color:rgba(216,250,0,.60)!important}
 html[data-fz3-theme="light"] .fz3-brandname b,html[data-fz3-theme="light"] .fz3-sb-text b{color:#f2f2ee!important}
@@ -399,3 +416,17 @@ html[data-fz3-phase="dock"] body::after{display:none!important}
 html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_keys_"],
 html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_shortcutKeys_"],
 html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16,17,16,.52)!important}
+
+/* ---------- L. 字体层：标题 / 字标用内置 Anton（v2.0.4） ----------
+ * 用户口径：对话部分与非标题文本都不用这个字体，只有标题保留；标题英文字体不再加粗。
+ * 标题清单：侧栏字标（.fz3-brandname b / .fz3-sb-text b）、欢迎页大标题
+ * （.fz3-copy-title / .WOwLGG_headline）、分区标题（.GAkraW_sectionLabel）、
+ * 设置页标题（.fz3-set-name / .AnXs9G_navTitle）、电费坞标题（.fz3-bill-head）。
+ * 正文 / 对话 / 代码 / 标签 / 数值 / 按钮 / 会话名一律不套显示字体。
+ * 字体已随包（assets/anton/），没装 Impact 的机器也一样；万一 woff2 加载失败则按
+ * --fz3-display 后面的 Impact / 窄体 / 系统字体回落，不会缺字或豆腐块。
+ * font-synthesis-weight:none：Anton / Impact 都只有 400 一档，标题声明的是 700，
+ * 不开这个开关浏览器会合成加粗（笔画糊成一坨）；关掉后英文字形保持 400 的天然粗细，
+ * 汉字回落到的 CJK 字体（雅黑 / 苹方 / Noto）自带真 Bold，仍然是粗的。 */
+.fz3-copy-title,.fz3-set-name,.fz3-bill-head{font-family:var(--fz3-display)!important}
+.fz3-copy-title,.fz3-set-name,.fz3-bill-head,.fz3-sb-text b,.fz3-brandname b,.GAkraW_sectionLabel,.WOwLGG_headline,.AnXs9G_navTitle{font-synthesis-weight:none}
