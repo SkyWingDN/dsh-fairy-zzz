@@ -422,7 +422,7 @@ components:
 
 **8.13 settings-panel / 设置弹窗** — width min(880,92vw)、height auto、max-height min(780,86vh)、radius {rounded.panel}、bg #1b1d1b、border 1px rgba(255,255,255,.10)、压暗阴影；浅色 #fff + 14px 硬偏移。内部：header 58、nav padding 18 12 + 1px 右边线、navTitle mono 12/.18em、navCell 40/radius 6/13px，**active = 青柠底 + ink 字 + 700**（含 icon），content padding 20 24。（skin L220–243）
 
-**8.14 fairy-settings / Fairy 设置区（v2.1.0）** — 插件自有。顶部 `.fz3-set-tabs` 两个标签页（语音 / 外观），12px、padding 8 16、radius 9、1px rgba(255,255,255,.10) 描边，active = 青柠底 + ink 字 + 700；下方 `.fz3-set` flex column gap 14；每页一张 `.fz3-set-card`（padding 14 16、radius 8、透明底 + 1px rgba(255,255,255,.10) 描边）；卡头 `.fz3-set-card-title` 13px + `.fz3-set-card-status` 11px 冷灰；卡内 `.fz3-set-line` 整行、`.fz3-set-pair` 两列（gap 22，窄于 720px 回单列）、`.fz3-set-pane` 一列（标题行 + 开关/按钮右对齐 + 说明 11px）；switch 42×24/radius 99，OFF 近黑底 + 冷灰描边，ON 青柠底 + ink 滑块 translateX(18)；按钮 radius 999 + mono 11，hover 青柠填充 ink 字。字号、颜色、尺寸沿用 v2.0.4 的 v3 设置样式；v4 仪表盘的大号数值样式不使用。（client.js L1254–1330；skin 设置段）
+**8.14 fairy-settings / Fairy 设置区（v2.1.0–v2.1.1）** — 插件自有。顶部 `.fz3-set-tabs` 两个标签页（语音 / 外观），12px、padding 8 16、radius 9、1px rgba(255,255,255,.10) 描边，active = 青柠底 + ink 字 + 700；下方 `.fz3-set` flex column gap 14；每页一张 `.fz3-set-card`（padding 14 16、radius 8、透明底 + 1px rgba(255,255,255,.10) 描边）；卡头 `.fz3-set-card-title` 13px + `.fz3-set-card-status` 11px 冷灰；卡内 `.fz3-set-line` 整行、`.fz3-set-pair` 两列（gap 22，窄于 720px 回单列）、`.fz3-set-pane` 一列（标题行 + 开关/按钮右对齐 + 说明 11px）；switch 42×24/radius 99，OFF 近黑底 + 冷灰描边，ON 青柠底 + ink 滑块 translateX(18)；按钮 radius 999 + mono 11，hover 青柠填充 ink 字。字号、颜色、尺寸沿用 v2.0.4 的 v3 设置样式；v4 仪表盘的大号数值样式不使用。v2.1.1 起语音页把引擎目录收进引擎状态同一张卡：路径输入、保存、检测 / 清除紧接状态行，不再有独立的「引擎目录」小标题。（client.js L1254–1330；skin 设置段）
 
 **8.15 boot-overlay / 开场覆盖层** — 全屏 #0a0a0a；::before 左上 `// H.D.D. NORTH SEEK DATA SYSTEM`（mono 10/600/.30em，rgba(216,250,0,.62)，left 26/top 22）；::after 为 3px 扫描线（1px 黑线 .10）+ 径向压暗（.46）；视频保持原片颜色，只做 `saturate(1.04) contrast(1.02) brightness(1.02)`（v1.7.7 起；v1.7.0–v1.7.6 是去色的 grayscale 分级）；skip 按钮 mono/.22em/青柠 .62。（skin L333–344）
 
@@ -616,7 +616,7 @@ v1.7.2 的两处修复都是「边线装饰放错了形状」：
 
 ### 16.9 设置页「语音 / 外观」标签页（v2.1.0）
 
-- 语义分组：语音 = 自动朗读、语音引擎状态 / 启停 / 刷新、引擎目录、试听问候 / 测试语音 / 停止；外观 = 显示眼徽、开场动画重播。
+- 语义分组：语音 = 自动朗读、语音引擎状态 / 启停 / 刷新、目录（v2.1.1 起与引擎状态同一张卡）、试听问候 / 测试语音 / 停止；外观 = 显示眼徽、开场动画重播。
 - 壳层：`.fz3-set-tabs`（`role=tablist`）+ 两个 `.fz3-set-tab`（`role=tab`、`aria-selected`、active 青柠）；每页只渲染自己的 `.fz3-set-card`，不再把全部控件堆在一个长列表里。
 - 视觉纪律：沿用 v2.0.4 的字体 / 颜色 / 开关和按钮尺寸，不放大数字、不新增仪表盘卡片；预览台词仍放在语音卡内。
 
@@ -630,6 +630,16 @@ v1.7.2 的两处修复都是「边线装饰放错了形状」：
 
 - 根因：工作区列表底部宿主的 `.GAkraW_fade`（`position:absolute; height:24px`，渐变到画布色）铺到列表右缘，把 8px 滚动条尾端一起压暗；实测滑条拇指颜色从 RGB(100,115,9) 掉到 RGB(50,57,4)。
 - 修复：皮肤加 `.GAkraW_fade{right:12px}`，渐隐层右缘让开 12px；滚动条完整，列表底部渐隐仍保留。未改电费坞 `bottom` / `--fz3-bill-reserve`。
+
+### 16.12 语音设置卡收拢（v2.1.1）
+
+- 语音页只保留一张引擎卡：卡头是「语音引擎」+ 状态文案 + 启动/停止/刷新；状态下面直接接目录输入行（`input` + `保存` + 内联 `检测` / `清除`）与来源提示。
+- 删除原来的独立「引擎目录」小标题、`.fz3-set-line` 分隔和重复字段头；`.fz3-set-field` 上间距 12px，输入框 / 按钮尺寸不变。自动朗读与试听仍在本页，顺序在目录之后。
+
+### 16.13 键盘焦点环（v2.1.1）
+
+- 树行、菜单项、列表项等宿主容器会裁切外扩焦点环的内容，统一改内嵌：`outline-offset:-2px`；覆盖 `[role=treeitem]` / `[role=menuitem]` / `[role=menuitemradio]` / `[role=menuitemcheckbox]` / `[role=option]` / `[role=menu] button` / `[role=menu] a` / `[role=listbox] button`。
+- 侧栏字标：宿主按钮只有 24px 高，与 46px 可见字标错位，因此隐藏宿主焦点框，改在 `.fz3-sb-brand` 覆盖层上画 2px 青柠环（浅色主题 `#101110`）；环完整包住字标与副标题，不再从「// Fairy」中间穿过。
 
 ## 17. 截图索引
 

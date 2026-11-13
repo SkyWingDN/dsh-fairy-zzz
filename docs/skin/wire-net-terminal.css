@@ -107,6 +107,24 @@ html[data-fz3-theme="light"] :focus-visible{outline-color:#101110!important}
    缩略图改用内嵌焦点环（负 offset），环形仍完整可见且不撑开任何布局。 */
 [class*="_thumbnail"]:focus-visible{outline:2px solid rgba(216,250,0,.85)!important;outline-offset:-2px!important}
 html[data-fz3-theme="light"] [class*="_thumbnail"]:focus-visible{outline-color:#101110!important}
+/* 宿主菜单项与工作区树行的焦点环改用内嵌，避免被菜单 overflow 裁掉、
+   或被下一行的选中底色盖住（TAB 连续切换时尤明显）。
+   宿主菜单项是 button，部分弹层不带 role=menuitem，所以再按 [role=menu] 兜一层。 */
+[role="treeitem"]:focus-visible,
+[role="menuitem"]:focus-visible,
+[role="menuitemradio"]:focus-visible,
+[role="menuitemcheckbox"]:focus-visible,
+[role="option"]:focus-visible,
+[role="menu"] button:focus-visible,
+[role="menu"] a:focus-visible,
+[role="listbox"] button:focus-visible{outline-offset:-2px!important}
+/* 字标的焦点环改画在插件覆盖层上：宿主按钮只有 24px 高、和 46px 高的可见字标错位，
+   原外框会从「// Fairy」中间穿过、压到副标题。 */
+.wtg9ga_brand:focus-visible{outline:none!important}
+body:has(.wtg9ga_brand:focus-visible) .fz3-sb-brand{
+  outline:2px solid rgba(216,250,0,.75)!important;outline-offset:2px;
+}
+html[data-fz3-theme="light"] body:has(.wtg9ga_brand:focus-visible) .fz3-sb-brand{outline-color:#101110!important}
 
 /* ---------- B. 侧栏：墨黑底 + 纸白胶囊 ---------- */
 .wtg9ga_root{

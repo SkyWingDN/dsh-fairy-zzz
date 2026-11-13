@@ -8,7 +8,7 @@ Boot animation → greeting → docked eye badge, plus a "Wire-Net Terminal" hos
 
 [中文](README.md) · [Changelog](docs/CHANGELOG.md) · [Technical notes](docs/TECHNICAL.md) · [Performance report](docs/PERFORMANCE.md)
 
-![version](https://img.shields.io/badge/version-2.1.0-D8FA00?style=flat-square&labelColor=101110)
+![version](https://img.shields.io/badge/version-2.1.1-D8FA00?style=flat-square&labelColor=101110)
 [![npm](https://img.shields.io/npm/v/@sky_wing_dn%2Fdsh-fairy-zzz?style=flat-square&labelColor=101110&color=D8FA00)](https://www.npmjs.com/package/@sky_wing_dn/dsh-fairy-zzz)
 ![license](https://img.shields.io/badge/license-MIT-101110?style=flat-square)
 ![platform](https://img.shields.io/badge/DSH-Desktop%20%26%20Web-101110?style=flat-square)
@@ -289,7 +289,7 @@ Attach the tarball from `npm pack` to the GitHub Release; npm-installed users wi
 
 ## Changelog
 
-Milestones: v1.1–v1.6 performance and eye-runtime rewrite; v1.7 Wire-Net Terminal skin, fee readout, boot colour correction; v2.0 one-click self-update; v2.0.3 the fee dock sits above the footer and no longer covers the session list; v2.0.4 bundled Anton title font and speakable-text preprocessing; v2.1.0 workspace-only eye badge, Voice / Appearance settings tabs, realigned sidebar wordmark and update pill, and a scrollbar fade fix. User-visible changes per release live in [docs/CHANGELOG.md](docs/CHANGELOG.md); implementation notes and trade-offs in [docs/TECHNICAL.md](docs/TECHNICAL.md).
+Milestones: v1.1–v1.6 performance and eye-runtime rewrite; v1.7 Wire-Net Terminal skin, fee readout, boot colour correction; v2.0 one-click self-update; v2.0.3 the fee dock sits above the footer and no longer covers the session list; v2.0.4 bundled Anton title font and speakable-text preprocessing; v2.1.0 workspace-only eye badge, Voice / Appearance settings tabs, realigned sidebar wordmark and update pill, and a scrollbar fade fix; v2.1.1 compact voice settings card and complete keyboard focus rings. User-visible changes per release live in [docs/CHANGELOG.md](docs/CHANGELOG.md); implementation notes and trade-offs in [docs/TECHNICAL.md](docs/TECHNICAL.md).
 
 ## License
 

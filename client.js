@@ -1297,7 +1297,7 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 .fz3-dash-preview{grid-column:1/-1;font-size:10.5px;line-height:1.5;color:#7f92a9;padding:0 2px}
 .fz3-dash-foot{margin-top:auto;padding-top:10px;font-size:10.5px;line-height:1.5;color:#6f8299}
 .fz3-dash .fz3-set-switch{align-self:flex-start;margin-top:2px}
-.fz3-set-field{display:block}
+.fz3-set-field{display:block;margin-top:12px}
 .fz3-set-field-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
 .fz3-set-field-links{display:flex;align-items:center;gap:12px}
 .fz3-set-linkbtn{font:inherit;font-family:var(--fz3-mono);font-size:10.5px;letter-spacing:.02em;padding:0;border:0;background:none;color:#8fa9c7;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
@@ -1797,6 +1797,24 @@ html[data-fz3-theme="light"] :focus-visible{outline-color:#101110!important}
    缩略图改用内嵌焦点环（负 offset），环形仍完整可见且不撑开任何布局。 */
 [class*="_thumbnail"]:focus-visible{outline:2px solid rgba(216,250,0,.85)!important;outline-offset:-2px!important}
 html[data-fz3-theme="light"] [class*="_thumbnail"]:focus-visible{outline-color:#101110!important}
+/* 宿主菜单项与工作区树行的焦点环改用内嵌，避免被菜单 overflow 裁掉、
+   或被下一行的选中底色盖住（TAB 连续切换时尤明显）。
+   宿主菜单项是 button，部分弹层不带 role=menuitem，所以再按 [role=menu] 兜一层。 */
+[role="treeitem"]:focus-visible,
+[role="menuitem"]:focus-visible,
+[role="menuitemradio"]:focus-visible,
+[role="menuitemcheckbox"]:focus-visible,
+[role="option"]:focus-visible,
+[role="menu"] button:focus-visible,
+[role="menu"] a:focus-visible,
+[role="listbox"] button:focus-visible{outline-offset:-2px!important}
+/* 字标的焦点环改画在插件覆盖层上：宿主按钮只有 24px 高、和 46px 高的可见字标错位，
+   原外框会从「// Fairy」中间穿过、压到副标题。 */
+.wtg9ga_brand:focus-visible{outline:none!important}
+body:has(.wtg9ga_brand:focus-visible) .fz3-sb-brand{
+  outline:2px solid rgba(216,250,0,.75)!important;outline-offset:2px;
+}
+html[data-fz3-theme="light"] body:has(.wtg9ga_brand:focus-visible) .fz3-sb-brand{outline-color:#101110!important}
 
 /* ---------- B. 侧栏：墨黑底 + 纸白胶囊 ---------- */
 .wtg9ga_root{
@@ -3136,6 +3154,33 @@ html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16
             ),
             h(
               'div',
+              { className: 'fz3-set-field' },
+              h(
+                'div',
+                { className: 'fz3-set-path' },
+                h('input', {
+                  type: 'text',
+                  className: 'fz3-set-input',
+                  value: voiceHome,
+                  spellCheck: false,
+                  placeholder: '例如 D:\\Fairy\\tts 或 /opt/fairy-tts',
+                  onChange: (event) => setVoiceHome(event.target.value),
+                  onKeyDown: (event) => {
+                    if (event.key === 'Enter') saveVoiceHome(voiceHome)
+                  },
+                }),
+                h(
+                  'button',
+                  { type: 'button', className: 'fz3-set-btn', onClick: () => saveVoiceHome(voiceHome), disabled: voiceHomeBusy === 'save' },
+                  voiceHomeBusy === 'save' ? '保存中…' : '保存',
+                ),
+                h('button', { type: 'button', className: 'fz3-set-linkbtn', onClick: loadVoiceHome }, '检测'),
+                h('button', { type: 'button', className: 'fz3-set-linkbtn', onClick: () => saveVoiceHome('') }, '清除'),
+              ),
+              homeHint ? h('div', { className: 'fz3-set-desc is-hint' }, homeHint) : null,
+            ),
+            h(
+              'div',
               { className: 'fz3-set-pair' },
               h(
                 'div',
@@ -3172,42 +3217,6 @@ html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16
                 ),
                 h('div', { className: 'fz3-set-desc' }, '问候音与本地 TTS 各测一次'),
               ),
-            ),
-            h(
-              'div',
-              { className: 'fz3-set-line fz3-set-field' },
-              h(
-                'div',
-                { className: 'fz3-set-field-head' },
-                h('div', { className: 'fz3-set-label' }, '引擎目录'),
-                h(
-                  'div',
-                  { className: 'fz3-set-field-links' },
-                  h('button', { type: 'button', className: 'fz3-set-linkbtn', onClick: loadVoiceHome }, '检测'),
-                  h('button', { type: 'button', className: 'fz3-set-linkbtn', onClick: () => saveVoiceHome('') }, '清除'),
-                ),
-              ),
-              h(
-                'div',
-                { className: 'fz3-set-path' },
-                h('input', {
-                  type: 'text',
-                  className: 'fz3-set-input',
-                  value: voiceHome,
-                  spellCheck: false,
-                  placeholder: '例如 D:\\Fairy\\tts 或 /opt/fairy-tts',
-                  onChange: (event) => setVoiceHome(event.target.value),
-                  onKeyDown: (event) => {
-                    if (event.key === 'Enter') saveVoiceHome(voiceHome)
-                  },
-                }),
-                h(
-                  'button',
-                  { type: 'button', className: 'fz3-set-btn', onClick: () => saveVoiceHome(voiceHome), disabled: voiceHomeBusy === 'save' },
-                  voiceHomeBusy === 'save' ? '保存中…' : '保存',
-                ),
-              ),
-              homeHint ? h('div', { className: 'fz3-set-desc is-hint' }, homeHint) : null,
             ),
             previewLine ? h('div', { className: 'fz3-set-desc is-hint' }, '刚刚试听：' + previewLine) : null,
           )
