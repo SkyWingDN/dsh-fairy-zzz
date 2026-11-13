@@ -1204,6 +1204,10 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 .fz3-layer[data-phase="dock"] .fz3-core{
   left:var(--fz3-dock-x);top:var(--fz3-dock-y);width:var(--fz3-dock-size);opacity:1;pointer-events:none;
 }
+/* v2.1.0：眼徽只在工作区出现。插件页、自动化、设置弹窗等 surface=away 时整颗收起。
+   用 visibility 而不是 display:none：元素仍占位、getBoundingClientRect 不变，
+   拖拽 / dock 坐标测量不受影响；回到工作区时 opacity 由上面那条规则恢复。 */
+.fz3-layer[data-phase="dock"][data-surface="away"] .fz3-core{visibility:hidden!important;opacity:0!important;pointer-events:none!important}
 /* 开机收拢（v1.7.5）：不再单独放慢，和眼标复位 / 拖动共用上面那条 1.35s 的曲线。
    早先试过把这一段拉长到 2.2s、5s，结果比复位还慢，看着不像同一个动作。 */
 /* v1.7.5（修复）：刚挂载的两帧内不画过渡、也不画眼徽：
@@ -1250,27 +1254,68 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 
 /* ---------- 设置页 ---------- */
 .fz3-set{display:flex;flex-direction:column;gap:14px;padding:2px 2px 8px;color:#e2ecfa;font-family:var(--fz3-font)}
-.fz3-set-head{display:flex;align-items:center;gap:12px;padding:2px 0 6px}
+.fz3-set-head{display:flex;align-items:center;gap:12px;padding:2px 0 2px}
 .fz3-set-eye{width:46px;height:46px;flex:none;display:block;filter:drop-shadow(0 0 12px rgba(64,116,255,.5))}
 .fz3-set-eye svg{width:100%;height:100%;display:block;overflow:visible}
 .fz3-set-name{font-size:15px;letter-spacing:.03em}
 .fz3-set-sub{font-size:11.5px;color:#8fa3bb;margin-top:3px}
-.fz3-set-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(130,160,210,.14)}
+.fz3-set-card{display:flex;flex-direction:column;gap:0;padding:14px 16px;border-radius:12px;background:rgba(255,255,255,.025);border:1px solid rgba(130,160,210,.14);min-width:0}
+.fz3-set-card.is-wide{grid-column:1/-1}
+.fz3-set-card-head{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:28px}
+.fz3-set-card-title{display:flex;align-items:center;gap:8px;font-size:13px;line-height:1.4}
+.fz3-set-card-title .fz3-set-dot{box-shadow:0 0 8px currentColor}
+.fz3-set-card-status{font-size:11px;color:#8b9fb8;margin-top:4px;line-height:1.5}
+.fz3-set-line{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(130,160,210,.10)}
+.fz3-set-line .fz3-set-label{line-height:1.4}
+.fz3-set-line .fz3-set-desc{max-width:460px}
+.fz3-set-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(130,160,210,.10)}
+.fz3-set-pane{display:flex;flex-direction:column;gap:5px;min-width:0}
+.fz3-set-pane-head{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:24px}
+.fz3-set-pane .fz3-set-desc{margin-top:0}
+.fz3-set-pane .fz3-set-actions{margin:0;justify-content:flex-end}
+.fz3-set-tabs{display:flex;gap:8px;padding:2px 0 0}
+.fz3-set-tab{font:inherit;font-size:12px;padding:8px 16px;border-radius:9px;cursor:pointer;color:#e8f2ff;background:rgba(87,232,255,.08);border:1px solid rgba(110,200,255,.24);transition:background .16s ease,border-color .16s ease,color .16s ease}
+.fz3-set-tab:hover{background:rgba(87,232,255,.16);border-color:rgba(120,225,255,.46)}
+.fz3-set-tab.is-active{background:rgba(87,232,255,.22);border-color:rgba(120,225,255,.6);color:#f4fbff}
+.fz3-dash{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.fz3-dash-section{grid-column:1/-1;display:flex;align-items:baseline;gap:8px;padding:2px 2px 0}
+.fz3-dash-section:first-child{padding-top:0}
+.fz3-dash-section-title{font-size:11px;font-weight:700;letter-spacing:.10em;color:#dcecff}
+.fz3-dash-section-meta{font-size:10.5px;color:#7f92a9;margin-left:auto}
+.fz3-dash-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.fz3-dash-main{min-width:0}
+.fz3-dash-head-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;justify-content:flex-end;flex:none}
+.fz3-dash-head-actions .fz3-set-btn{padding:7px 12px}
+.fz3-dash-kicker{font-size:11px;line-height:1.4;letter-spacing:.04em;color:#8fa3bb}
+.fz3-dash-value{display:flex;align-items:center;gap:8px;margin-top:7px;font-size:22px;line-height:1.1;font-weight:700;letter-spacing:.01em;color:#edf5ff;white-space:nowrap;font-variant-numeric:tabular-nums}
+.fz3-dash-value .fz3-set-dot{width:7px;height:7px}
+.fz3-dash-value.is-on{color:var(--fz3-lime,#b8ff2e)}
+.fz3-dash-value.is-error{color:#ff8a72}
+.fz3-dash-desc{font-size:11px;line-height:1.55;color:#8396ad;margin-top:6px}
+.fz3-dash-desc.is-hint{margin-top:7px}
+.fz3-dash-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.fz3-dash-preview{grid-column:1/-1;font-size:10.5px;line-height:1.5;color:#7f92a9;padding:0 2px}
+.fz3-dash-foot{margin-top:auto;padding-top:10px;font-size:10.5px;line-height:1.5;color:#6f8299}
+.fz3-dash .fz3-set-switch{align-self:flex-start;margin-top:2px}
+.fz3-set-field{display:block}
+.fz3-set-field-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.fz3-set-field-links{display:flex;align-items:center;gap:12px}
+.fz3-set-linkbtn{font:inherit;font-family:var(--fz3-mono);font-size:10.5px;letter-spacing:.02em;padding:0;border:0;background:none;color:#8fa9c7;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.fz3-set-linkbtn:hover:not(:disabled){color:#57e8ff}
+.fz3-set-linkbtn:disabled{opacity:.4;cursor:default}
 .fz3-set-label{font-size:13px}
 .fz3-set-desc{font-size:11px;color:#8b9fb8;margin-top:3px;line-height:1.5}
 .fz3-set-dot{width:8px;height:8px;border-radius:50%;flex:none;box-shadow:0 0 10px currentColor}
 .fz3-set-dot.is-on{background:#4ee6a8;color:#4ee6a8}
-.fz3-set-row.is-stack{display:block}
-.fz3-set-engine-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
-.fz3-set-engine-head .fz3-set-dot{margin-top:7px}
-.fz3-set-engine .fz3-set-actions{margin-top:10px}
+.fz3-set-dot.is-wait{background:#f0b45c;box-shadow:0 0 11px rgba(240,180,92,.6)}
+.fz3-set-dot.is-off{background:#7d8ea6;color:#7d8ea6}
+.fz3-set-engine-controls{display:flex;align-items:center;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-left:auto}
+.fz3-set-engine-controls .fz3-set-btn{padding:7px 12px}
 .fz3-set-desc.is-hint{margin-top:7px}
-.fz3-set-path{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.fz3-set-path{display:flex;gap:8px;align-items:center;margin-top:0;flex-wrap:wrap}
 .fz3-set-input{flex:1 1 260px;min-width:0;padding:8px 11px;font-family:inherit;font-size:12.5px;font-weight:400;line-height:1.45;letter-spacing:0;color:#dbe8f6;background:rgba(9,13,22,.82);border:1px solid rgba(120,160,220,.26);border-radius:9px;outline:none;transition:border-color .18s ease,box-shadow .18s ease}
 .fz3-set-input:focus{border-color:rgba(87,232,255,.55);box-shadow:0 0 0 3px rgba(87,232,255,.12)}
 .fz3-set-input::placeholder{color:rgba(150,172,200,.5)}
-.fz3-set-dot.is-wait{background:#f0b45c;box-shadow:0 0 11px rgba(240,180,92,.6)}
-.fz3-set-dot.is-off{background:#7d8ea6;color:#7d8ea6}
 .fz3-set-switch{width:42px;height:24px;border-radius:99px;border:1px solid rgba(140,170,220,.3);background:rgba(120,150,200,.18);position:relative;cursor:pointer;flex:none;transition:background .18s ease,border-color .18s ease}
 .fz3-set-switch::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#cfdcee;transition:transform .18s ease,background .18s ease}
 .fz3-set-switch[data-on="1"]{background:linear-gradient(90deg,#2f7bff,#57e8ff);border-color:rgba(120,225,255,.6)}
@@ -1281,6 +1326,9 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
 .fz3-set-btn:disabled{opacity:.4;cursor:default}
 .fz3-set-btn.is-ghost{background:rgba(255,255,255,.04);border-color:rgba(140,160,190,.24)}
 .fz3-set-note{font-size:11px;line-height:1.6;color:#7f92a9}
+@media (max-width:720px){
+  .fz3-set-pair{grid-template-columns:1fr;gap:14px}
+}
 
 /* ---------- 信号故障：threads（水平拉丝）/ blocks（5 条横切片） ---------- */
 /* 故障态的 filter 里不要再塞 drop-shadow：阴影会按元素的边框盒被裁掉四边，
@@ -1447,25 +1495,25 @@ body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
    再由 .fz3-sb-brand 在同一位置画 Fairy 字标。 */
 [class*="_brandName"],[class*="_brandMark"]{visibility:hidden!important}
 
-.fz3-sb-brand{position:fixed;left:var(--fz3-brand-left,10px);top:var(--fz3-brand-top,52px);width:262px;height:var(--fz3-brand-h,46px);padding:0 10px;border-radius:11px;display:flex;align-items:center;gap:11px;pointer-events:none;z-index:4;background:transparent;box-shadow:none;border-radius:0;
+.fz3-sb-brand{position:fixed;left:var(--fz3-brand-left,10px);top:var(--fz3-brand-top,52px);box-sizing:border-box;width:var(--fz3-brand-w,262px);height:var(--fz3-brand-h,46px);padding:0 10px;border-radius:11px;display:flex;align-items:center;gap:11px;pointer-events:none;z-index:4;background:transparent;box-shadow:none;
   opacity:0;transition:opacity .6s ease .35s}
 .fz3-layer[data-phase="dock"] .fz3-sb-brand{opacity:1}
 .fz3-sb-logo{width:22px;height:22px;flex:0 0 22px;display:block}
 .fz3-sb-logo svg{width:100%;height:100%;display:block}
-.fz3-sb-text{display:flex;flex-direction:column;gap:3px;min-width:0}
+.fz3-sb-text{display:flex;flex:1 1 auto;flex-direction:column;gap:3px;min-width:0;width:calc(var(--fz3-brand-w,262px) - 53px)}
 .fz3-sb-text b{font-size:19px;font-weight:700;letter-spacing:.02em;color:#f2f5ff;line-height:1;
   font-family:"Palatino Linotype","Songti SC",Georgia,serif;font-style:italic}
-.fz3-sb-text i{font-style:normal;font-size:8.5px;letter-spacing:.16em;color:rgba(150,168,220,.72);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fz3-sb-text i{font-style:normal;font-size:8.5px;letter-spacing:.16em;color:rgba(150,168,220,.72);white-space:nowrap;overflow:visible;text-overflow:clip}
 
 /* v2.0.0：插件自更新 —— 侧栏字标右上的「可更新」胶囊 + 点开的确认浮层。
    胶囊挂在 .fz3-sb-brand 里（那个容器 pointer-events:none，所以这里单独开 auto）；
    浮层 fixed 定位在字标正下方，靠 --fz3-brand-* 三个变量对齐（measureOnce 写入）。 */
-.fz3-upd-pill{position:absolute;right:8px;top:50%;transform:translateY(-50%);display:inline-flex;align-items:center;gap:5px;height:21px;padding:0 9px;font-family:var(--fz3-mono);font-size:10.5px;font-weight:700;letter-spacing:.08em;color:#0a0b08;background:var(--fz3-lime);border:1px solid rgba(0,0,0,.6);border-radius:999px;box-shadow:0 0 0 3px rgba(216,250,0,.12),0 2px 8px rgba(0,0,0,.5);cursor:pointer;pointer-events:auto;white-space:nowrap}
+.fz3-upd-pill{position:absolute;left:auto;right:var(--fz3-upd-right,-32px);top:auto;bottom:0;display:inline-flex;align-items:center;gap:5px;height:21px;padding:0 9px;font-family:var(--fz3-mono);font-size:10.5px;font-weight:700;letter-spacing:.08em;color:#0a0b08;background:var(--fz3-lime);border:1px solid rgba(0,0,0,.6);border-radius:999px;box-shadow:0 0 0 3px rgba(216,250,0,.12),0 2px 8px rgba(0,0,0,.5);cursor:pointer;pointer-events:auto;white-space:nowrap;z-index:1}
 .fz3-upd-pill:hover{background:#e6ff3d}
 .fz3-upd-pill[data-state="busy"]{background:var(--fz3-amber)}
 .fz3-upd-pill:focus-visible{outline:2px solid #f2f2ee;outline-offset:2px}
 .fz3-upd-pill-dot{width:6px;height:6px;border-radius:50%;background:#0a0b08;animation:fz3-blink 1.6s steps(2,end) infinite}
-.fz3-upd{position:fixed;box-sizing:border-box;left:var(--fz3-brand-left,10px);top:calc(var(--fz3-brand-top,52px) + var(--fz3-brand-h,46px) + 10px);width:304px;padding:14px 15px 13px;z-index:20;pointer-events:auto;color:#f2f2ee;background:rgba(12,14,12,.98);border:1px solid rgba(216,250,0,.26);border-radius:12px;box-shadow:0 20px 54px rgba(0,0,0,.66)}
+.fz3-upd{position:fixed;box-sizing:border-box;left:var(--fz3-brand-left,10px);top:calc(var(--fz3-brand-top,52px) + var(--fz3-brand-h,46px) + 24px);width:304px;padding:14px 15px 13px;z-index:20;pointer-events:auto;color:#f2f2ee;background:rgba(12,14,12,.98);border:1px solid rgba(216,250,0,.26);border-radius:12px;box-shadow:0 20px 54px rgba(0,0,0,.66)}
 .fz3-upd-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
 .fz3-upd-title{font-family:var(--fz3-mono);font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--fz3-lime)}
 .fz3-upd-close{flex:none;width:20px;height:20px;margin:-2px -4px 0 0;border:0;background:transparent;color:rgba(242,242,238,.5);font-size:16px;line-height:1;cursor:pointer;border-radius:6px}
@@ -1569,7 +1617,13 @@ html[data-fz3-theme="light"] .fz3-brandmark-eye,html[data-fz3-theme="light"] .fz
 html[data-fz3-theme="light"] .fz3-set{color:#16213a}
 html[data-fz3-theme="light"] .fz3-set-name{color:#0f1730}
 html[data-fz3-theme="light"] .fz3-set-sub,html[data-fz3-theme="light"] .fz3-set-desc{color:#5c6b8f}
-html[data-fz3-theme="light"] .fz3-set-row{background:rgba(255,255,255,.72);border-color:rgba(60,90,220,.16)}
+html[data-fz3-theme="light"] .fz3-set-card{background:rgba(255,255,255,.55);border-color:rgba(60,90,220,.16)}
+html[data-fz3-theme="light"] .fz3-dash-section-title{color:#16213a}
+html[data-fz3-theme="light"] .fz3-dash-section-meta,html[data-fz3-theme="light"] .fz3-dash-kicker,html[data-fz3-theme="light"] .fz3-dash-desc,html[data-fz3-theme="light"] .fz3-dash-preview,html[data-fz3-theme="light"] .fz3-dash-foot{color:#5c6b8f}
+html[data-fz3-theme="light"] .fz3-dash-value{color:#16213a}
+html[data-fz3-theme="light"] .fz3-dash-value.is-on{color:#3f7d00}
+html[data-fz3-theme="light"] .fz3-set-line,html[data-fz3-theme="light"] .fz3-set-pair{border-top-color:rgba(60,90,220,.12)}
+html[data-fz3-theme="light"] .fz3-set-linkbtn{color:#526a94}
 html[data-fz3-theme="light"] .fz3-set-btn{color:#1b2a4a;background:rgba(47,85,232,.10);border-color:rgba(70,110,230,.34)}
 html[data-fz3-theme="light"] .fz3-set-btn:hover:not(:disabled){background:rgba(47,85,232,.18);border-color:rgba(70,110,230,.55)}
 html[data-fz3-theme="light"] .fz3-set-btn.is-ghost{background:rgba(255,255,255,.6);border-color:rgba(120,140,200,.34)}
@@ -1731,6 +1785,8 @@ html[data-fz3-theme="light"] ::selection{background:#101110!important;color:#d8f
 *::-webkit-scrollbar-thumb:hover{background:rgba(216,250,0,.72)!important;background-clip:padding-box}
 html[data-fz3-theme="light"] *::-webkit-scrollbar-thumb{background:rgba(16,17,16,.26)!important;background-clip:padding-box}
 html[data-fz3-theme="light"] *::-webkit-scrollbar-thumb:hover{background:rgba(16,17,16,.46)!important;background-clip:padding-box}
+/* 列表底部的渐隐层原本铺到右缘，会把滚动条一起渐隐；右侧让出滚动条，避免电费坞上方那截滑条发黑。 */
+.GAkraW_fade{right:12px}
 textarea,input{caret-color:var(--fz3-lime)!important}
 textarea:focus,input:focus{box-shadow:none!important}
 a{color:var(--fz3-cyan)!important;text-underline-offset:3px}
@@ -1949,7 +2005,27 @@ html[data-fz3-theme="light"] .AnXs9G_close:hover{background:rgba(16,17,16,.06)!i
 
 /* ---------- H. 插件自身组件：Fairy 设置 / 字标 / dock 气泡 ---------- */
 .fz3-set{color:#f2f2ee}
-.fz3-set-row{background:transparent!important;border:1px solid rgba(255,255,255,.10)!important;border-radius:8px!important}
+.fz3-set-card{background:transparent!important;border:1px solid rgba(255,255,255,.10)!important;border-radius:8px!important}
+.fz3-set-tab{border-radius:999px!important;background:transparent!important;border:1px solid rgba(255,255,255,.16)!important;color:rgba(242,242,238,.66)!important;font-family:var(--fz3-mono)!important;letter-spacing:.04em}
+.fz3-set-tab:hover{background:rgba(255,255,255,.05)!important;border-color:rgba(255,255,255,.32)!important;color:#f2f2ee!important}
+.fz3-set-tab.is-active{background:var(--fz3-lime)!important;border-color:var(--fz3-lime)!important;color:#0a0b08!important}
+.fz3-set-tab.is-active:hover{background:#e6ff52!important;border-color:#e6ff52!important;color:#0a0b08!important}
+.fz3-set-engine-controls{display:flex;align-items:center;gap:8px}
+.fz3-dash-section-title{font-family:var(--fz3-mono);letter-spacing:.16em;color:#f2f2ee!important}
+.fz3-dash-section-meta{color:rgba(242,242,238,.40)!important}
+.fz3-dash-kicker{color:rgba(242,242,238,.46)!important}
+.fz3-dash-value{color:#f2f2ee!important}
+.fz3-dash-value.is-on{color:var(--fz3-lime)!important}
+.fz3-dash-value.is-error{color:#ff8a72!important}
+.fz3-dash-desc,.fz3-dash-preview{color:rgba(242,242,238,.48)!important}
+.fz3-set-card-title{font-weight:700}
+.fz3-set-card-status{color:rgba(242,242,238,.40)!important}
+.fz3-set-line,.fz3-set-pair{border-top-color:rgba(255,255,255,.08)!important}
+.fz3-set-linkbtn{
+  color:rgba(242,242,238,.44)!important;font-family:var(--fz3-mono)!important;text-decoration:none!important;
+  border-bottom:1px dotted rgba(255,255,255,.22)!important;padding-bottom:1px!important;
+}
+.fz3-set-linkbtn:hover:not(:disabled){color:var(--fz3-lime)!important;border-bottom-color:var(--fz3-lime)!important}
 .fz3-set-name{font-weight:700}
 .fz3-set-sub,.fz3-set-desc,.fz3-set-note{color:rgba(242,242,238,.48)!important}
 .fz3-set-switch[data-on="1"]{background:var(--fz3-lime)!important;border-color:var(--fz3-lime)!important}
@@ -1978,10 +2054,20 @@ html[data-fz3-theme="light"] .AnXs9G_close:hover{background:rgba(16,17,16,.06)!i
 .fz3-sb-text i{font-family:var(--fz3-mono)!important;font-size:8px!important;line-height:1.4!important;letter-spacing:.16em!important;color:rgba(216,250,0,.60)!important}
 html[data-fz3-theme="light"] .fz3-brandname b,html[data-fz3-theme="light"] .fz3-sb-text b{color:#f2f2ee!important}
 html[data-fz3-theme="light"] .fz3-set{color:#101110}
-html[data-fz3-theme="light"] .fz3-set-row{border-color:rgba(16,17,16,.14)!important}
+html[data-fz3-theme="light"] .fz3-set-card{background:transparent!important;border-color:rgba(16,17,16,.14)!important;border-radius:8px!important}
+html[data-fz3-theme="light"] .fz3-set-tab{border-color:rgba(16,17,16,.18)!important;color:rgba(16,17,16,.62)!important}
+html[data-fz3-theme="light"] .fz3-set-tab:hover{background:rgba(16,17,16,.05)!important;border-color:rgba(16,17,16,.32)!important;color:#101110!important}
+html[data-fz3-theme="light"] .fz3-set-tab.is-active{background:var(--fz3-lime)!important;border-color:var(--fz3-lime)!important;color:#0a0b08!important}
+html[data-fz3-theme="light"] .fz3-set-tab.is-active:hover{background:#e6ff52!important;border-color:#e6ff52!important;color:#0a0b08!important}
+html[data-fz3-theme="light"] .fz3-dash-section-title{color:#101110!important}
+html[data-fz3-theme="light"] .fz3-dash-section-meta,html[data-fz3-theme="light"] .fz3-dash-kicker,html[data-fz3-theme="light"] .fz3-dash-desc,html[data-fz3-theme="light"] .fz3-dash-preview{color:rgba(16,17,16,.52)!important}
+html[data-fz3-theme="light"] .fz3-dash-value{color:#101110!important}
+html[data-fz3-theme="light"] .fz3-dash-value.is-on{color:#4b7c00!important}
+html[data-fz3-theme="light"] .fz3-set-line,html[data-fz3-theme="light"] .fz3-set-pair{border-top-color:rgba(16,17,16,.10)!important}
 html[data-fz3-theme="light"] .fz3-set-sub,html[data-fz3-theme="light"] .fz3-set-desc,html[data-fz3-theme="light"] .fz3-set-note{color:rgba(16,17,16,.52)!important}
 html[data-fz3-theme="light"] .fz3-set-btn{border-color:rgba(16,17,16,.22)!important;color:#101110!important}
 html[data-fz3-theme="light"] .fz3-set-input{background:#fff!important;border-color:rgba(16,17,16,.16)!important;color:#101110!important}
+html[data-fz3-theme="light"] .fz3-set-linkbtn{color:rgba(16,17,16,.52)!important;border-bottom-color:rgba(16,17,16,.22)!important}
 
 /* ---------- I. 开场覆盖层：墨黑 + 青柠 HUD 边框 ---------- */
 .fz3-screen{background:#0a0a0a!important}
@@ -2811,6 +2897,7 @@ html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16
       }
       /* 试听问候：本时段 5 条随机语音里抽一条，把台词显示出来，方便确认新语音都在 */
       const [previewLine, setPreviewLine] = useState('')
+      const [settingsTab, setSettingsTab] = useState('voice')
 
       const ping = useCallback(() => {
         if (pingAbort.current) {
@@ -2979,6 +3066,18 @@ html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16
             : '来源：' + (homeSourceLabel || '自动检测')
           : voiceInfo.reason || ''
         : ''
+      const engineDot = 'fz3-set-dot' + (ready ? ' is-on' : enginePhase === 'loading' ? ' is-wait' : ' is-off')
+      const tabBtn = (id, label) => h(
+        'button',
+        {
+          type: 'button',
+          className: 'fz3-set-tab' + (settingsTab === id ? ' is-active' : ''),
+          role: 'tab',
+          'aria-selected': settingsTab === id,
+          onClick: () => setSettingsTab(id),
+        },
+        label,
+      )
       return h(
         'div',
         { className: 'fz3-set' },
@@ -2995,94 +3094,167 @@ html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16
         ),
         h(
           'div',
-          { className: 'fz3-set-row' },
-          h('div', null, h('div', { className: 'fz3-set-label' }, '自动朗读回复'), h('div', { className: 'fz3-set-desc' }, '助手回答完成后用 Fairy 的声音念出来')),
-          h('button', {
-            type: 'button',
-            className: 'fz3-set-switch',
-            'data-on': voiceState.enabled ? '1' : '0',
-            'aria-pressed': !!voiceState.enabled,
-            onClick: () => setVoice(!voiceState.enabled),
-          }),
+          { className: 'fz3-set-tabs', role: 'tablist', 'aria-label': 'Fairy 设置分类' },
+          tabBtn('voice', '语音'),
+          tabBtn('appearance', '外观'),
         ),
-        h(
-          'div',
-          { className: 'fz3-set-row' },
-          h('div', null, h('div', { className: 'fz3-set-label' }, '显示眼徽')),
-          h('button', {
-            type: 'button',
-            className: 'fz3-set-switch',
-            'data-on': eyeHidden ? '0' : '1',
-            'aria-pressed': !eyeHidden,
-            onClick: toggleEye,
-          }),
-        ),
-        h(
-          'div',
-          { className: 'fz3-set-row is-stack fz3-set-engine' },
-          h(
+        settingsTab === 'voice'
+          ? h(
             'div',
-            { className: 'fz3-set-engine-head' },
+            { className: 'fz3-set-card' },
             h(
               'div',
-              null,
-              h('div', { className: 'fz3-set-label' }, '语音引擎'),
-              h('div', { className: 'fz3-set-desc' }, engineText),
+              { className: 'fz3-set-card-head' },
+              h(
+                'div',
+                null,
+                h(
+                  'div',
+                  { className: 'fz3-set-card-title' },
+                  h('span', { className: engineDot }),
+                  '语音引擎',
+                ),
+                h('div', { className: 'fz3-set-card-status' }, engineText),
+              ),
+              h(
+                'div',
+                { className: 'fz3-set-engine-controls' },
+                h(
+                  'button',
+                  {
+                    type: 'button',
+                    className: 'fz3-set-btn',
+                    onClick: () => controlEngine(ready ? 'stop' : 'start'),
+                    disabled: ready ? engineBusy === 'stop' : engineBusy === 'start',
+                  },
+                  ready
+                    ? engineBusy === 'stop' ? '停止中…' : '停止引擎'
+                    : engineBusy === 'start' ? '启动中…' : '启动引擎',
+                ),
+                h('button', { type: 'button', className: 'fz3-set-linkbtn', onClick: ping }, '刷新'),
+              ),
             ),
-            h('span', { className: 'fz3-set-dot' + (ready ? ' is-on' : enginePhase === 'loading' ? ' is-wait' : ' is-off') }),
-          ),
-          h(
+            h(
+              'div',
+              { className: 'fz3-set-pair' },
+              h(
+                'div',
+                { className: 'fz3-set-pane' },
+                h(
+                  'div',
+                  { className: 'fz3-set-pane-head' },
+                  h('div', { className: 'fz3-set-label' }, '自动朗读回复'),
+                  h('button', {
+                    type: 'button',
+                    className: 'fz3-set-switch',
+                    'data-on': voiceState.enabled ? '1' : '0',
+                    'aria-pressed': !!voiceState.enabled,
+                    onClick: () => setVoice(!voiceState.enabled),
+                  }),
+                ),
+                h('div', { className: 'fz3-set-desc' }, '助手回答完成后用 Fairy 的声音念出来'),
+              ),
+              h(
+                'div',
+                { className: 'fz3-set-pane' },
+                h(
+                  'div',
+                  { className: 'fz3-set-pane-head' },
+                  h('div', { className: 'fz3-set-label' }, '试听'),
+                  h(
+                    'div',
+                    { className: 'fz3-set-actions' },
+                    h('button', { type: 'button', className: 'fz3-set-btn', onClick: playGreet, title: '随机试听本时段的 5 条问候之一' }, '试听问候'),
+                    busy
+                      ? h('button', { type: 'button', className: 'fz3-set-btn is-ghost', onClick: stopSpeech }, '停止')
+                      : h('button', { type: 'button', className: 'fz3-set-btn', onClick: testVoice }, '测试语音'),
+                  ),
+                ),
+                h('div', { className: 'fz3-set-desc' }, '问候音与本地 TTS 各测一次'),
+              ),
+            ),
+            h(
+              'div',
+              { className: 'fz3-set-line fz3-set-field' },
+              h(
+                'div',
+                { className: 'fz3-set-field-head' },
+                h('div', { className: 'fz3-set-label' }, '引擎目录'),
+                h(
+                  'div',
+                  { className: 'fz3-set-field-links' },
+                  h('button', { type: 'button', className: 'fz3-set-linkbtn', onClick: loadVoiceHome }, '检测'),
+                  h('button', { type: 'button', className: 'fz3-set-linkbtn', onClick: () => saveVoiceHome('') }, '清除'),
+                ),
+              ),
+              h(
+                'div',
+                { className: 'fz3-set-path' },
+                h('input', {
+                  type: 'text',
+                  className: 'fz3-set-input',
+                  value: voiceHome,
+                  spellCheck: false,
+                  placeholder: '例如 D:\\Fairy\\tts 或 /opt/fairy-tts',
+                  onChange: (event) => setVoiceHome(event.target.value),
+                  onKeyDown: (event) => {
+                    if (event.key === 'Enter') saveVoiceHome(voiceHome)
+                  },
+                }),
+                h(
+                  'button',
+                  { type: 'button', className: 'fz3-set-btn', onClick: () => saveVoiceHome(voiceHome), disabled: voiceHomeBusy === 'save' },
+                  voiceHomeBusy === 'save' ? '保存中…' : '保存',
+                ),
+              ),
+              homeHint ? h('div', { className: 'fz3-set-desc is-hint' }, homeHint) : null,
+            ),
+            previewLine ? h('div', { className: 'fz3-set-desc is-hint' }, '刚刚试听：' + previewLine) : null,
+          )
+          : h(
             'div',
-            { className: 'fz3-set-path' },
-            h('input', {
-              type: 'text',
-              className: 'fz3-set-input',
-              value: voiceHome,
-              spellCheck: false,
-              placeholder: '例如 D:\\Fairy\\tts 或 /opt/fairy-tts',
-              onChange: (event) => setVoiceHome(event.target.value),
-              onKeyDown: (event) => {
-                if (event.key === 'Enter') saveVoiceHome(voiceHome)
-              },
-            }),
+            { className: 'fz3-set-card' },
             h(
-              'button',
-              { type: 'button', className: 'fz3-set-btn', onClick: () => saveVoiceHome(voiceHome), disabled: voiceHomeBusy === 'save' },
-              voiceHomeBusy === 'save' ? '保存中…' : '保存',
+              'div',
+              { className: 'fz3-set-card-head' },
+              h('div', { className: 'fz3-set-card-title' }, '眼徽与开场动画'),
             ),
             h(
-              'button',
-              { type: 'button', className: 'fz3-set-btn is-ghost', onClick: loadVoiceHome },
-              '检测',
-            ),
-            h(
-              'button',
-              { type: 'button', className: 'fz3-set-btn is-ghost', onClick: () => saveVoiceHome('') },
-              '清除',
+              'div',
+              { className: 'fz3-set-pair' },
+              h(
+                'div',
+                { className: 'fz3-set-pane' },
+                h(
+                  'div',
+                  { className: 'fz3-set-pane-head' },
+                  h('div', { className: 'fz3-set-label' }, '显示眼徽'),
+                  h('button', {
+                    type: 'button',
+                    className: 'fz3-set-switch',
+                    'data-on': eyeHidden ? '0' : '1',
+                    'aria-pressed': !eyeHidden,
+                    onClick: toggleEye,
+                  }),
+                ),
+                h('div', { className: 'fz3-set-desc' }, '只在工作区显示，切到插件等页面自动收起'),
+              ),
+              h(
+                'div',
+                { className: 'fz3-set-pane' },
+                h(
+                  'div',
+                  { className: 'fz3-set-pane-head' },
+                  h('div', { className: 'fz3-set-label' }, '开场动画'),
+                  h('button', { type: 'button', className: 'fz3-set-btn is-ghost', onClick: replayBoot }, '重播'),
+                ),
+                h('div', { className: 'fz3-set-desc' }, '重新播放 H.D.D 开机动画'),
+              ),
             ),
           ),
-          homeHint ? h('div', { className: 'fz3-set-desc is-hint' }, homeHint) : null,
-          h(
-            'div',
-            { className: 'fz3-set-actions' },
-            h('button', { type: 'button', className: 'fz3-set-btn', onClick: () => controlEngine('start'), disabled: engineBusy === 'start' || ready }, engineBusy === 'start' ? '启动中…' : '启动引擎'),
-            h('button', { type: 'button', className: 'fz3-set-btn is-ghost', onClick: () => controlEngine('stop'), disabled: engineBusy === 'stop' || !ready }, '停止引擎'),
-            h('button', { type: 'button', className: 'fz3-set-btn is-ghost', onClick: ping }, '刷新状态'),
-          ),
-        ),
-        h(
-          'div',
-          { className: 'fz3-set-actions' },
-          h('button', { type: 'button', className: 'fz3-set-btn', onClick: playGreet, title: '随机试听本时段的 5 条问候之一' }, '试听问候'),
-          h('button', { type: 'button', className: 'fz3-set-btn', onClick: replayBoot }, '重播开机动画'),
-          h('button', { type: 'button', className: 'fz3-set-btn', onClick: testVoice, disabled: busy }, '测试语音'),
-          h('button', { type: 'button', className: 'fz3-set-btn is-ghost', onClick: stopSpeech, disabled: !busy }, '停止'),
-        ),
-        previewLine ? h('div', { className: 'fz3-set-note' }, '刚刚试听：' + previewLine) : null,
         h('div', { className: 'fz3-set-note' }, 'Fairy 皮肤 · 待机随机眨眼与花屏、思考态眼睑呼吸；电费余额 / 今日电费 / 倍率倒计时常驻左下角实时刷新。眼标只做状态指示：按住右键可以拖到任意位置，左键不作用。'),
       )
     }
-
     function BrandMark() {
       return h(
         'span',
@@ -3540,6 +3712,51 @@ html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16
 
       /* 眼徽坐标放 localStorage；拖拽统一走「按住右键」，不再有开关 */
       const [eyeHidden, setEyeHidden] = useState(() => readBool(EYE_KEY, false))
+      /* v2.1.0：眼徽只在工作区显示。DSH 是 SPA，路由不会写进 location.pathname，
+         只能观察 DOM：工作区根 .an3WzG_root 可见、且没有可见的 role="dialog" 弹窗，
+         才算真正停在工作区；插件页 / 自动化 / 设置弹窗统一算 away。
+         聊天流会持续改 DOM，所以重测限制成 140ms 最多一次，不跟逐字输出跑。 */
+      const [surfaceAway, setSurfaceAway] = useState(false)
+      useEffect(() => {
+        let timer = 0
+        let last = 0
+        const visible = (el) => !!(el && el.getClientRects && el.getClientRects().length > 0)
+        const measure = () => {
+          const dialogs = document.querySelectorAll('[role="dialog"]')
+          for (let i = 0; i < dialogs.length; i += 1) {
+            if (visible(dialogs[i])) {
+              setSurfaceAway(true)
+              return
+            }
+          }
+          setSurfaceAway(!visible(document.querySelector('.an3WzG_root')))
+        }
+        const schedule = () => {
+          if (timer) return
+          const wait = Math.max(0, 140 - (Date.now() - last))
+          timer = setTimeout(() => {
+            timer = 0
+            last = Date.now()
+            measure()
+          }, wait)
+        }
+        measure()
+        const observer = new MutationObserver((records) => {
+          for (let i = 0; i < records.length; i += 1) {
+            const target = records[i].target
+            if (target && target.closest && target.closest('.fz3-layer')) continue
+            schedule()
+            return
+          }
+        })
+        observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'style', 'aria-hidden'] })
+        window.addEventListener('resize', schedule)
+        return () => {
+          observer.disconnect()
+          if (timer) clearTimeout(timer)
+          window.removeEventListener('resize', schedule)
+        }
+      }, [])
       const [dragging, setDragging] = useState(false)
       const [customPos, setCustomPos] = useState(() => {
         const saved = readStored(POS_KEY, null)
@@ -3833,9 +4050,25 @@ html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16
           if (!row) return false
           const r = row.getBoundingClientRect()
           if (r.width <= 0 || r.height <= 0) return false
-          setLayerVar('--fz3-brand-top', Math.round(r.top - 6) + 'px')
+          /* v2.1.0：字标盒子原来固定 262px 再加左右 padding，盒子右缘会越过侧栏，
+             「可更新」胶囊也被侧栏裁掉/压到折叠按钮。按宿主 logo 行右侧的折叠按钮
+             反推可用宽度，让胶囊收回字标格子内。 */
+          const toggle = document.querySelector('[data-sidebar-toggle="true"]')
+          const host = r.parentElement || row
+          const hostRight = host.getBoundingClientRect().right
+          const rightEdge = toggle ? toggle.getBoundingClientRect().left : hostRight
+          const brandW = Math.max(170, Math.min(262, rightEdge - r.left - 8))
+          setLayerVar('--fz3-brand-w', Math.round(brandW) + 'px')
+          /* v2.1.0：字标整体上提 6px，给下方的「可更新」胶囊腾出空间；
+             胶囊右缘对齐新会话按钮右缘，底部搭在按钮上缘（不盖住按钮文字/快捷键）。 */
+          setLayerVar('--fz3-brand-top', Math.round(r.top - 12) + 'px')
           setLayerVar('--fz3-brand-left', Math.round(r.left) + 'px')
           setLayerVar('--fz3-brand-h', Math.round(Math.max(34, r.height + 10)) + 'px')
+          const newSession = document.querySelector('button[class*="_newSession"]')
+          if (newSession) {
+            const ns = newSession.getBoundingClientRect()
+            setLayerVar('--fz3-upd-right', Math.round(r.left + brandW - ns.right) + 'px')
+          }
           if (!target) {
             target = row
             if (timer) {
@@ -4529,7 +4762,7 @@ html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16
 
       return h(
         'div',
-        { className: 'fz3-layer', 'data-phase': phase, 'data-mood': mood, 'data-celebrate': celebrate ? '1' : '0', 'data-dragging': dragging ? '1' : '0', 'data-settled': settled ? '1' : '0' },
+        { className: 'fz3-layer', 'data-phase': phase, 'data-mood': mood, 'data-celebrate': celebrate ? '1' : '0', 'data-dragging': dragging ? '1' : '0', 'data-settled': settled ? '1' : '0', 'data-surface': surfaceAway ? 'away' : 'workspace' },
         h(
           'div',
           { className: 'fz3-screen', onClick: needTap ? retryVoice : undefined },

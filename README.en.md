@@ -8,7 +8,7 @@ Boot animation → greeting → docked eye badge, plus a "Wire-Net Terminal" hos
 
 [中文](README.md) · [Changelog](docs/CHANGELOG.md) · [Technical notes](docs/TECHNICAL.md) · [Performance report](docs/PERFORMANCE.md)
 
-![version](https://img.shields.io/badge/version-2.0.4-D8FA00?style=flat-square&labelColor=101110)
+![version](https://img.shields.io/badge/version-2.1.0-D8FA00?style=flat-square&labelColor=101110)
 [![npm](https://img.shields.io/npm/v/@sky_wing_dn%2Fdsh-fairy-zzz?style=flat-square&labelColor=101110&color=D8FA00)](https://www.npmjs.com/package/@sky_wing_dn/dsh-fairy-zzz)
 ![license](https://img.shields.io/badge/license-MIT-101110?style=flat-square)
 ![platform](https://img.shields.io/badge/DSH-Desktop%20%26%20Web-101110?style=flat-square)
@@ -32,7 +32,7 @@ It is not a pure theme pack. The plugin ships a small host half too: static asse
 
 **Zero runtime dependencies.** The host half only uses Node built-ins; the client half is a single hand-written ESM file with no bundler and no `node_modules`.
 
-**Self-update (since v2.0.0).** The plugin asks npm whether a newer version exists; a small 「可更新 / update available」 pill shows next to the Fairy wordmark in the sidebar, and one click on the confirmation popover installs it — refresh the page or restart DSH when prompted. This only works for copies installed from npm via `dsh plugin --profile <name> add ...`; a `link:` install pointing at a local folder has no registry source and never shows the button (edit the source and refresh the page instead). Failed updates explain the reason (network, unavailable or incompatible version, host refusing to replace a running plugin) and offer a re-check button; versions incompatible with the current DSH are skipped automatically. **2.0.2 fixes the chain itself** — in 2.0.0 / 2.0.1 the check never ran and the install always failed, so a machine on either version needs one manual install of 2.0.2 before the button can update it.
+**Self-update (since v2.0.0).** The plugin asks npm whether a newer version exists; a small 「可更新 / update available」 pill shows above the New session button, right-aligned to the button, and one click on the confirmation popover installs it — refresh the page or restart DSH when prompted. This only works for copies installed from npm via `dsh plugin --profile <name> add ...`; a `link:` install pointing at a local folder has no registry source and never shows the button (edit the source and refresh the page instead). Failed updates explain the reason (network, unavailable or incompatible version, host refusing to replace a running plugin) and offer a re-check button; versions incompatible with the current DSH are skipped automatically. **2.0.2 fixes the chain itself** — in 2.0.0 / 2.0.1 the check never ran and the install always failed, so a machine on either version needs one manual install of 2.0.2 before the button can update it.
 
 ## Credits
 
@@ -71,11 +71,12 @@ Full third-party license texts live in [licenses/](licenses/); per-item attribut
 
 **Eye badge**
 
-- About 1.9 s after the greeting it flies to the vertical middle of the conversation's left edge and stays there as a status indicator.
+- About 1.9 s after the greeting it flies to the vertical middle of the conversation's left edge and stays there as a status indicator. **Since v2.1.0 it only appears in the workspace**: it hides on the Plugins page, plugin marketplace, automation tasks and while Settings is open, and returns when you go back; boot and greeting still keep it.
 - Its state comes from the host's agent registry: `idle` / `thinking` / `working` / `done`; the eyelid stays half-closed while thinking or working, and opens/closes with the breath.
 - Eyelid, blade rotation, lens breathing and gaze drift are drawn from a single static SVG by a 15 fps ticker (vector mid-frames, not rotated bitmaps). Halo, pulse rings and ambient light run on CSS `steps()` timelines — no resident `requestAnimationFrame` loop.
 - Hold right mouse button to drag, double right-click to reset. Dragging and docking stay inside the conversation area and step aside when a higher `z-index` widget covers the landing spot.
 - "Show eye badge" hides the badge; the fee readout stays.
+- The sidebar wordmark subtitle shows in full; the 「可更新」 pill sits above the New session button and is right-aligned to it.
 
 **Wire-Net Terminal skin (since v1.7.0)**
 
@@ -155,16 +156,14 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
 
 | Control | Description |
 | --- | --- |
+| Tabs: Voice / Appearance | Voice manages speech and the engine; Appearance manages the badge and boot replay |
 | Auto-read replies | Speak the assistant's answer when it finishes; the per-message button still works when off |
-| Voice engine | Status light: green = ready, amber = starting, grey = not running |
+| Voice engine | Status: green = ready, amber = starting, grey = not running; start / stop on the right, `Refresh` re-probes immediately |
 | Engine directory | Type a path → `Save` (writes `<plugin>/voice-home.txt`), `Test` (validate only), `Clear` (back to auto-detection); the line below shows the active directory and its source |
-| Start / Stop engine | Host-managed engine lifecycle |
-| Refresh status | Re-probe immediately |
 | Preview greeting | Play a random one of the 5 lines for this slot and show its text |
-| Replay boot | Run boot → greeting → dock again |
 | Test voice / Stop | Synthesize one test line / stop playback |
-| Show eye badge | Toggle the badge only |
-| Reset badge | Same as double right-click; back to the default position |
+| Show eye badge | Toggle the badge only; it is visible in the workspace and hides on the Plugins / Settings pages |
+| Boot animation · Replay | Run boot → greeting → dock again |
 
 ## Voice engine (optional)
 
@@ -290,7 +289,7 @@ Attach the tarball from `npm pack` to the GitHub Release; npm-installed users wi
 
 ## Changelog
 
-Milestones: v1.1–v1.6 performance and eye-runtime rewrite; v1.7 Wire-Net Terminal skin, fee readout, boot colour correction; v2.0 one-click self-update; v2.0.3 the fee dock sits above the footer and no longer covers the session list; v2.0.4 bundled Anton title font and speakable-text preprocessing. User-visible changes per release live in [docs/CHANGELOG.md](docs/CHANGELOG.md); implementation notes and trade-offs in [docs/TECHNICAL.md](docs/TECHNICAL.md).
+Milestones: v1.1–v1.6 performance and eye-runtime rewrite; v1.7 Wire-Net Terminal skin, fee readout, boot colour correction; v2.0 one-click self-update; v2.0.3 the fee dock sits above the footer and no longer covers the session list; v2.0.4 bundled Anton title font and speakable-text preprocessing; v2.1.0 workspace-only eye badge, Voice / Appearance settings tabs, realigned sidebar wordmark and update pill, and a scrollbar fade fix. User-visible changes per release live in [docs/CHANGELOG.md](docs/CHANGELOG.md); implementation notes and trade-offs in [docs/TECHNICAL.md](docs/TECHNICAL.md).
 
 ## License
 

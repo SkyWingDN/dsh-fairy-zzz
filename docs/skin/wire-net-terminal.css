@@ -95,6 +95,8 @@ html[data-fz3-theme="light"] ::selection{background:#101110!important;color:#d8f
 *::-webkit-scrollbar-thumb:hover{background:rgba(216,250,0,.72)!important;background-clip:padding-box}
 html[data-fz3-theme="light"] *::-webkit-scrollbar-thumb{background:rgba(16,17,16,.26)!important;background-clip:padding-box}
 html[data-fz3-theme="light"] *::-webkit-scrollbar-thumb:hover{background:rgba(16,17,16,.46)!important;background-clip:padding-box}
+/* 列表底部的渐隐层原本铺到右缘，会把滚动条一起渐隐；右侧让出滚动条，避免电费坞上方那截滑条发黑。 */
+.GAkraW_fade{right:12px}
 textarea,input{caret-color:var(--fz3-lime)!important}
 textarea:focus,input:focus{box-shadow:none!important}
 a{color:var(--fz3-cyan)!important;text-underline-offset:3px}
@@ -313,7 +315,27 @@ html[data-fz3-theme="light"] .AnXs9G_close:hover{background:rgba(16,17,16,.06)!i
 
 /* ---------- H. 插件自身组件：Fairy 设置 / 字标 / dock 气泡 ---------- */
 .fz3-set{color:#f2f2ee}
-.fz3-set-row{background:transparent!important;border:1px solid rgba(255,255,255,.10)!important;border-radius:8px!important}
+.fz3-set-card{background:transparent!important;border:1px solid rgba(255,255,255,.10)!important;border-radius:8px!important}
+.fz3-set-tab{border-radius:999px!important;background:transparent!important;border:1px solid rgba(255,255,255,.16)!important;color:rgba(242,242,238,.66)!important;font-family:var(--fz3-mono)!important;letter-spacing:.04em}
+.fz3-set-tab:hover{background:rgba(255,255,255,.05)!important;border-color:rgba(255,255,255,.32)!important;color:#f2f2ee!important}
+.fz3-set-tab.is-active{background:var(--fz3-lime)!important;border-color:var(--fz3-lime)!important;color:#0a0b08!important}
+.fz3-set-tab.is-active:hover{background:#e6ff52!important;border-color:#e6ff52!important;color:#0a0b08!important}
+.fz3-set-engine-controls{display:flex;align-items:center;gap:8px}
+.fz3-dash-section-title{font-family:var(--fz3-mono);letter-spacing:.16em;color:#f2f2ee!important}
+.fz3-dash-section-meta{color:rgba(242,242,238,.40)!important}
+.fz3-dash-kicker{color:rgba(242,242,238,.46)!important}
+.fz3-dash-value{color:#f2f2ee!important}
+.fz3-dash-value.is-on{color:var(--fz3-lime)!important}
+.fz3-dash-value.is-error{color:#ff8a72!important}
+.fz3-dash-desc,.fz3-dash-preview{color:rgba(242,242,238,.48)!important}
+.fz3-set-card-title{font-weight:700}
+.fz3-set-card-status{color:rgba(242,242,238,.40)!important}
+.fz3-set-line,.fz3-set-pair{border-top-color:rgba(255,255,255,.08)!important}
+.fz3-set-linkbtn{
+  color:rgba(242,242,238,.44)!important;font-family:var(--fz3-mono)!important;text-decoration:none!important;
+  border-bottom:1px dotted rgba(255,255,255,.22)!important;padding-bottom:1px!important;
+}
+.fz3-set-linkbtn:hover:not(:disabled){color:var(--fz3-lime)!important;border-bottom-color:var(--fz3-lime)!important}
 .fz3-set-name{font-weight:700}
 .fz3-set-sub,.fz3-set-desc,.fz3-set-note{color:rgba(242,242,238,.48)!important}
 .fz3-set-switch[data-on="1"]{background:var(--fz3-lime)!important;border-color:var(--fz3-lime)!important}
@@ -342,10 +364,20 @@ html[data-fz3-theme="light"] .AnXs9G_close:hover{background:rgba(16,17,16,.06)!i
 .fz3-sb-text i{font-family:var(--fz3-mono)!important;font-size:8px!important;line-height:1.4!important;letter-spacing:.16em!important;color:rgba(216,250,0,.60)!important}
 html[data-fz3-theme="light"] .fz3-brandname b,html[data-fz3-theme="light"] .fz3-sb-text b{color:#f2f2ee!important}
 html[data-fz3-theme="light"] .fz3-set{color:#101110}
-html[data-fz3-theme="light"] .fz3-set-row{border-color:rgba(16,17,16,.14)!important}
+html[data-fz3-theme="light"] .fz3-set-card{background:transparent!important;border-color:rgba(16,17,16,.14)!important;border-radius:8px!important}
+html[data-fz3-theme="light"] .fz3-set-tab{border-color:rgba(16,17,16,.18)!important;color:rgba(16,17,16,.62)!important}
+html[data-fz3-theme="light"] .fz3-set-tab:hover{background:rgba(16,17,16,.05)!important;border-color:rgba(16,17,16,.32)!important;color:#101110!important}
+html[data-fz3-theme="light"] .fz3-set-tab.is-active{background:var(--fz3-lime)!important;border-color:var(--fz3-lime)!important;color:#0a0b08!important}
+html[data-fz3-theme="light"] .fz3-set-tab.is-active:hover{background:#e6ff52!important;border-color:#e6ff52!important;color:#0a0b08!important}
+html[data-fz3-theme="light"] .fz3-dash-section-title{color:#101110!important}
+html[data-fz3-theme="light"] .fz3-dash-section-meta,html[data-fz3-theme="light"] .fz3-dash-kicker,html[data-fz3-theme="light"] .fz3-dash-desc,html[data-fz3-theme="light"] .fz3-dash-preview{color:rgba(16,17,16,.52)!important}
+html[data-fz3-theme="light"] .fz3-dash-value{color:#101110!important}
+html[data-fz3-theme="light"] .fz3-dash-value.is-on{color:#4b7c00!important}
+html[data-fz3-theme="light"] .fz3-set-line,html[data-fz3-theme="light"] .fz3-set-pair{border-top-color:rgba(16,17,16,.10)!important}
 html[data-fz3-theme="light"] .fz3-set-sub,html[data-fz3-theme="light"] .fz3-set-desc,html[data-fz3-theme="light"] .fz3-set-note{color:rgba(16,17,16,.52)!important}
 html[data-fz3-theme="light"] .fz3-set-btn{border-color:rgba(16,17,16,.22)!important;color:#101110!important}
 html[data-fz3-theme="light"] .fz3-set-input{background:#fff!important;border-color:rgba(16,17,16,.16)!important;color:#101110!important}
+html[data-fz3-theme="light"] .fz3-set-linkbtn{color:rgba(16,17,16,.52)!important;border-bottom-color:rgba(16,17,16,.22)!important}
 
 /* ---------- I. 开场覆盖层：墨黑 + 青柠 HUD 边框 ---------- */
 .fz3-screen{background:#0a0a0a!important}

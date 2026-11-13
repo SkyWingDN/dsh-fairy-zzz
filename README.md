@@ -8,7 +8,7 @@
 
 [English](README.en.md) · [变更记录](docs/CHANGELOG.md) · [技术说明](docs/TECHNICAL.md) · [性能报告](docs/PERFORMANCE.md)
 
-![version](https://img.shields.io/badge/version-2.0.4-D8FA00?style=flat-square&labelColor=101110)
+![version](https://img.shields.io/badge/version-2.1.0-D8FA00?style=flat-square&labelColor=101110)
 [![npm](https://img.shields.io/npm/v/@sky_wing_dn%2Fdsh-fairy-zzz?style=flat-square&labelColor=101110&color=D8FA00)](https://www.npmjs.com/package/@sky_wing_dn/dsh-fairy-zzz)
 ![license](https://img.shields.io/badge/license-MIT-101110?style=flat-square)
 ![platform](https://img.shields.io/badge/DSH-Desktop%20%26%20Web-101110?style=flat-square)
@@ -32,7 +32,7 @@ dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
 
 **运行时零依赖**：宿主半边只用 Node 内置模块，客户端半边是一份手写 ESM，不经过打包器，也不需要 `node_modules`。
 
-**自更新（v2.0.0 起）**：插件会自己问 npm 有没有新版本——侧栏 Fairy 字标右上出现「可更新」胶囊，点开确认就能装，装完按提示刷新页面或重启 DSH。只对 `dsh plugin --profile <name> add ...` 从 npm 装进来的插件生效；用 `link:` 指向本地目录的安装没有 registry 来源，不会显示这个按钮（改完源码照旧刷新页面即生效）。更新失败会说清原因（网络、版本不可用 / 与当前 DSH 不兼容、宿主正在使用等），可以点「重新检查」丢掉缓存重查；和当前 DSH 不兼容的新版本会被自动跳过。**2.0.2 修好了这条链路本身**（2.0.0 / 2.0.1 的检查从未真正执行、安装也必然失败），装插件的那台机器需要手动装到 2.0.2 一次，之后才能用按钮更新。
+**自更新（v2.0.0 起）**：插件会自己问 npm 有没有新版本——「新会话」按钮上方右侧出现「可更新」胶囊（右缘与按钮右缘对齐），点开确认就能装，装完按提示刷新页面或重启 DSH。只对 `dsh plugin --profile <name> add ...` 从 npm 装进来的插件生效；用 `link:` 指向本地目录的安装没有 registry 来源，不会显示这个按钮（改完源码照旧刷新页面即生效）。更新失败会说清原因（网络、版本不可用 / 与当前 DSH 不兼容、宿主正在使用等），可以点「重新检查」丢掉缓存重查；和当前 DSH 不兼容的新版本会被自动跳过。**2.0.2 修好了这条链路本身**（2.0.0 / 2.0.1 的检查从未真正执行、安装也必然失败），装插件的那台机器需要手动装到 2.0.2 一次，之后才能用按钮更新。
 
 ## 来源与致谢
 
@@ -71,11 +71,12 @@ dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
 
 **眼徽**
 
-- 问候结束约 1.9s 后飞到会话区左缘中线常驻，光晕淡出，只做状态指示。
+- 问候结束约 1.9s 后飞到会话区左缘中线常驻，光晕淡出，只做状态指示。**v2.1.0 起只在工作区显示**：切到插件页、插件市场、自动化任务或打开设置时自动收起，回到工作区恢复；开机与问好阶段仍保留。
 - 状态来自宿主 Agent 注册表：`idle` / `thinking` / `working` / `done`，思考与执行期间眼睑半闭，并跟着呼吸一开一合。
 - 眼睑、叶片公转、眼球呼吸、目光微动由一份静态 SVG + 15fps ticker 重绘（矢量中间帧，不是旋转位图）；光晕、脉冲环、氛围光走 CSS `steps()` 时间线，没有常驻 `requestAnimationFrame` 主循环。
 - 右键按住拖动、双击右键复位；拖动与停靠限制在会话内容区内，落点被更高 `z-index` 的挂件挡住时会自动让位。
 - 「显示眼徽」可以整体隐藏，电费读数不跟着隐藏。
+- 侧栏字标副标题完整显示；「可更新」胶囊在「新会话」按钮上方，右缘与按钮右缘对齐。
 
 **绳网终端皮肤（v1.7.0 起）**
 
@@ -155,16 +156,14 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
 
 | 控件 | 说明 |
 | --- | --- |
+| 标签页：语音 / 外观 | 语音页管朗读与引擎；外观页管眼徽与开场动画 |
 | 自动朗读回复 | 助手回答完成后自动念出来；关掉也可以单独点消息旁的朗读按钮 |
-| 语音引擎 | 引擎状态：绿 = 就绪，黄 = 启动中，灰 = 未运行 |
+| 语音引擎 | 引擎状态：绿 = 就绪，黄 = 启动中，灰 = 未运行；右侧可启动 / 停止引擎，`刷新` 立即重探 |
 | 引擎目录 | 输入路径 → `保存`（写入 `<插件目录>/voice-home.txt`）、`检测`（只校验）、`清除`（回到自动探测）；未保存时行内提示当前生效目录与来源 |
-| 启动引擎 / 停止引擎 | 由宿主进程托管引擎启停 |
-| 刷新状态 | 立即重新探测一次 |
 | 试听问候 | 每次点击随机试听本时段 5 条之一，并回显台词 |
-| 重播开机动画 | 重新走一遍 开机 → 问好 → 收成眼徽 |
 | 测试语音 / 停止 | 合成一句测试语音 / 停止当前播放 |
-| 显示眼徽 | 只开关眼标本身 |
-| 眼标复位 | 双击右键的等价按钮，把眼徽放回默认位置 |
+| 显示眼徽 | 只开关眼标本身；眼徽只在工作区显示，切到插件 / 设置等页面自动收起 |
+| 开场动画 · 重播 | 重新走一遍 开机 → 问好 → 收成眼徽 |
 
 ## 语音引擎（可选）
 
@@ -290,7 +289,7 @@ GitHub Release 附 `npm pack` 生成的 tarball；从 npm 装的用户下次打�
 
 ## 变更记录
 
-主要节点：v1.1–v1.6 性能与眼徽重写；v1.7 绳网终端皮肤、电费读数、开机颜色校正；v2.0 一键自更新；v2.0.3 电费坞贴底、不再压住会话列表；v2.0.4 内置 Anton 标题字体、朗读文本预处理。逐版本的用户可见改动见 [docs/CHANGELOG.md](docs/CHANGELOG.md)；实现细节与设计取舍在 [docs/TECHNICAL.md](docs/TECHNICAL.md)。
+主要节点：v1.1–v1.6 性能与眼徽重写；v1.7 绳网终端皮肤、电费读数、开机颜色校正；v2.0 一键自更新；v2.0.3 电费坞贴底、不再压住会话列表；v2.0.4 内置 Anton 标题字体、朗读文本预处理；v2.1.0 眼徽只在工作区显示、设置页分「语音 / 外观」标签页、侧栏字标与更新胶囊重新对齐、修复滚动条被渐隐层压暗。逐版本的用户可见改动见 [docs/CHANGELOG.md](docs/CHANGELOG.md)；实现细节与设计取舍在 [docs/TECHNICAL.md](docs/TECHNICAL.md)。
 
 ## 许可
 

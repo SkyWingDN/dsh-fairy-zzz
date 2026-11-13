@@ -422,7 +422,7 @@ components:
 
 **8.13 settings-panel / 设置弹窗** — width min(880,92vw)、height auto、max-height min(780,86vh)、radius {rounded.panel}、bg #1b1d1b、border 1px rgba(255,255,255,.10)、压暗阴影；浅色 #fff + 14px 硬偏移。内部：header 58、nav padding 18 12 + 1px 右边线、navTitle mono 12/.18em、navCell 40/radius 6/13px，**active = 青柠底 + ink 字 + 700**（含 icon），content padding 20 24。（skin L220–243）
 
-**8.14 fairy-row / Fairy 设置行** — 插件自有。.fz3-set gap 14；行 flex space-between + gap 16、padding 12 14、radius {rounded.control}、透明底 + 1px rgba(255,255,255,.10) 描边；标题 15、副文 11.5/.48；switch 42×24/radius 99，OFF 近黑底 + 冷灰描边，ON 青柠底 + ink 滑块 translateX(18)；按钮 radius 999 + mono 11，hover 青柠填充 ink 字。（client.js L821–849；skin L247–296）
+**8.14 fairy-settings / Fairy 设置区（v2.1.0）** — 插件自有。顶部 `.fz3-set-tabs` 两个标签页（语音 / 外观），12px、padding 8 16、radius 9、1px rgba(255,255,255,.10) 描边，active = 青柠底 + ink 字 + 700；下方 `.fz3-set` flex column gap 14；每页一张 `.fz3-set-card`（padding 14 16、radius 8、透明底 + 1px rgba(255,255,255,.10) 描边）；卡头 `.fz3-set-card-title` 13px + `.fz3-set-card-status` 11px 冷灰；卡内 `.fz3-set-line` 整行、`.fz3-set-pair` 两列（gap 22，窄于 720px 回单列）、`.fz3-set-pane` 一列（标题行 + 开关/按钮右对齐 + 说明 11px）；switch 42×24/radius 99，OFF 近黑底 + 冷灰描边，ON 青柠底 + ink 滑块 translateX(18)；按钮 radius 999 + mono 11，hover 青柠填充 ink 字。字号、颜色、尺寸沿用 v2.0.4 的 v3 设置样式；v4 仪表盘的大号数值样式不使用。（client.js L1254–1330；skin 设置段）
 
 **8.15 boot-overlay / 开场覆盖层** — 全屏 #0a0a0a；::before 左上 `// H.D.D. NORTH SEEK DATA SYSTEM`（mono 10/600/.30em，rgba(216,250,0,.62)，left 26/top 22）；::after 为 3px 扫描线（1px 黑线 .10）+ 径向压暗（.46）；视频保持原片颜色，只做 `saturate(1.04) contrast(1.02) brightness(1.02)`（v1.7.7 起；v1.7.0–v1.7.6 是去色的 grayscale 分级）；skip 按钮 mono/.22em/青柠 .62。（skin L333–344）
 
@@ -565,14 +565,14 @@ v1.7.2 的两处修复都是「边线装饰放错了形状」：
 
 ### 16.1 胶囊（.fz3-upd-pill）
 
-- 位置：侧栏 Fairy 字标（`.fz3-sb-brand`）右上角，与字标同一行；**只有查到 npm 上有更新版本才出现**，平时不占位。
+- 位置：侧栏「新会话」按钮上方、Fairy 字标正下方；胶囊底部与字标副标题底边平齐，右缘与新会话按钮右缘对齐（v2.1.0 起；v2.0.x 曾固定在字标右上角）。**只有查到 npm 上有更新版本才出现**，平时不占位。
 - 形态：21px 高胶囊，青柠 `#d8fa00` 实底 + 墨字 `#0a0b08`（和「新会话」同一套主行动配色），10.5px 等宽字，左侧 6px 圆点带 blink 呼吸；hover `#e6ff3d`；安装中（busy）换成琥珀 `--fz3-amber`。
 - 层级：字标容器是 `pointer-events:none`，胶囊单独开 `auto`，不挡拖拽与侧栏点击；键盘焦点环 2px 纸白。
 - 文案只有两种：可更新 / 更新中。
 
 ### 16.2 浮层（.fz3-upd）
 
-- 位置：固定在字标正下方（`left = --fz3-brand-left`，`top = --fz3-brand-top + --fz3-brand-h + 10`），宽 304px，会压住侧栏前两行导航——这是有意的浮层语义，不做遮罩。
+- 位置：固定在字标下方（`left = --fz3-brand-left`，`top = --fz3-brand-top + --fz3-brand-h + 24`，v2.1.0 起由 +10 改为 +24，给上移后的胶囊让出高度），宽 304px，会压住侧栏前两行导航——这是有意的浮层语义，不做遮罩。
 - 材质：墨黑面板 `rgba(12,14,12,.98)`、1px 青柠描边（26%）、12px 圆角、大投影；点 × 或 Esc 关闭。
 - 内容顺序：标题（发现新版本 / 安装完成 / 更新失败）+ ×；版本行 `1.7.7 → 2.0.0`（等宽，旧版 62% 白、新版纸白、箭头青柠）；说明两行；安装中加一条 2px 扫描条；调试态加一行琥珀提示；按钮行（主按钮青柠实底，次按钮幽灵）。
 - 文案口径：`applied` → 主按钮「刷新页面」；`restart-required` → 说明「重启 DSH 后生效」、主按钮「知道了」；失败给中文原因并允许「重试」和「重新检查」；`cancelled` 标题是「更新已取消」。
@@ -608,6 +608,28 @@ v1.7.2 的两处修复都是「边线装饰放错了形状」：
 - 字体：随包 Anton 400（`assets/anton/Anton-Regular.woff2`，SIL OFL 1.1）以 `@font-face "FZ3 Display"` 声明，`--fz3-display` 首选它；Impact / Haettenschweiler / Arial Narrow 与 CJK 系统字体依次回落。没装 Impact 的机器（macOS / 移动端）也是同一套窄体标题。
 - 字重：Anton 只有 400，标题声明 700 时用 `font-synthesis-weight:none` 关掉合成加粗，英文保持 400 的天然粗细；汉字回落的 CJK 字体自带真 Bold，仍是粗的。
 - 正文、对话、代码、标签、数值、按钮、会话名不套显示字体，仍用 `--fz3-font` / `--fz3-mono`。
+
+### 16.8 眼徽只在工作区（v2.1.0）
+
+- 判定：先看是否有可见 `[role="dialog"]`（设置弹窗等），有就隐藏；否则看工作区根 `.an3WzG_root` 是否可见（`getClientRects().length > 0`）。`FairySkin` 用 `MutationObserver` 观察 `document.body` 的 `childList` / `attributes`（过滤 class / style / aria-hidden，跳过 `.fz3-layer` 内部，140ms 节流），并挂 `resize`。
+- 表现：图层根写 `data-surface="away"` 时，基础 CSS 对 `.fz3-layer[data-phase="dock"][data-surface="away"] .fz3-core` 设 `visibility:hidden!important;opacity:0!important;pointer-events:none!important`；用 visibility 而非 display，保留占位与 dock 测量。boot / greet 相不隐藏，回到工作区自动恢复。
+
+### 16.9 设置页「语音 / 外观」标签页（v2.1.0）
+
+- 语义分组：语音 = 自动朗读、语音引擎状态 / 启停 / 刷新、引擎目录、试听问候 / 测试语音 / 停止；外观 = 显示眼徽、开场动画重播。
+- 壳层：`.fz3-set-tabs`（`role=tablist`）+ 两个 `.fz3-set-tab`（`role=tab`、`aria-selected`、active 青柠）；每页只渲染自己的 `.fz3-set-card`，不再把全部控件堆在一个长列表里。
+- 视觉纪律：沿用 v2.0.4 的字体 / 颜色 / 开关和按钮尺寸，不放大数字、不新增仪表盘卡片；预览台词仍放在语音卡内。
+
+### 16.10 侧栏字标与更新胶囊对齐（v2.1.0）
+
+- 副标题：`.fz3-sb-text` 拿满字标剩余宽度（`flex:1 1 auto; width:calc(var(--fz3-brand-w,262px) - 53px)`），`i` 从省略号改为完整显示（`overflow:visible; text-overflow:clip`），13 个汉字不再截断。
+- 胶囊：保留青柠实底 + 墨字样式，`position:absolute; right:var(--fz3-upd-right,-32px); top:auto; bottom:0`，底部与副标题底边平齐，右缘与新会话按钮右缘对齐；`measureOnce` 写 `--fz3-brand-top = r.top - 12`（字标上提 6px）与 `--fz3-upd-right = r.left + brandW - newSession.right`（实测 -32px）。不能直接用 `r.right`（宿主字标盒右缘），会算偏。
+- 浮层 top 同步加 24px，避免盖住上移后的胶囊。
+
+### 16.11 工作区滚动条渐隐修复（v2.1.0）
+
+- 根因：工作区列表底部宿主的 `.GAkraW_fade`（`position:absolute; height:24px`，渐变到画布色）铺到列表右缘，把 8px 滚动条尾端一起压暗；实测滑条拇指颜色从 RGB(100,115,9) 掉到 RGB(50,57,4)。
+- 修复：皮肤加 `.GAkraW_fade{right:12px}`，渐隐层右缘让开 12px；滚动条完整，列表底部渐隐仍保留。未改电费坞 `bottom` / `--fz3-bill-reserve`。
 
 ## 17. 截图索引
 
