@@ -1,7 +1,7 @@
 import { appendFileSync, createReadStream, existsSync, mkdirSync, openSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { mkdir, stat } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { extname, join, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { homedir } from 'node:os'
@@ -397,10 +397,114 @@ async function engineState() {
 
 let enginePromise = null
 let engineChild = null
+let engineWatchdog = null
 /* 引擎代际：stop 或「新一次启动」都会 +1。启动循环每轮都核对代际，发现变了
    立刻中止；否则 stop 之后旧循环还会把 promise 解成 true，下一个请求就会以为
    引擎可用，再拉起一个进程（重复进程 / 端口冲突）。 */
 let engineGen = 0
+
+/* 干掉一棵进程树。Windows 用 taskkill /t，因为 fairy_server.py 自己还会拉起
+   text sidecar 和 gsv_server；只杀 python 主进程会留下这两个子进程。
+   POSIX 下 spawn 时用了 detached，子进程是进程组组长，kill(-pid) 能一次带走整组。 */
+function killTreeSync(pid) {
+  const id = Number(pid)
+  if (!id) return false
+  try {
+    if (IS_WIN) {
+      return spawnSync('taskkill', ['/pid', String(id), '/t', '/f'], { stdio: 'ignore', windowsHide: true }).status === 0
+    }
+    try {
+      process.kill(-id, 'SIGTERM')
+    } catch {
+      process.kill(id, 'SIGTERM')
+    }
+    return true
+  } catch {
+    return false
+  }
+}
+
+/* 宿主被强杀（任务管理器 / 崩溃 / 升级重启）时，Node 的 exit 事件不会触发，
+   引擎就会一直留在后台。这里在拉起引擎时再拉一个 detached 的 watchdog：
+   watchdog 和宿主之间有一条 IPC 通道，宿主一死通道断开，它立刻 taskkill 引擎。
+   watchdog 不依赖宿主继续执行代码，所以强杀场景也能清理干净。
+
+   watchdog 必须是 Node 而不是 python：它只需要 child_process 和 IPC。
+   Electron 宿主的 process.execPath 是 Electron 可执行文件，加上
+   ELECTRON_RUN_AS_NODE=1 后就是普通 Node；普通 Node 宿主则原样使用。 */
+function startEngineWatchdog(child) {
+  const pid = Number(child?.pid)
+  if (!pid) return null
+  const code = `
+const { spawnSync } = require('node:child_process')
+const pid = ${pid}
+let done = false
+function reap() {
+  if (done) return
+  done = true
+  try {
+    if (process.platform === 'win32') {
+      spawnSync('taskkill', ['/pid', String(pid), '/t', '/f'], { stdio: 'ignore', windowsHide: true })
+    } else {
+      try { process.kill(-pid, 'SIGTERM') } catch { try { process.kill(pid, 'SIGTERM') } catch {} }
+    }
+  } catch {}
+  process.exit(0)
+}
+process.on('disconnect', reap)
+process.on('SIGTERM', reap)
+process.on('SIGINT', reap)
+setInterval(() => {
+  try { process.kill(pid, 0) } catch { process.exit(0) }
+}, 2000)
+`
+  const env = { ...process.env }
+  if (process.versions.electron) env.ELECTRON_RUN_AS_NODE = '1'
+  try {
+    const watchdog = spawn(process.execPath, ['-e', code], {
+      detached: true,
+      stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
+      windowsHide: true,
+      env,
+    })
+    watchdog.unref()
+    watchdog.on('error', () => {
+      if (engineWatchdog === watchdog) engineWatchdog = null
+    })
+    watchdog.once('exit', () => {
+      if (engineWatchdog === watchdog) engineWatchdog = null
+    })
+    return watchdog
+  } catch {
+    return null
+  }
+}
+
+function stopWatchdog() {
+  const watchdog = engineWatchdog
+  engineWatchdog = null
+  if (!watchdog) return
+  /* 先断 IPC，让 watchdog 自己走 reap 分支；断不了再直接结束它。 */
+  try {
+    watchdog.disconnect()
+  } catch {
+    try {
+      watchdog.kill()
+    } catch {}
+  }
+}
+
+let exitGuardInstalled = false
+function installExitGuard() {
+  if (exitGuardInstalled) return
+  exitGuardInstalled = true
+  /* 正常退出（关窗口、app.quit）时进程还有机会同步执行 taskkill。
+     强杀场景由 watchdog 兜底。 */
+  process.once('exit', () => {
+    const child = engineChild
+    if (child?.pid) killTreeSync(child.pid)
+  })
+}
 
 function ensureEngine() {
   syncVoiceHome()
@@ -417,14 +521,9 @@ function ensureEngine() {
       /* 之前拉起的进程还活着但不应答：先杀掉再重来，避免两个进程抢同一个端口。 */
       const stale = engineChild
       if (stale && stale.exitCode === null && stale.signalCode === null) {
-        try {
-          if (process.platform === 'win32') {
-            spawn('taskkill', ['/pid', String(stale.pid), '/t', '/f'], { stdio: 'ignore', windowsHide: true })
-          } else {
-            stale.kill('SIGTERM')
-          }
-        } catch {}
+        killTreeSync(stale.pid)
         engineChild = null
+        stopWatchdog()
       }
       const logFile = join(TTS_DIR, 'server.log')
       let out = 'ignore'
@@ -441,10 +540,14 @@ function ensureEngine() {
       })
       child.unref()
       engineChild = child
+      engineWatchdog = startEngineWatchdog(child)
       /* 进程没了（含 TTS 服务 300s 空闲自杀 / 崩溃）必须清掉缓存的 promise 和
          child，否则之后每次 /tts 都拿旧的「已启动」直接 502，只能手动 stop/start。 */
       const release = () => {
-        if (engineChild === child) engineChild = null
+        if (engineChild === child) {
+          engineChild = null
+          stopWatchdog()
+        }
         if (holder.task && enginePromise === holder.task) enginePromise = null
       }
       child.once('exit', release)
@@ -475,17 +578,9 @@ async function stopEngine() {
   enginePromise = null
   const child = engineChild
   engineChild = null
+  stopWatchdog()
   if (!child) return false
-  try {
-    if (process.platform === 'win32') {
-      spawn('taskkill', ['/pid', String(child.pid), '/t', '/f'], { stdio: 'ignore', windowsHide: true })
-    } else {
-      child.kill('SIGTERM')
-    }
-    return true
-  } catch {
-    return false
-  }
+  return killTreeSync(child.pid)
 }
 
 /** CPU 推理排队：一次只跑一句，跟引擎保持一致。 */
@@ -1143,6 +1238,13 @@ export function apply(ctx) {
   const webServer = ctx.webServer
   if (!webServer) return
 
+  installExitGuard()
+  /* 插件被卸载 / 宿主热重载时也把托管中的引擎收掉；正常关窗口时
+     installExitGuard 还会再兜一次。 */
+  ctx.effect(() => () => {
+    void stopEngine()
+  })
+
   const tracker = createMoodTracker(ctx)
   const mood = tracker.mood
   const moodSeen = tracker.seen
@@ -1238,6 +1340,7 @@ export function apply(ctx) {
           engineError: engine.error,
           engineHome: TTS_DIR,
           engineManaged: Boolean(engineChild),
+          engineWatchdog: Boolean(engineWatchdog),
           voiceHome: inspectVoice(),
           voice: 'Fairy · Ⅲ',
           speed: TTS_SPEED,
@@ -1335,7 +1438,7 @@ export function apply(ctx) {
             sendJson(res, 200, { ok: true, stopped, engine: await engineState(), home: TTS_DIR })
             return
           }
-          sendJson(res, 200, { ok: true, engine: await engineState(), home: TTS_DIR, managed: Boolean(engineChild) })
+          sendJson(res, 200, { ok: true, engine: await engineState(), home: TTS_DIR, managed: Boolean(engineChild), watchdog: Boolean(engineWatchdog) })
         } catch (cause) {
           sendJson(res, 500, { ok: false, error: String(cause?.message ?? cause), home: TTS_DIR })
         }

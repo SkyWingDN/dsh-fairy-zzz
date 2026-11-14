@@ -8,7 +8,7 @@
 
 [English](README.en.md) · [变更记录](docs/CHANGELOG.md) · [技术说明](docs/TECHNICAL.md) · [性能报告](docs/PERFORMANCE.md)
 
-![version](https://img.shields.io/badge/version-2.1.1-D8FA00?style=flat-square&labelColor=101110)
+![version](https://img.shields.io/badge/version-2.2.0-D8FA00?style=flat-square&labelColor=101110)
 [![npm](https://img.shields.io/npm/v/@sky_wing_dn%2Fdsh-fairy-zzz?style=flat-square&labelColor=101110&color=D8FA00)](https://www.npmjs.com/package/@sky_wing_dn/dsh-fairy-zzz)
 ![license](https://img.shields.io/badge/license-MIT-101110?style=flat-square)
 ![platform](https://img.shields.io/badge/DSH-Desktop%20%26%20Web-101110?style=flat-square)
@@ -63,7 +63,7 @@ dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
 | --- | --- |
 | ![语音与朗读设置](screenshots/04-settings.png) | ![外观与开场动画设置](screenshots/05-settings-appearance.png) |
 
-> 截图采自 v2.1.1，对应当前的绳网终端皮肤、语音 / 外观设置页与开机动画；界面细节可能随后续版本继续调整。当前样式规范见 [docs/UI-DESIGN.md](docs/UI-DESIGN.md) 与 [docs/skin/](docs/skin/)。
+> 截图采自 v2.1.1；v2.2.0 未改界面，视觉与截图一致。界面细节可能随后续版本继续调整。当前样式规范见 [docs/UI-DESIGN.md](docs/UI-DESIGN.md) 与 [docs/skin/](docs/skin/)。
 
 ## 特性
 
@@ -101,6 +101,7 @@ dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
 - 问候语音是预录 mp3，**不依赖引擎**。
 - 把回复念出来需要本地 GPT-SoVITS（CPU 推理）。本仓库**不含**模型权重、参考音频与推理引擎。
 - 设置里可指定引擎目录、启动 / 停止、试听问候、测试语音。
+- 引擎由插件托管：正常退出 DSH、卸载插件、宿主崩溃或被强杀时，都会自动结束整棵引擎进程树，不会留下后台常驻的 python。
 - v2.0.4 起朗读前会先把 markdown 清洗成可念的句子：代码块整段跳过，行内代码里的路径 / 单位 / 数字转成中文读法，长回复从第一句念到最后一句（不再按总长或块数截断）。
 
 ## 安装
@@ -196,6 +197,8 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
 | `FAIRY_CACHE_DIR` | `<插件目录>/cache` | 合成语音与磁盘缓存位置 |
 
 引擎日志写在引擎目录下的 `server.log`。CPU 加载约 20s，加载完成前设置面板显示「启动中」。
+
+引擎进程由插件负责回收：设置页停止、插件卸载、正常关闭或强杀 DSH，都会结束引擎主进程与它拉起的 sidecar / `gsv_server`，不会在后台留下 python。
 
 ## HTTP 路由
 
@@ -293,7 +296,7 @@ GitHub Release 附 `npm pack` 生成的 tarball；从 npm 装的用户下次打�
 
 ## 变更记录
 
-主要节点：v1.1–v1.6 性能与眼徽重写；v1.7 绳网终端皮肤、电费读数、开机颜色校正；v2.0 一键自更新；v2.0.3 电费坞贴底、不再压住会话列表；v2.0.4 内置 Anton 标题字体、朗读文本预处理；v2.1.0 眼徽只在工作区显示、设置页分「语音 / 外观」标签页、侧栏字标与更新胶囊重新对齐、修复滚动条被渐隐层压暗；v2.1.1 语音设置卡收拢、键盘焦点框补全。逐版本的用户可见改动见 [docs/CHANGELOG.md](docs/CHANGELOG.md)；实现细节与设计取舍在 [docs/TECHNICAL.md](docs/TECHNICAL.md)。
+主要节点：v1.1–v1.6 性能与眼徽重写；v1.7 绳网终端皮肤、电费读数、开机颜色校正；v2.0 一键自更新；v2.0.3 电费坞贴底、不再压住会话列表；v2.0.4 内置 Anton 标题字体、朗读文本预处理；v2.1.0 眼徽只在工作区显示、设置页分「语音 / 外观」标签页、侧栏字标与更新胶囊重新对齐、修复滚动条被渐隐层压暗；v2.1.1 语音设置卡收拢、键盘焦点框补全；v2.2.0 本地语音引擎随 DSH 退出自动回收，不再残留 python 进程。逐版本的用户可见改动见 [docs/CHANGELOG.md](docs/CHANGELOG.md)；实现细节与设计取舍在 [docs/TECHNICAL.md](docs/TECHNICAL.md)。
 
 ## 许可
 

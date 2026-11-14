@@ -8,7 +8,7 @@ Boot animation → greeting → docked eye badge, plus a "Wire-Net Terminal" hos
 
 [中文](README.md) · [Changelog](docs/CHANGELOG.md) · [Technical notes](docs/TECHNICAL.md) · [Performance report](docs/PERFORMANCE.md)
 
-![version](https://img.shields.io/badge/version-2.1.1-D8FA00?style=flat-square&labelColor=101110)
+![version](https://img.shields.io/badge/version-2.2.0-D8FA00?style=flat-square&labelColor=101110)
 [![npm](https://img.shields.io/npm/v/@sky_wing_dn%2Fdsh-fairy-zzz?style=flat-square&labelColor=101110&color=D8FA00)](https://www.npmjs.com/package/@sky_wing_dn/dsh-fairy-zzz)
 ![license](https://img.shields.io/badge/license-MIT-101110?style=flat-square)
 ![platform](https://img.shields.io/badge/DSH-Desktop%20%26%20Web-101110?style=flat-square)
@@ -63,7 +63,7 @@ Full third-party license texts live in [licenses/](licenses/); per-item attribut
 | --- | --- |
 | ![Voice and speech settings](screenshots/04-settings.png) | ![Appearance and boot animation settings](screenshots/05-settings-appearance.png) |
 
-> Screenshots come from v2.1.1 and match the current Wire-Net Terminal skin, voice / appearance settings and boot animation; details may continue to change in later versions. The live look is specified in [docs/UI-DESIGN.md](docs/UI-DESIGN.md) and [docs/skin/](docs/skin/).
+> Screenshots come from v2.1.1; v2.2.0 does not change the UI, so the visuals still match. Details may continue to change in later versions. The live look is specified in [docs/UI-DESIGN.md](docs/UI-DESIGN.md) and [docs/skin/](docs/skin/).
 
 ## Features
 
@@ -101,6 +101,7 @@ Full third-party license texts live in [licenses/](licenses/); per-item attribut
 - Greeting lines are pre-recorded mp3s and need no engine.
 - Reading replies aloud needs a local GPT-SoVITS with CPU inference. **This repository ships no model weights, reference audio or inference engine.**
 - The settings panel can point at an engine directory, start / stop it, preview greetings and test synthesis.
+- The engine is supervised by the plugin: a normal DSH quit, plugin unload, host crash or force-kill all tear down the whole engine process tree, so no python keeps running in the background.
 - Since v2.0.4 replies are cleaned into speakable sentences before synthesis: fenced code blocks are skipped, inline code paths / units / numbers are rewritten into Chinese reading, and long replies are read from the first sentence to the last (no total-length or chunk-count cut-off).
 
 ## Install
@@ -196,6 +197,8 @@ If none exists the skin still works; the settings panel just asks for a director
 | `FAIRY_CACHE_DIR` | `<plugin>/cache` | Synthesized audio and disk cache |
 
 The engine writes `server.log` next to itself. CPU loading takes about 20 s; until then the panel shows "starting".
+
+The plugin owns the engine process: Stop in settings, plugin unload, a normal DSH quit, or a crash / force-kill all end the engine main process and the sidecars it spawns (text sidecar, `gsv_server`), leaving no python behind.
 
 ## HTTP routes
 
@@ -293,7 +296,7 @@ Attach the tarball from `npm pack` to the GitHub Release; npm-installed users wi
 
 ## Changelog
 
-Milestones: v1.1–v1.6 performance and eye-runtime rewrite; v1.7 Wire-Net Terminal skin, fee readout, boot colour correction; v2.0 one-click self-update; v2.0.3 the fee dock sits above the footer and no longer covers the session list; v2.0.4 bundled Anton title font and speakable-text preprocessing; v2.1.0 workspace-only eye badge, Voice / Appearance settings tabs, realigned sidebar wordmark and update pill, and a scrollbar fade fix; v2.1.1 compact voice settings card and complete keyboard focus rings. User-visible changes per release live in [docs/CHANGELOG.md](docs/CHANGELOG.md); implementation notes and trade-offs in [docs/TECHNICAL.md](docs/TECHNICAL.md).
+Milestones: v1.1–v1.6 performance and eye-runtime rewrite; v1.7 Wire-Net Terminal skin, fee readout, boot colour correction; v2.0 one-click self-update; v2.0.3 the fee dock sits above the footer and no longer covers the session list; v2.0.4 bundled Anton title font and speakable-text preprocessing; v2.1.0 workspace-only eye badge, Voice / Appearance settings tabs, realigned sidebar wordmark and update pill, and a scrollbar fade fix; v2.1.1 compact voice settings card and complete keyboard focus rings; v2.2.0 automatically reaps the local voice engine when DSH exits, leaving no python processes behind. User-visible changes per release live in [docs/CHANGELOG.md](docs/CHANGELOG.md); implementation notes and trade-offs in [docs/TECHNICAL.md](docs/TECHNICAL.md).
 
 ## License
 
