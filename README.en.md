@@ -59,7 +59,11 @@ Full third-party license texts live in [licenses/](licenses/); per-item attribut
 | --- | --- |
 | ![Greeting](screenshots/02-greet.png) | ![Eye states](screenshots/03-eye-states.png) |
 
-> Screenshots come from an earlier build; details differ slightly from the current skin. The current Wire-Net Terminal look is specified in [docs/UI-DESIGN.md](docs/UI-DESIGN.md) and [docs/skin/](docs/skin/).
+| Voice & speech | Appearance & boot animation |
+| --- | --- |
+| ![Voice and speech settings](screenshots/04-settings.png) | ![Appearance and boot animation settings](screenshots/05-settings-appearance.png) |
+
+> Screenshots come from v2.1.1 and match the current Wire-Net Terminal skin, voice / appearance settings and boot animation; details may continue to change in later versions. The live look is specified in [docs/UI-DESIGN.md](docs/UI-DESIGN.md) and [docs/skin/](docs/skin/).
 
 ## Features
 

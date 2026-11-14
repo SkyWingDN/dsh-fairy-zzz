@@ -59,7 +59,11 @@ dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
 | --- | --- |
 | ![居中问好](screenshots/02-greet.png) | ![眼徽状态](screenshots/03-eye-states.png) |
 
-> 截图采自早期版本，界面细节与当前皮肤略有出入；当前的绳网终端样式见 [docs/UI-DESIGN.md](docs/UI-DESIGN.md) 与 [docs/skin/](docs/skin/)。
+| 语音与朗读 | 外观与开场动画 |
+| --- | --- |
+| ![语音与朗读设置](screenshots/04-settings.png) | ![外观与开场动画设置](screenshots/05-settings-appearance.png) |
+
+> 截图采自 v2.1.1，对应当前的绳网终端皮肤、语音 / 外观设置页与开机动画；界面细节可能随后续版本继续调整。当前样式规范见 [docs/UI-DESIGN.md](docs/UI-DESIGN.md) 与 [docs/skin/](docs/skin/)。
 
 ## 特性
 
