@@ -596,9 +596,9 @@ v1.7.2 的两处修复都是「边线装饰放错了形状」：
 - 「设置」右侧的 Ctrl+, 从几乎不可见抬到 `rgba(242,242,238,.56)`（浅色 `rgba(16,17,16,.52)`）；菜单项标题仍是 label-primary `#f2f2ee`，快捷键低一个层级，不抢「设置」。
 - 根因记录：skin 里 `.wtg9ga_newSession [class*="_kbd"],[class*="_key"],[class*="_separator"]` 的后两个选择器漏了容器前缀，全局把菜单快捷键刷成墨黑；v2.0.0 补前缀 + K 段统一抬对比度（技术细节见 TECHNICAL §22.4）。
 
-### 16.6 电费坞贴底与工作区预留（v2.0.3）
+### 16.6 电费坞贴底与工作区预留（v2.0.3，v2.2.1 调整）
 
-- 位置：电费坞不再写死 `bottom:86px`，改为 `bottom:var(--fz3-bill-bottom,86px)`；`BillDock` 挂载后读 `[class*="_footArea"]` 的 `getBoundingClientRect().top`，把「窗口高 - 页脚顶 + 6」写进变量，坞底离页脚 6px。
+- 位置：电费坞不再写死 `bottom:86px`，改为 `bottom:var(--fz3-bill-bottom,86px)`；`BillDock` 挂载后读 `[class*="_footArea"]` 的 `getBoundingClientRect().top`，把「窗口高 - 页脚顶 + 6」写进变量，坞底离页脚 6px（v2.2.1 起去掉 +6px 缝，直接与页脚上沿齐平，见 16.14）。
 - 预留：同一 effect 用坞自身 `offsetHeight + 14` 写 `--fz3-bill-reserve`，基础 CSS 加 `[class*="_regionArea"]{padding-bottom:var(--fz3-bill-reserve,0px)}`，会话列表可视区底边停在坞顶上方约 8px。
 - 兜底与跟随：页脚未挂载 / 高度为 0（侧栏折叠成窄条）时保留 86px；页脚与坞都挂 `ResizeObserver`，窗口 resize 120ms 防抖；卸载时清 timer / observer / listener 并移除两个变量。
 
@@ -640,6 +640,13 @@ v1.7.2 的两处修复都是「边线装饰放错了形状」：
 
 - 树行、菜单项、列表项等宿主容器会裁切外扩焦点环的内容，统一改内嵌：`outline-offset:-2px`；覆盖 `[role=treeitem]` / `[role=menuitem]` / `[role=menuitemradio]` / `[role=menuitemcheckbox]` / `[role=option]` / `[role=menu] button` / `[role=menu] a` / `[role=listbox] button`。
 - 侧栏字标：宿主按钮只有 24px 高，与 46px 可见字标错位，因此隐藏宿主焦点框，改在 `.fz3-sb-brand` 覆盖层上画 2px 青柠环（浅色主题 `#101110`）；环完整包住字标与副标题，不再从「// Fairy」中间穿过。
+
+### 16.14 电费坞不透明实底（v2.2.1）
+
+- 背景：`.fz3-bill` 从透明改为 `#101110` 实底 + `1px rgba(255,255,255,.09)` 描边；浅色 / 深色都用墨黑，因为皮肤侧栏本身固定 `#101110`，跟宿主浅色侧栏变量会形成色块。
+- 位置：坞底与 `[class*="_footArea"]` 上沿齐平（`--fz3-bill-bottom = innerHeight - footTop`，不再 +6px）；`--fz3-bill-reserve = dock.offsetHeight + 14` 不变，列表可视区底边停在坞顶上方约 8px。
+- 加载态：底板 opacity 恒为 1，只把标题 / 行 / 注释压到 .55，20s 轮询或切页时不会短暂透出下方会话行。
+- 验证：1282×823 下 bill [12,637,255,140,777]、footArea.top=777、gap 0；列表滚到底最后一行 bottom 746 < 列表底 762 < 坞顶 777，无重叠。
 
 ## 17. 截图索引
 

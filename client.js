@@ -1650,18 +1650,23 @@ html[data-fz3-theme="light"] .fz3-set-switch[data-on="1"]::after{background:#041
 .fz3-layer[data-phase="dock"] .fz3-core:focus-visible .fz3-eye-svg{transform:scale(1.07)}
 
 /* ---------- 常驻电费读数（v1.7.5） ---------- */
-/* 不做成卡片：没有底色、描边和阴影，就是侧栏页脚上方的几行字 + 一行计费说明，
-   和侧栏自己在同一个平面上，不会在窗口里再「套一个窗口」抢视线。
-   位置（v2.0.3）：贴在侧栏页脚上沿 6px 处，具体值由 BillDock 实测页脚 top 后写进
-   --fz3-bill-bottom（窗口高度 / 页脚高度变化会跟着重算）；86px 只是 JS 未生效时的兜底。
+/* v2.2.1（叠字修复）：改成不透明实底，边界画清楚。
+   2.2.0 之前这里是透明背景，工作区列表滚到电费坞后面时文字会透出来，和电费读数叠成一团。
+   现在铺侧栏同色 #101110 + 1px 描边，不用半透明 / 渐变过渡；底边直接贴住页脚上沿，
+   不再留 6px 缝，避免列表行从缝里透出来。
+   底色固定 #101110：皮肤里 .wtg9ga_root 在深 / 浅主题都强制这个墨黑底，
+   不能跟宿主 --dsw-specific-sidebar-fill（浅色下是 #f9fafb）走，否则浅色主题会变成浅色底。
+   位置：具体值由 BillDock 实测页脚 top 后写进 --fz3-bill-bottom（窗口高度 / 页脚高度变化
+   会跟着重算）；86px 只是 JS 未生效时的兜底。
    同时 BillDock 把「电费坞高度 + 上下留白」写进 --fz3-bill-reserve，侧栏列表区底部
-   让出等高的空白（见下方 regionArea 规则），工作区列表再长也滚不到电费坞底下。
+   让出等高的空白（见下方 regionArea 规则）：滚到底时最后一行停在电费坞上方；
+   中途滚过的行则被不透明底板挡住，不会和读数叠字。
    这里就是电费唯一的出口：不再有气泡，也没有点击；眼徽退回纯状态指示。
    数据走 usageCache 的 30s / 60s TTL，20s 轮询基本都命中缓存，不会反复解压会话日志。 */
 .fz3-bill{
   position:fixed;left:12px;bottom:var(--fz3-bill-bottom,86px);width:255px;z-index:2;box-sizing:border-box;
   display:grid;gap:1px;padding:8px 10px 9px;border-radius:8px;
-  pointer-events:auto;background:transparent;
+  pointer-events:auto;background:#101110;border:1px solid rgba(255,255,255,.09);
   font-family:var(--fz3-font);font-size:14px;line-height:1.45;color:rgba(242,242,238,.72);
 }
 .fz3-bill-head{margin-bottom:6px;font-family:var(--fz3-mono);font-size:15px;font-weight:700;letter-spacing:.06em;color:rgba(216,250,0,.86)}
@@ -1674,7 +1679,10 @@ html[data-fz3-theme="light"] .fz3-set-switch[data-on="1"]::after{background:#041
 .fz3-bill[data-tone="peak"] .fz3-bill-tag{background:#f0a13a}
 .fz3-bill-clock{font-family:var(--fz3-mono);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:#63bf8c;white-space:nowrap}
 .fz3-bill[data-tone="peak"] .fz3-bill-clock{color:#d8a86a}
-.fz3-bill[data-loading="1"]{opacity:.55}
+/* 加载态只压暗文字，底板必须保持不透明，否则又会透出后面的列表。 */
+.fz3-bill[data-loading="1"] .fz3-bill-head,
+.fz3-bill[data-loading="1"] .fz3-bill-row,
+.fz3-bill[data-loading="1"] .fz3-bill-note{opacity:.55}
 .fz3-bill-note{margin-top:5px;padding-top:6px;border-top:1px solid rgba(242,242,238,.07);font-size:11px;line-height:1.5;letter-spacing:.01em;color:rgba(242,242,238,.34)}
 html[data-fz3-theme="light"] .fz3-bill-head{color:rgba(96,122,0,.9)}
 html[data-fz3-theme="light"] .fz3-bill-k{color:rgba(16,17,16,.72)}
@@ -3483,6 +3491,7 @@ html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16
       }, [refresh])
 
       /* v2.0.3：电费坞贴住侧栏页脚上沿，并把自身高度让给工作区列表区。
+         v2.2.1：底边与页脚上沿齐平（原来留 6px 缝，列表行会从缝里透出来）。
          只写两个 CSS 变量，不动宿主 DOM：
            --fz3-bill-bottom   电费坞底边 = 页脚 top 反算（窗口 / 页脚高度变化自动跟随）
            --fz3-bill-reserve  列表区底部预留 = 电费坞高 + 14px（列表滚到底也压不到坞）
@@ -3501,7 +3510,7 @@ html[data-fz3-theme="light"] [class*="_shortcut_"] [class*="_key"]{color:rgba(16
           const fr = foot.getBoundingClientRect()
           /* 宽度 <200px = 侧栏被收成窄条，页脚不是正常形态，别跟着它算 */
           if (fr.height <= 0 || fr.width < 200) return false
-          root.style.setProperty('--fz3-bill-bottom', Math.max(8, Math.round(window.innerHeight - fr.top + 6)) + 'px')
+          root.style.setProperty('--fz3-bill-bottom', Math.max(8, Math.round(window.innerHeight - fr.top)) + 'px')
           const h = Math.round(dock.offsetHeight)
           if (h > 0) root.style.setProperty('--fz3-bill-reserve', h + 14 + 'px')
           return true

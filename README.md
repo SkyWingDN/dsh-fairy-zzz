@@ -8,7 +8,7 @@
 
 [English](README.en.md) · [变更记录](docs/CHANGELOG.md) · [技术说明](docs/TECHNICAL.md) · [性能报告](docs/PERFORMANCE.md)
 
-![version](https://img.shields.io/badge/version-2.2.0-D8FA00?style=flat-square&labelColor=101110)
+![version](https://img.shields.io/badge/version-2.2.1-D8FA00?style=flat-square&labelColor=101110)
 [![npm](https://img.shields.io/npm/v/@sky_wing_dn%2Fdsh-fairy-zzz?style=flat-square&labelColor=101110&color=D8FA00)](https://www.npmjs.com/package/@sky_wing_dn/dsh-fairy-zzz)
 ![license](https://img.shields.io/badge/license-MIT-101110?style=flat-square)
 ![platform](https://img.shields.io/badge/DSH-Desktop%20%26%20Web-101110?style=flat-square)
@@ -63,7 +63,7 @@ dsh plugin --profile desktop add @sky_wing_dn/dsh-fairy-zzz
 | --- | --- |
 | ![语音与朗读设置](screenshots/04-settings.png) | ![外观与开场动画设置](screenshots/05-settings-appearance.png) |
 
-> 截图采自 v2.1.1；v2.2.0 未改界面，视觉与截图一致。界面细节可能随后续版本继续调整。当前样式规范见 [docs/UI-DESIGN.md](docs/UI-DESIGN.md) 与 [docs/skin/](docs/skin/)。
+> 截图采自 v2.1.1；v2.2.0 未改界面；v2.2.1 只把侧栏电费坞底板改为不透明实底，其余布局与截图一致。界面细节可能随后续版本继续调整。当前样式规范见 [docs/UI-DESIGN.md](docs/UI-DESIGN.md) 与 [docs/skin/](docs/skin/)。
 
 ## 特性
 
@@ -296,7 +296,7 @@ GitHub Release 附 `npm pack` 生成的 tarball；从 npm 装的用户下次打�
 
 ## 变更记录
 
-主要节点：v1.1–v1.6 性能与眼徽重写；v1.7 绳网终端皮肤、电费读数、开机颜色校正；v2.0 一键自更新；v2.0.3 电费坞贴底、不再压住会话列表；v2.0.4 内置 Anton 标题字体、朗读文本预处理；v2.1.0 眼徽只在工作区显示、设置页分「语音 / 外观」标签页、侧栏字标与更新胶囊重新对齐、修复滚动条被渐隐层压暗；v2.1.1 语音设置卡收拢、键盘焦点框补全；v2.2.0 本地语音引擎随 DSH 退出自动回收，不再残留 python 进程。逐版本的用户可见改动见 [docs/CHANGELOG.md](docs/CHANGELOG.md)；实现细节与设计取舍在 [docs/TECHNICAL.md](docs/TECHNICAL.md)。
+主要节点：v1.1–v1.6 性能与眼徽重写；v1.7 绳网终端皮肤、电费读数、开机颜色校正；v2.0 一键自更新；v2.0.3 电费坞贴底、不再压住会话列表；v2.0.4 内置 Anton 标题字体、朗读文本预处理；v2.1.0 眼徽只在工作区显示、设置页分「语音 / 外观」标签页、侧栏字标与更新胶囊重新对齐、修复滚动条被渐隐层压暗；v2.1.1 语音设置卡收拢、键盘焦点框补全；v2.2.0 本地语音引擎随 DSH 退出自动回收，不再残留 python 进程；v2.2.1 电费坞改为不透明实底，修加载态与滚动时与工作区列表叠字。逐版本的用户可见改动见 [docs/CHANGELOG.md](docs/CHANGELOG.md)；实现细节与设计取舍在 [docs/TECHNICAL.md](docs/TECHNICAL.md)。
 
 ## 许可
 
